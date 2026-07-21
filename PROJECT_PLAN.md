@@ -1,3066 +1,3253 @@
-# FIRE Backtesting Framework (FBF)
-
-Version: 1.0.0
-Estado: Arquitectura Congelada (Frozen Specification)
-Autor: OpenAI + Julio Gracia
-Objetivo: Framework de investigación para estrategias de desacumulación (Safe Withdrawal Rates)
-
----
-
-# 1. Objetivo
+# 1. Introducción
 
 ## 1.1 Propósito
 
-Este proyecto NO pretende implementar únicamente el estudio de EarlyRetirementNow.
+El objetivo principal de este proyecto es reproducir de forma exacta los estudios publicados en la serie **Safe Withdrawal Rates** de EarlyRetirementNow, comenzando por el **Part 19 – Equity Glidepaths**.
 
-El objetivo es desarrollar un framework reutilizable capaz de investigar cualquier estrategia de desacumulación (withdrawal strategy) de forma completamente reproducible.
+Una vez reproducidos y validados dichos estudios, el proyecto deberá servir como plataforma para investigar nuevas estrategias de desacumulación y responder preguntas de investigación relacionadas con la jubilación mediante simulaciones históricas.
 
-El framework debe servir tanto para:
+El proyecto no pretende limitarse a reproducir un único estudio, sino proporcionar un motor de simulación reutilizable capaz de ejecutar cualquier experimento basado en series históricas de activos financieros.
 
-- reproducir estudios existentes,
-- extender dichos estudios,
-- investigar nuevas estrategias.
+Todas las decisiones arquitectónicas deberán priorizar, en este orden:
 
-Debe convertirse en una herramienta de investigación financiera.
-
----
-
-## 1.2 Requisitos funcionales
-
-El framework deberá ser capaz de estudiar:
-
-- Carteras estáticas
-- Glidepaths
-- Glidepaths activos
-- Nuevas reglas de retirada
-- Nuevos activos
-- Nuevos mercados
-- Nuevos algoritmos de rebalanceo
-- Monte Carlo (futuro)
-- Bootstrap (futuro)
-
----
-
-## 1.3 Requisitos no funcionales
-
-El framework deberá ser:
-
-- Determinista
-- Reproducible
-- Modular
-- Escalable
-- Extensible
-- Testable
-- Altamente documentado
-
----
-
-## 1.4 Prioridades
-
-Las prioridades del proyecto son:
-
-1. Exactitud matemática.
+1. Correctitud matemática.
 2. Reproducibilidad.
-3. Correctitud del dominio.
-4. Arquitectura limpia.
+3. Trazabilidad.
+4. Extensibilidad.
 5. Rendimiento.
-6. Facilidad para añadir nuevas estrategias.
-
-Nunca se sacrificará la exactitud para obtener mayor rendimiento.
 
 ---
 
-# 2. Principios de Diseño
+## 1.2 Objetivos
 
-## 2.1 Clean Architecture
+El proyecto deberá ser capaz de:
 
-El framework seguirá Clean Architecture.
-
-Se dividirá en cuatro capas.
-
-```
-Presentation
-
-↓
-
-Application
-
-↓
-
-Domain
-
-↓
-
-Infrastructure
-```
-
-La dependencia únicamente puede dirigirse hacia abajo.
-
-Infrastructure nunca podrá ser utilizada directamente por Domain.
+- Reproducir exactamente los estudios de EarlyRetirementNow.
+- Calcular Safe Withdrawal Rates para distintas estrategias.
+- Comparar múltiples Allocation Policies.
+- Ejecutar miles de cohortes históricas.
+- Ejecutar múltiples experimentos automáticamente.
+- Persistir todos los resultados.
+- Permitir extender el motor sin modificar el dominio.
 
 ---
 
-## 2.2 Separación de responsabilidades
+## 1.3 Alcance
+
+La primera versión implementará únicamente:
+
+- Datos mensuales.
+- ACWI Total Return EUR.
+- Bonos gubernamentales europeos.
+- Fondo monetario EUR.
+- Retirada constante ajustada por inflación.
+- Glidepaths pasivos.
+- Glidepaths activos.
+- Rebalanceo mensual.
+- Optimización mediante Binary Search.
+
+Todo elemento adicional deberá justificarse mediante un caso de uso real.
+
+---
+
+## 1.4 Filosofía
+
+El proyecto se divide en dos dominios completamente independientes.
+
+### Engine
+
+Responsable de ejecutar simulaciones.
+
+Nunca conoce estudios concretos.
+
+Nunca conoce EarlyRetirementNow.
+
+Nunca conoce experimentos específicos.
+
+Únicamente ejecuta simulaciones.
+
+### Research
+
+Responsable de definir estudios científicos.
+
+Describe qué simulaciones deben ejecutarse.
+
+Nunca implementa lógica de simulación.
+
+Todo estudio deberá describirse mediante configuración y utilizar exclusivamente las capacidades proporcionadas por el Engine.
+
+---
+
+## 1.5 Principios
+
+El dominio deberá ser completamente independiente de:
+
+- SQLite.
+- YAML.
+- CSV.
+- CLI.
+- Logging.
+- Gráficos.
+- Interfaces de usuario.
+
+Toda dependencia externa pertenecerá a Infrastructure.
+
+# 2. Arquitectura General
+
+## 2.1 Visión general
+
+El proyecto se divide en los siguientes módulos:
+
+- Engine
+- Research
+- Infrastructure
+- Analysis
+- CLI
 
 Cada módulo tendrá una única responsabilidad.
 
-Ejemplos:
-
-- Portfolio únicamente conoce dinero.
-- Strategy únicamente conoce pesos objetivo.
-- Runner únicamente ejecuta experimentos.
-- SQLite únicamente persiste resultados.
-
----
-
-## 2.3 Inmutabilidad
-
-Siempre que sea posible se utilizarán objetos inmutables.
-
-Especialmente:
-
-- Allocation
-- AssetId
-- Money
-- SimulationParameters
-- ExperimentConfiguration
-
----
-
-## 2.4 Reproducibilidad
-
-Toda simulación debe producir exactamente el mismo resultado cuando:
-
-- CSV es idéntico.
-- Configuración es idéntica.
-- Estrategia es idéntica.
-- Framework Version es idéntica.
-
----
-
-## 2.5 Modularidad
-
-Todo componente debe poder sustituirse.
-
-Ejemplos
-
-Nuevo algoritmo de rebalanceo.
-
-Nueva estrategia.
-
-Nuevo activo.
-
-Nueva regla de retirada.
-
-Sin modificar el motor.
-
----
-
-## 2.6 Configuración
-
-Ningún valor de negocio podrá aparecer hardcodeado.
-
-Toda configuración deberá provenir de:
-
-- YAML
-- JSON
-- Base de datos
-
----
-
-# 3. Arquitectura General
-
-```
-fire_backtest/
-
-    domain/
-
-    application/
-
-    infrastructure/
-
-    presentation/
-
-    docs/
-
-    benchmarks/
-
-    tests/
-```
-
----
-
-## Domain
-
-Contiene únicamente lógica financiera.
-
-No conoce:
-
-- SQLite
-- NumPy
-- CLI
-- Logging
-
----
-
-## Application
-
-Coordina el dominio.
-
-Contiene:
-
-- Runner
-- Casos de uso
-- Simulaciones
-
----
-
-## Infrastructure
-
-Contiene:
-
-- SQLite
-- SQLAlchemy
-- CSV Loader
-- Exportadores
-- Logging
-
----
-
-## Presentation
-
-Contiene:
-
-- CLI
-- Futuras APIs
-- Interfaz Web
-
----
-
-# 4. Dominio
-
-El dominio representa conceptos financieros.
-
-Nunca librerías.
-
-Nunca bases de datos.
-
-Nunca archivos.
-
----
-
-## Entidades
-
-El dominio estará formado por entidades.
-
-Inicialmente:
-
-```
-Asset
-
-Portfolio
-
-Allocation
-
-Money
-
-Withdrawal
-
-Simulation
-
-Experiment
-
-Strategy
-
-MarketData
-
-SimulationResult
-```
-
----
-
-## Value Objects
-
-También existirán objetos inmutables.
-
-Ejemplos
-
-```
-AssetId
-
-Percentage
-
-Return
-
-Inflation
-
-Drawdown
-
-Weight
-
-AllocationTarget
-
-WithdrawalAmount
-```
-
----
-
-## Servicios del Dominio
-
-Los servicios contendrán lógica financiera.
-
-Ejemplos
-
-```
-RebalanceService
-
-WithdrawalService
-
-BinarySearchService
-
-PortfolioService
-```
-
----
-
-## Eventos
-
-El dominio emitirá eventos.
-
-Ejemplos
-
-```
-SimulationStarted
-
-WithdrawalPerformed
-
-AllocationChanged
-
-PortfolioRebalanced
-
-SimulationFinished
-
-BinarySearchIteration
-```
-
-Los eventos no modificarán el dominio.
-
-Únicamente informarán.
-
----
-
-# 5. Flujo General
-
-Todo experimento sigue exactamente este flujo.
-
-```
-Experiment
-
-↓
-
-Dataset
-
-↓
-
-Preprocessing
-
-↓
-
-Simulation Runner
-
-↓
-
-Simulation Engine
-
-↓
-
-Strategy
-
-↓
-
-Withdrawal Rule
-
-↓
-
-Portfolio
-
-↓
-
-Rebalance
-
-↓
-
-Monthly Result
-
-↓
-
-Simulation Result
-
-↓
-
-Statistics
-
-↓
-
-Persistence
-
-↓
-
-Analysis
-```
-
----
-
-## Experiment
-
-Representa un estudio completo.
-
-Ejemplo
-
-```
-Dataset
-
-ACWI
-
-Horizonte
-
-60 años
-
-Targets
-
-0%
-
-50%
-
-100%
-
-Strategies
-
-40
-
-Withdrawal Rules
-
-3
-```
-
-Un Experiment puede ejecutar miles de simulaciones.
-
----
-
-## Simulation
-
-Representa una cohorte concreta.
-
-Ejemplo
-
-```
-Inicio
-
-1989-01
-
-Horizonte
-
-720 meses
-
-Target
-
-100%
-
-Strategy
-
-Glidepath 60→100
-
-Withdrawal Rule
-
-Constant Real
-```
-
----
-
-## Monthly Loop
-
-Cada simulación sigue exactamente este orden.
-
-```
-Inicio del mes
-
-↓
-
-Actualizar pesos objetivo
-
-↓
-
-Calcular retirada
-
-↓
-
-Retirar utilizando el rebalanceo
-
-↓
-
-Si aún no coincide con AllocationTarget
-
-Rebalancear
-
-↓
-
-Aplicar retornos del mes
-
-↓
-
-Guardar MonthlyResult
-
-↓
-
-Mes siguiente
-```
-
-Este orden es INMUTABLE.
-
-No podrá modificarse sin crear un ADR.
-
----
-
-## Resultado
-
-Cada simulación devuelve un único objeto.
-
-```
-SimulationResult
-```
-
-Debe contener:
-
-- Portfolio History
-- Withdrawals
-- Rebalances
-- Drawdowns
-- Allocation History
-- Statistics
-- Metadata
-- Events
-- Logs
-
-Toda la información necesaria para reconstruir la simulación.
-
-SQLite y Analysis trabajarán exclusivamente con SimulationResult.
-
-Nunca accederán al motor.
-
-# 6. Datos de Mercado (Market Data)
-
-## 6.1 Filosofía
-
-El framework trabaja exclusivamente con **retornos mensuales**.
-
-Nunca utilizará precios como dato de entrada.
-
-Los precios o índices acumulados se calcularán automáticamente durante el preprocesado.
-
-Esto permite utilizar cualquier activo siempre que exista una serie de retornos.
-
----
-
-## 6.2 Formato del CSV
-
-El CSV deberá contener una fila por mes.
-
-Campos obligatorios
-
-date
-
-inflation
-
-Todos los demás campos serán interpretados como activos.
-
-Ejemplo
-
-date, inflation, ACWI, BOND_SHORT, BOND_LONG, MONEY
-
-1989-01,0.0031,0.021,-0.004,0.011,0.002
-
-1989-02,0.0018,-0.051,0.008,0.017,0.002
-
-...
-
----
-
-Cada columna representa
-
-RETORNO TOTAL DEL MES
-
-No precios.
-
-No índices.
-
-No dividendos separados.
-
-No cotizaciones.
-
----
-
-## 6.3 Dataset Registry
-
-Los datasets no se cargarán directamente.
-
-Cada dataset tendrá un identificador.
-
-Ejemplo
-
-ACWI_EUR_TOTAL_RETURN
-
-SP500_SHILLER
-
-MSCI_WORLD
-
-EURO_GOV_SHORT
-
-EURO_GOV_LONG
-
-EUR_MONETARY
-
----
-
-El objetivo es que las simulaciones almacenen
-
-dataset_id
-
-y no únicamente una ruta de fichero.
-
----
-
-## 6.4 Validaciones
-
-Antes de aceptar un dataset deberán comprobarse
-
-- fechas ordenadas
-- meses consecutivos
-- sin duplicados
-- sin valores nulos
-- inflación existente
-- activos existentes
-- nombres únicos
-
-Si alguna comprobación falla
-
-InvalidDatasetException
-
----
-
-# 7. Preprocesado
-
-El preprocesado se ejecuta una única vez por dataset.
-
-Nunca durante una simulación.
-
----
-
-## 7.1 Objetivo
-
-Reducir al mínimo el trabajo del motor.
-
-Todo cálculo repetitivo deberá realizarse aquí.
-
----
-
-## 7.2 Índices acumulados
-
-Para cada activo
-
-crear un índice base 100.
-
-Ejemplo
-
-ACWI
-
-1989-01
-
-100
-
-1989-02
-
-102.4
-
-1989-03
-
-98.1
-
-...
-
----
-
-## 7.3 IPC
-
-Crear
-
-CPI_INDEX
-
-acumulado.
-
-Permitirá calcular
-
-retiradas reales.
-
----
-
-## 7.4 ATH
-
-Para cada activo
-
-calcular
-
-running_max
-
-is_ath
-
-is_underwater
-
-drawdown
-
-Todo quedará almacenado.
-
-Nunca volverá a calcularse.
-
----
-
-## 7.5 Drawdown
-
-Guardar
-
-drawdown absoluto
-
-drawdown porcentual
-
-duración del drawdown
-
-profundidad máxima
-
-Esto permitirá futuros estudios.
-
----
-
-## 7.6 Caché
-
-El resultado del preprocesado podrá serializarse.
-
-Así no será necesario recalcularlo en futuras ejecuciones.
-
----
-
-# 8. Activos
-
-El framework no conoce activos concretos.
-
-Únicamente conoce
-
-Asset
-
----
-
-## 8.1 Asset
-
-Todo activo posee
-
-AssetId
-
-Nombre
-
-Descripción
-
-Moneda
-
-Serie histórica
-
-Metadatos
-
----
-
-Nunca existen propiedades especiales.
-
-No existe
-
-portfolio.acwi
-
-portfolio.money
-
-Todo funciona mediante AssetId.
-
----
-
-## 8.2 AssetId
-
-Es un Value Object.
-
-Ejemplos
-
-ACWI
-
-BOND_SHORT
-
-BOND_LONG
-
-MONEY
-
-BTC
-
-GOLD
-
-REIT
-
-SMALL_VALUE
-
----
-
-## 8.3 Extensibilidad
-
-Añadir un activo nuevo nunca debe requerir modificar el motor.
-
-Únicamente
-
-añadir columna al dataset
-
-registrarlo
-
-crear estrategia si fuese necesario
-
----
-
-# 9. Portfolio
-
-## 9.1 Filosofía
-
-El portfolio almacena únicamente dinero.
-
-Nunca participaciones.
-
-Nunca ETFs.
-
-Nunca fondos.
-
-Nunca precios.
-
----
-
-Cada activo tiene únicamente
-
-valor_en_euros
-
----
-
-## 9.2 Operaciones
-
-Debe soportar
-
-deposit()
-
-withdraw()
-
-buy()
-
-sell()
-
-apply_return()
-
-rebalance()
-
-allocation()
-
-value()
-
----
-
-## 9.3 Restricciones
-
-Nunca puede existir
-
-valor negativo
-
-activo inexistente
-
-dinero creado
-
-dinero destruido
-
-excepto mediante
-
-retirada
-
-o
-
-rentabilidad.
-
----
-
-## 9.4 Allocation
-
-La asignación siempre se calcula
-
-sobre el patrimonio total.
-
-Nunca sobre el patrimonio invertido.
-
----
-
-## 9.5 Historial
-
-El portfolio no guarda historial.
-
-El historial pertenece a
-
-SimulationResult.
-
----
-
-# 10. Estrategias
-
-Las estrategias únicamente responden
-
-¿Cuál debería ser la asignación objetivo?
-
-Nunca realizan operaciones.
-
-Nunca conocen dinero.
-
-Nunca conocen el portfolio.
-
----
-
-## 10.1 Interface
-
-Toda estrategia implementa
-
-initialize()
-
-monthly_target()
-
-finish()
-
----
-
-## 10.2 Resultado
-
-Devuelven
-
-AllocationTarget
-
-Ejemplo
-
-ACWI
-
-64%
-
-BOND_SHORT
-
-28%
-
-MONEY
-
-8%
-
----
-
-## 10.3 Identidad
-
-Toda estrategia posee
-
-name
-
-identifier
-
-config_json
-
-config_hash
-
----
-
-config_hash
-
-SHA256
-
-del JSON ordenado.
-
----
-
-## 10.4 Configuración
-
-Las estrategias se crearán mediante
-
-YAML
-
-o
-
-JSON.
-
-Nunca mediante código hardcodeado.
-
-Ejemplo
-
-type: glidepath
-
-start_equity: 60
-
-end_equity: 100
-
-slope: 0.333333
-
-active: true
-
----
-
-## 10.5 Estrategias previstas
-
-Static Allocation
-
-Passive Glidepath
-
-Active Glidepath
-
-Custom Strategy
-
----
-
-## 10.6 Glidepath Pasivo
-
-Incrementa
-
-la asignación objetivo
-
-todos los meses.
-
----
-
-## 10.7 Glidepath Activo
-
-Incrementa
-
-únicamente cuando
-
-is_underwater == true
-
-Es decir
-
-cuando el índice de referencia
-
-NO está en ATH.
-
-Si durante ese mes
-
-el índice marca un nuevo ATH
-
-el glidepath permanece congelado.
-
----
-
-## 10.8 Validaciones
-
-Toda estrategia debe comprobar
-
-pesos positivos
-
-suma igual al 100%
-
-activos existentes
-
-configuración válida
-
-antes de comenzar la simulación.
-
-En caso contrario
-
-InvalidStrategyException.
-
-# 11. Withdrawal Rules
-
-## 11.1 Filosofía
-
-Las reglas de retirada son completamente independientes del portfolio.
-
-Su única responsabilidad es responder:
-
-> ¿Cuánto dinero debe retirarse este mes?
-
-Nunca ejecutan la retirada.
-
-Nunca venden activos.
-
-Nunca conocen el rebalanceo.
-
----
-
-## 11.2 Interface
-
-Toda regla implementará
-
-initialize()
-
-monthly_withdrawal()
-
-finish()
-
 ---
 
-## 11.3 Datos disponibles
-
-Una WithdrawalRule podrá consultar:
-
-- Patrimonio actual
-- Patrimonio inicial
-- Patrimonio máximo
-- Inflación acumulada
-- Mes de simulación
-- Horizonte restante
-- Historial de retiradas
-- Historial de rentabilidades
-
-Nunca podrá modificar estos datos.
-
----
-
-## 11.4 Constant Real
-
-Será la primera implementación.
-
-Funcionamiento:
-
-Retirada inicial
-
-↓
-
-Ajustar cada mes por IPC
-
-↓
-
-Nunca modificar por rentabilidad.
-
----
-
-Ejemplo
-
-Capital
-
-360000€
-
-SWR
-
-4%
-
-Retirada inicial
-
-14400€/año
-
-1200€/mes
-
-Si el IPC del primer año es 2%
-
-La retirada del segundo año será
-
-14688€/año
-
----
-
-## 11.5 Futuras reglas
-
-VPW
-
-Guyton-Klinger
-
-Constant Percentage
-
-Floor & Ceiling
-
-Custom
-
-No deberán requerir modificaciones en el motor.
-
----
-
-# 12. Rebalanceo
-
-## 12.1 Filosofía
-
-El rebalanceo es un problema matemático.
-
-Nunca una heurística.
-
-Debe encontrar la solución óptima.
-
----
-
-## 12.2 Objetivo
-
-Minimizar
-
-Σ compras + Σ ventas
-
-Sujeto a
-
-- Pesos objetivo
-- Retirada solicitada
-- Restricciones del portfolio
-
----
-
-## 12.3 Orden mensual
-
-El orden será SIEMPRE
-
-1 Actualizar AllocationTarget
-
-2 Calcular retirada
-
-3 Ejecutar la retirada intentando satisfacer el rebalanceo
-
-4 Si aún no coincide con AllocationTarget
-
-Rebalancear
-
-5 Aplicar retornos
-
----
-
-## 12.4 Rebalanceo implícito
-
-La retirada siempre intentará utilizarse para acercarse al AllocationTarget.
-
-Ejemplo
-
-Objetivo
-
-60%
-
-40%
-
-Situación
-
-63%
-
-37%
-
-Retirada
-
-1000€
-
-Primero se venderá RV.
-
-Si tras esa venta se alcanza el objetivo
-
-No habrá más operaciones.
-
----
-
-## 12.5 Rebalanceo explícito
-
-Si la retirada no ha sido suficiente
-
-El algoritmo calculará
-
-las compras y ventas mínimas
-
-para alcanzar el AllocationTarget.
-
----
-
-## 12.6 Restricciones
-
-Nunca crear dinero.
-
-Nunca destruir dinero.
-
-Nunca dejar activos negativos.
-
-Nunca superar el patrimonio.
-
----
-
-# 13. Motor de Simulación
-
-## 13.1 Filosofía
-
-El Simulation Engine coordina.
-
-No toma decisiones financieras.
-
-Todas las decisiones pertenecen al dominio.
-
----
-
-## 13.2 Responsabilidades
-
-Para cada mes
-
-Solicitar AllocationTarget
-
-↓
-
-Solicitar Withdrawal
-
-↓
-
-Actualizar Portfolio
-
-↓
-
-Aplicar retornos
-
-↓
-
-Generar MonthlyResult
-
----
-
-## 13.3 El motor no conoce
-
-SQLite
-
-CSV
-
-CLI
-
-Logging
-
-Gráficas
-
----
-
-## 13.4 Contexto
-
-Cada simulación recibe
-
-Dataset
-
-Strategy
-
-WithdrawalRule
-
-Horizonte
-
-Portfolio inicial
-
-Configuración
-
----
+## 2.2 Engine
 
-## 13.5 Resultado
+Responsable de ejecutar simulaciones.
 
-Siempre devuelve
+Contiene exclusivamente lógica de dominio.
 
-SimulationResult
+Nunca realiza operaciones de entrada o salida.
 
-Nunca escribe directamente en base de datos.
+Nunca conoce formatos de persistencia.
 
 Nunca genera gráficos.
 
 ---
 
-# 14. Binary Search
+## 2.3 Research
 
-## 14.1 Objetivo
+Define experimentos científicos.
 
-Encontrar la Safe Withdrawal Rate
+Contiene:
 
-que produce exactamente
+- Experimentos.
+- Configuraciones.
+- Estudios.
+- Comparativas.
 
-el patrimonio objetivo al finalizar la simulación.
-
----
-
-## 14.2 Entradas
-
-Simulation
-
-Target
-
-Tolerancia
-
-Máximo iteraciones
-
-Valor inicial
+No contiene lógica de simulación.
 
 ---
 
-## 14.3 Funcionamiento
+## 2.4 Infrastructure
 
-El algoritmo ejecutará
+Responsable de todas las dependencias externas.
 
-Simulation
+Incluye:
 
-↓
-
-Resultado
-
-↓
-
-Comparación
-
-↓
-
-Nuevo SWR
-
-↓
-
-Simulation
-
-↓
-
-...
-
-Hasta converger.
+- SQLite.
+- Lectura de CSV.
+- Exportación.
+- Logging.
+- Configuración.
+- Persistencia.
 
 ---
 
-## 14.4 Independencia
+## 2.5 Analysis
 
-Binary Search nunca conoce
+Genera resultados derivados.
+
+Ejemplos:
+
+- Tablas.
+- Comparativas.
+- Gráficos.
+- Informes.
+
+Nunca ejecuta simulaciones.
+
+---
+
+## 2.6 CLI
+
+Punto de entrada del programa.
+
+Únicamente:
+
+- Lee configuración.
+- Construye experimentos.
+- Ejecuta el Runner.
+- Muestra el progreso.
+
+Toda la lógica pertenece al Engine.
+
+---
+
+## 2.7 Dependencias
+
+La dirección de dependencias será siempre:
+
+CLI
+
+↓
+
+Research
+
+↓
+
+Engine
+
+↓
+
+Infrastructure
+
+Analysis dependerá exclusivamente de los resultados generados por el Engine.
+
+Nunca al contrario.
+
+# 3. Modelo del Dominio
+
+## 3.1 Filosofía
+
+El dominio representa exclusivamente conceptos financieros y de simulación.
+
+Nunca contendrá detalles de infraestructura.
+
+Nunca conocerá bases de datos.
+
+Nunca conocerá formatos de fichero.
+
+Nunca conocerá interfaces gráficas.
+
+---
+
+## 3.2 Separación entre Engine y Research
+
+El dominio se divide conceptualmente en dos niveles.
+
+### Engine
+
+Responsable de ejecutar simulaciones.
+
+Únicamente conoce conceptos genéricos.
+
+Ejemplos
+
+- Portfolio
+- Allocation
+- Withdrawal
+- Optimizer
+- Dataset
+- Simulation
+
+Nunca conoce estudios concretos.
+
+---
+
+### Research
+
+Responsable de definir estudios científicos.
+
+Un estudio describe:
+
+- Dataset.
+- Horizonte.
+- Allocation Policies.
+- Withdrawal Policies.
+- Optimizer.
+- Targets.
+- Configuración.
+
+Todo estudio deberá implementarse mediante configuración.
+
+Nunca mediante código específico.
+
+---
+
+## 3.3 Objetos principales
+
+El dominio estará compuesto, como mínimo, por los siguientes conceptos.
+
+ExperimentDefinition
+
+ExperimentRun
+
+Simulation
+
+SimulationContext
+
+SimulationState
+
+SimulationResult
+
+DecisionContext
+
+MarketSnapshot
 
 Portfolio
 
-Strategy
+AssetHolding
 
-Assets
+Allocation
 
-Withdrawal
+AllocationTarget
 
-Únicamente recibe
+MonthlyResult
 
-SimulationResult.
+Summary
 
----
+Statistics
 
-## 14.5 Aproximación inicial
+Diagnostics
 
-Cuando existan cohortes consecutivas
-
-la búsqueda comenzará utilizando
-
-la SWR obtenida para la cohorte anterior.
-
-Esto reduce considerablemente el número de iteraciones.
+Trace
 
 ---
 
-## 14.6 Error
+## 3.4 Separación entre configuración y estado
 
-Si no converge
+Todo objeto pertenecerá exactamente a una de estas categorías.
 
-lanzará
+### Configuración
 
-BinarySearchDidNotConvergeException
+Información inmutable.
 
-Nunca devolverá resultados parciales.
+Ejemplos
 
----
+- Dataset
+- AllocationPolicy
+- WithdrawalPolicy
+- Horizonte
+- Target
 
-# 15. Experimentos
+### Estado
 
-## 15.1 Filosofía
+Información mutable.
 
-Un experimento representa un conjunto completo de simulaciones.
+Ejemplos
 
-No una única simulación.
+- Portfolio
+- Patrimonio
+- Allocation actual
+- Retirada acumulada
 
----
-
-## 15.2 Un experimento contiene
-
-Dataset
-
-Horizonte
-
-Targets
-
-Estrategias
-
-Withdrawal Rules
-
-Configuración
+Nunca deberán mezclarse ambas responsabilidades.
 
 ---
 
-## 15.3 Un experimento genera
+## 3.5 Objetos inmutables
 
-N simulaciones
+Como norma general, todos los objetos del dominio serán inmutables.
+
+Únicamente podrán modificarse:
+
+- SimulationState.
+- Portfolio.
+- AssetHolding.
+
+El resto deberán reconstruirse cuando cambien.
+
+---
+
+## 3.6 Responsabilidad única
+
+Cada objeto del dominio tendrá exactamente una responsabilidad.
+
+Nunca se permitirá que un objeto:
+
+- tome decisiones,
+- modifique estado,
+- persista información,
+- genere gráficos,
+
+al mismo tiempo.
+
+---
+
+## 3.7 Flujo general
+
+El Engine seguirá el siguiente flujo conceptual.
+
+ExperimentDefinition
 
 ↓
 
-N resultados
+ExperimentRun
 
 ↓
 
-Estadísticas agregadas
+Simulation
+
+↓
+
+SimulationResult
+
+Research únicamente construye ExperimentDefinition.
+
+El Engine ejecuta el resto.
 
 ---
 
-## 15.4 Runner
+## 3.8 Principio de independencia
 
-El Runner únicamente ejecuta Experiments.
+El dominio deberá poder ejecutarse completamente:
 
-Nunca Strategies directamente.
+- sin SQLite,
+- sin YAML,
+- sin CSV,
+- sin Logging,
+- sin CLI,
 
-Nunca Simulations directamente.
+utilizando únicamente objetos en memoria.
+
+# 4. Experimentos
+
+## 4.1 Objetivo
+
+Un ExperimentDefinition representa un estudio científico completamente definido.
+
+Describe qué simulaciones deben ejecutarse.
+
+Nunca ejecuta simulaciones.
+
+Nunca conoce detalles de implementación.
 
 ---
 
-## 15.5 Paralelización
+## 4.2 Contenido
 
-La unidad de paralelización será
+Como mínimo contendrá:
 
-la cohorte.
+- Nombre.
+- Descripción.
+- Dataset.
+- Horizonte.
+- Allocation Policies.
+- Withdrawal Policies.
+- Optimizer.
+- Targets.
+- Configuración.
 
-No el Binary Search.
+---
 
-No la estrategia.
+## 4.3 ExperimentRun
 
-Cada proceso ejecutará un conjunto de cohortes consecutivas.
+Cada ejecución de un ExperimentDefinition generará un ExperimentRun independiente.
 
-## Modificación de la arquitectura
+ExperimentRun representa una ejecución concreta del experimento.
 
-Se introduce un nuevo objeto de dominio:
+Permitirá repetir exactamente el mismo estudio múltiples veces.
 
-SimulationContext
+---
 
-Su objetivo es contener toda la información INMUTABLE necesaria para ejecutar una simulación.
+## 4.4 Simulation
 
-El SimulationContext se construye una única vez al comenzar la simulación.
+Cada combinación de:
 
-A partir de ese momento ninguna parte del motor podrá modificarlo.
+- cohorte,
+- Allocation Policy,
+- Withdrawal Policy,
+- Target,
+
+generará una Simulation independiente.
+
+Todas las Simulations serán completamente independientes entre sí.
+
+---
+
+## 4.5 Resultado
+
+Cada Simulation producirá exactamente un SimulationResult.
+
+Un ExperimentRun estará compuesto por una colección de SimulationResult.
+
+---
+
+## 4.6 Ciclo de vida
+
+ExperimentDefinition
+
+↓
+
+ExperimentRun
+
+↓
+
+Simulation
+
+↓
+
+SimulationResult
+
+---
+
+## 4.7 Responsabilidades
+
+ExperimentDefinition
+
+Describe.
+
+ExperimentRun
+
+Coordina.
+
+Simulation
+
+Ejecuta.
+
+SimulationResult
+
+Almacena resultados.
+
+Cada concepto tendrá una única responsabilidad.
+
+---
+
+## 4.8 Configuración
+
+Toda la información necesaria para ejecutar un experimento deberá encontrarse en ExperimentDefinition.
+
+No estará permitido modificar dicha configuración durante la ejecución.
+
+---
+
+## 4.9 Reproducibilidad
+
+Dos ExperimentRun creados a partir del mismo ExperimentDefinition deberán producir exactamente los mismos resultados siempre que:
+
+- el Dataset sea el mismo,
+- la configuración sea la misma,
+- las Policies sean las mismas,
+- la versión del Engine sea la misma.
+
+---
+
+## 4.10 Independencia
+
+ExperimentDefinition nunca conocerá:
+
+- SQLite,
+- CSV,
+- YAML,
+- Logging,
+- CLI.
+
+Únicamente contendrá información del dominio.
+
+# 5. Datasets
+
+## 5.1 Objetivo
+
+Un Dataset representa una serie histórica utilizada por el Engine para ejecutar simulaciones.
+
+El Dataset únicamente contiene datos.
+
+Nunca contiene lógica.
+
+Nunca conoce estrategias.
+
+Nunca conoce simulaciones.
+
+---
+
+## 5.2 Alcance de la primera versión
+
+La primera versión trabajará exclusivamente con:
+
+- Frecuencia mensual.
+- Una única serie temporal por AssetClass.
+- ACWI Total Return EUR.
+- Bonos gubernamentales europeos.
+- Fondo monetario EUR.
+- IPC.
+
+La arquitectura permitirá ampliar posteriormente el número de AssetClass sin modificar el Engine.
+
+---
+
+## 5.3 Responsabilidades
+
+Un Dataset deberá proporcionar:
+
+- Fechas.
+- Retornos mensuales.
+- Inflación mensual.
+- Índice acumulado.
+- Información necesaria para construir los MarketSnapshot.
+
+Nunca realizará cálculos durante la simulación.
+
+---
+
+## 5.4 Preprocesado
+
+Antes de ejecutar cualquier experimento, el Dataset será preprocesado.
+
+El preprocesado calculará toda la información derivada que pueda reutilizarse entre simulaciones.
+
+Como mínimo:
+
+- Índice acumulado.
+- Running ATH.
+- isATH.
+- isUnderwater.
+- Inflación acumulada.
+
+El objetivo es evitar cálculos repetidos para cada cohorte.
+
+---
+
+## 5.5 Validación
+
+Todo Dataset deberá validarse antes de utilizarse.
+
+Como mínimo deberá comprobarse:
+
+- Fechas ordenadas.
+- Sin duplicados.
+- Sin meses ausentes.
+- Sin valores nulos.
+- Todas las AssetClass presentes.
+- IPC presente.
+
+Un Dataset inválido impedirá la ejecución del experimento.
+
+---
+
+## 5.6 Independencia
+
+El Engine nunca leerá directamente un CSV.
+
+El Dataset ya deberá encontrarse cargado y validado antes de comenzar la simulación.
+
+---
+
+## 5.7 Inmutabilidad
+
+Una vez construido, un Dataset será completamente inmutable.
+
+Ninguna simulación podrá modificarlo.
+
+Todas las simulaciones compartirán la misma instancia del Dataset.
+
+---
+
+## 5.8 Relación con MarketSnapshot
+
+Durante el preprocesado se construirá un MarketSnapshot por cada mes del Dataset.
+
+La simulación únicamente consumirá dichos MarketSnapshot.
+
+Nunca accederá directamente al Dataset.
+
+# 6. MarketSnapshot
+
+## 6.1 Objetivo
+
+MarketSnapshot representa el estado del mercado para un único mes.
+
+Es un objeto completamente inmutable.
+
+Se construye durante el preprocesado del Dataset y es reutilizado por todas las simulaciones.
+
+---
+
+## 6.2 Filosofía
+
+MarketSnapshot representa únicamente información del mercado.
+
+Nunca contiene información del Portfolio.
+
+Nunca contiene información de una simulación concreta.
+
+Nunca contiene lógica.
+
+---
+
+## 6.3 Contenido
+
+Como mínimo contendrá:
+
+- Fecha.
+- Retorno mensual de cada AssetClass.
+- Inflación mensual.
+- Inflación acumulada.
+- Valor acumulado del índice.
+- Running ATH.
+- isATH.
+- isUnderwater.
+
+---
+
+## 6.4 Información excluida
+
+MarketSnapshot nunca contendrá:
+
+- Patrimonio.
+- Allocation.
+- Drawdown del Portfolio.
+- Compras.
+- Ventas.
+- Retiradas.
+- Rentabilidad de una cartera.
+
+Toda esa información pertenece a SimulationState o MonthlyResult.
+
+---
+
+## 6.5 Construcción
+
+Todos los MarketSnapshot deberán construirse durante el preprocesado.
+
+Nunca durante la simulación.
+
+El objetivo es minimizar el coste computacional de ejecutar miles de cohortes.
+
+---
+
+## 6.6 Consumo
+
+Cada iteración mensual recibirá exactamente un MarketSnapshot.
+
+Las Policies nunca accederán directamente al Dataset.
+
+Toda la información del mercado deberá proporcionarse mediante este objeto.
+
+---
+
+## 6.7 Reutilización
+
+Todos los ExperimentRun compartirán los mismos MarketSnapshot derivados de un Dataset.
+
+Nunca se duplicarán innecesariamente en memoria.
+
+---
+
+## 6.8 Principio de responsabilidad única
+
+MarketSnapshot únicamente representa el estado del mercado para un instante concreto.
+
+No toma decisiones.
+
+No modifica estado.
+
+No conoce ninguna simulación.
+
+# 7. AssetClass
+
+## 7.1 Objetivo
+
+AssetClass representa una categoría de activo financiero sobre la que puede invertirse durante una simulación.
+
+No representa un ETF, un fondo concreto ni un ISIN.
+
+Representa una clase de activo abstraída.
+
+---
+
+## 7.2 AssetClass iniciales
+
+La primera versión implementará exclusivamente:
+
+- ACWI Total Return EUR
+- Euro Government Bonds
+- Euro Money Market
+
+La arquitectura permitirá añadir nuevas AssetClass sin modificar el Engine.
+
+---
+
+## 7.3 Responsabilidades
+
+Una AssetClass únicamente identifica una serie temporal dentro de un Dataset.
+
+Nunca almacena dinero.
+
+Nunca conoce un Portfolio.
+
+Nunca conoce Allocation.
+
+Nunca contiene lógica.
+
+---
+
+## 7.4 Identidad
+
+Cada AssetClass tendrá como mínimo:
+
+- Id
+- Nombre
+- Descripción
+
+Su identidad será estable durante toda la vida del proyecto.
+
+---
+
+## 7.5 Relación con Dataset
+
+Cada AssetClass tendrá exactamente una serie temporal dentro de un Dataset.
+
+La simulación siempre trabajará utilizando dicha serie.
+
+---
+
+## 7.6 Restricciones
+
+Una AssetClass nunca contendrá:
+
+- Rentabilidades calculadas.
+- Cantidades monetarias.
+- Pesos.
+- Allocation.
+- Holdings.
+
+Toda esa información pertenece al Portfolio.
+
+---
+
+## 7.7 Extensibilidad
+
+Será posible añadir nuevas AssetClass sin modificar:
+
+- Simulation
+- Portfolio
+- AllocationPolicy
+- WithdrawalPolicy
+
+El único requisito será que el Dataset proporcione una serie temporal válida.
+
+# 8. Portfolio
+
+## 8.1 Objetivo
+
+Portfolio representa el estado económico completo de una cartera en un instante determinado.
+
+Únicamente almacena estado.
+
+No implementa reglas de negocio.
+
+No toma decisiones.
+
+---
+
+## 8.2 Contenido
+
+Como mínimo contendrá:
+
+- Lista de AssetHolding.
+- Patrimonio total.
+- Allocation actual.
+
+---
+
+## 8.3 AssetHolding
+
+Cada AssetHolding representa el capital invertido en una única AssetClass.
 
 Contendrá como mínimo:
 
-- ExperimentId
-- SimulationId
-- Dataset
-- Strategy
-- WithdrawalRule
-- Horizonte
-- Target
-- Portfolio Inicial
-- Configuración
-- Referencias al preprocesado
-- Parámetros del Binary Search
-- Metadata
+- AssetClass.
+- Valor actual en euros.
 
-El Simulation Engine únicamente recibirá
+No almacenará porcentajes.
 
-SimulationContext
+Los porcentajes se calcularán a partir del patrimonio total.
 
-y el estado mutable de la simulación.
+---
 
-Nunca listas de parámetros independientes.
+## 8.4 Filosofía
 
-# 16. Simulation State
+El Portfolio almacena euros.
 
-## 16.1 Filosofía
+No almacena participaciones.
 
-Toda la información mutable pertenece al SimulationState.
+No almacena número de títulos.
 
-El estado mutable nunca debe mezclarse con la configuración.
+No almacena precios.
+
+Toda la simulación se realiza sobre capital monetario.
+
+---
+
+## 8.5 Restricciones
+
+Portfolio nunca implementará:
+
+- comprar()
+- vender()
+- retirar()
+- rebalancear()
+- aplicar_retorno()
+- calcular_valor()
+- calcular_allocation()
+
+Toda modificación será responsabilidad exclusiva de PortfolioService.
+
+---
+
+## 8.6 Invariantes
+
+Siempre deberá cumplirse:
+
+Patrimonio Total = Σ Valor de todos los AssetHolding.
+
+Ningún AssetHolding podrá tener un valor negativo.
+
+La suma de Allocation deberá ser exactamente 100%, salvo errores de redondeo definidos por el Engine.
+
+---
+
+## 8.7 Mutabilidad
+
+Portfolio es uno de los pocos objetos mutables del dominio.
+
+Toda modificación deberá realizarse exclusivamente mediante PortfolioService.
+
+Nunca directamente.
+
+---
+
+## 8.8 Independencia
+
+Portfolio nunca conocerá:
+
+- AllocationPolicy.
+- WithdrawalPolicy.
+- Optimizer.
+- Simulation.
+- Dataset.
+
+Únicamente representa el estado económico de la cartera.
+
+# 9. PortfolioService
+
+## 9.1 Objetivo
+
+PortfolioService será el único componente autorizado para modificar un Portfolio.
+
+Toda modificación del patrimonio deberá realizarse exclusivamente mediante este servicio.
+
+---
+
+## 9.2 Filosofía
+
+PortfolioService ejecuta operaciones.
+
+Nunca toma decisiones.
+
+Nunca decide cuánto retirar.
+
+Nunca decide cuándo rebalancear.
+
+Nunca decide cuál debe ser la Allocation objetivo.
+
+Todas esas decisiones pertenecen a las Policies.
+
+---
+
+## 9.3 Responsabilidades
+
+Como mínimo implementará las siguientes operaciones:
+
+- aplicar_retorno()
+- retirar()
+- comprar()
+- vender()
+- rebalancear()
+- calcular_valor()
+- calcular_allocation()
+
+---
+
+## 9.4 aplicar_retorno()
+
+Aplica los retornos mensuales definidos por el MarketSnapshot.
+
+Cada AssetHolding se actualizará utilizando exclusivamente el retorno correspondiente a su AssetClass.
+
+No modifica la Allocation objetivo.
+
+---
+
+## 9.5 retirar()
+
+Retira una cantidad determinada del Portfolio.
+
+La retirada deberá intentar satisfacer el rebalanceo de forma implícita.
+
+Si la retirada no es suficiente para alcanzar la AllocationTarget, será necesario ejecutar posteriormente un rebalanceo explícito.
+
+---
+
+## 9.6 rebalancear()
+
+Recibe:
+
+- Portfolio.
+- AllocationTarget.
+
+Su responsabilidad consiste en ejecutar las compras y ventas necesarias para alcanzar dicha asignación.
+
+Nunca decide cuál debe ser la AllocationTarget.
+
+---
+
+## 9.7 Restricciones
+
+PortfolioService nunca accederá directamente a:
+
+- Dataset.
+- Simulation.
+- Optimizer.
+- ExperimentDefinition.
+
+Únicamente operará sobre el Portfolio recibido.
+
+---
+
+## 9.8 Invariantes
+
+Tras cualquier operación deberán cumplirse las siguientes condiciones:
+
+- Ningún AssetHolding será negativo.
+- No se creará dinero.
+- No se destruirá dinero.
+- El patrimonio será igual a la suma de todos los AssetHolding.
+- La Allocation reflejará exactamente el estado del Portfolio.
+
+---
+
+## 9.9 Principio de responsabilidad única
+
+PortfolioService ejecuta operaciones.
+
+Las Policies toman decisiones.
+
+La simulación coordina el proceso.
+
+Cada responsabilidad pertenece a un único componente.
+
+# 10. AllocationDrift
+
+## 10.1 Objetivo
+
+AllocationDrift representa la desviación existente entre la Allocation actual del Portfolio y la AllocationTarget definida por la AllocationPolicy.
+
+Es un objeto de dominio.
+
+No contiene lógica de rebalanceo.
+
+Únicamente describe la diferencia entre ambos estados.
+
+---
+
+## 10.2 Motivación
+
+La desviación entre la asignación actual y la asignación objetivo es un concepto fundamental del dominio.
+
+Permite:
+
+- Conocer cuánto se ha desviado la cartera.
+- Implementar rebalanceos por umbral.
+- Medir la calidad del rebalanceo.
+- Generar estadísticas de desviación.
+- Facilitar la auditoría de la simulación.
+
+Por este motivo se modela explícitamente.
+
+---
+
+## 10.3 Contenido
+
+AllocationDrift contendrá, como mínimo:
+
+- Allocation actual.
+- Allocation objetivo.
+- Diferencia por cada AssetClass.
+- Desviación absoluta por AssetClass.
+- Desviación máxima.
+- Desviación total.
+
+---
+
+## 10.4 Construcción
+
+AllocationDrift será construido por el Engine a partir de:
+
+- Allocation.
+- AllocationTarget.
+
+Nunca será construido por una AllocationPolicy.
+
+---
+
+## 10.5 Responsabilidades
+
+AllocationDrift nunca decidirá si debe rebalancearse.
+
+Únicamente describe el estado actual.
+
+La decisión corresponderá al RebalanceEngine.
+
+---
+
+## 10.6 Extensibilidad
+
+En el futuro podrán añadirse métricas adicionales sin modificar el resto del dominio.
+
+Ejemplos:
+
+- Error cuadrático.
+- Error medio absoluto.
+- Distancia euclídea.
+- Distancia Manhattan.
+
+---
+
+## 10.7 Inmutabilidad
+
+AllocationDrift será completamente inmutable.
+
+# 11. Policy
+
+## 11.1 Objetivo
+
+Policy representa un algoritmo capaz de tomar una decisión durante la simulación.
+
+Nunca modifica el estado.
+
+Nunca ejecuta operaciones.
+
+Únicamente analiza el contexto recibido y devuelve una decisión.
+
+Todas las políticas del Engine heredarán de esta abstracción.
+
+---
+
+## 11.2 Filosofía
+
+Una Policy responde exactamente a una pregunta del dominio.
+
+Ejemplos:
+
+- ¿Cuál debe ser la asignación objetivo?
+- ¿Cuánto dinero debe retirarse?
+- ¿Qué impuestos deben aplicarse? (futuro)
+- ¿Qué comisiones deben cobrarse? (futuro)
+
+Nunca ejecuta dicha decisión.
+
+---
+
+## 11.3 Ciclo de vida
+
+Toda Policy implementará:
+
+before_simulation(context)
+
+before_month(decision_context)
+
+decide(decision_context)
+
+↓
+
+PolicyDecision
+
+after_month(decision_context)
+
+after_simulation(context)
+
+---
+
+## 11.4 Restricciones
+
+Las Policy:
+
+- Nunca modificarán el Portfolio.
+- Nunca accederán al Dataset completo.
+- Nunca accederán a SQLite.
+- Nunca realizarán operaciones financieras.
+
+Toda la información necesaria estará disponible mediante DecisionContext.
+
+---
+
+## 11.5 Determinismo
+
+Dado el mismo DecisionContext deberán producir exactamente la misma PolicyDecision.
+
+# 12. PolicyDecision
+
+## 12.1 Objetivo
+
+PolicyDecision representa el resultado producido por una Policy.
+
+Es una abstracción del dominio.
+
+Nunca contiene lógica.
+
+Únicamente describe una decisión.
+
+---
+
+## 12.2 Filosofía
+
+Cada tipo de Policy devolverá una especialización de PolicyDecision.
+
+El resto del Engine trabajará siempre con esta abstracción.
+
+---
+
+## 12.3 Implementaciones iniciales
+
+La primera versión implementará:
+
+- AllocationDecision.
+- WithdrawalDecision.
+
+---
+
+## 12.4 Implementaciones futuras
+
+La arquitectura permitirá añadir:
+
+- TaxDecision.
+- FeeDecision.
+- CurrencyDecision.
+- RiskDecision.
+
+Sin modificar SimulationRunner.
+
+---
+
+## 12.5 Inmutabilidad
+
+Toda PolicyDecision será completamente inmutable.
+
+# 13. AllocationPolicy
+
+## 13.1 Objetivo
+
+AllocationPolicy es una especialización de Policy.
+
+Su única responsabilidad consiste en decidir cuál debe ser la AllocationTarget del Portfolio.
+
+Nunca ejecuta operaciones.
+
+---
+
+## 13.2 Resultado
+
+Toda AllocationPolicy devolverá un AllocationDecision.
+
+AllocationDecision heredará de PolicyDecision.
+
+Como mínimo contendrá:
+
+- AllocationTarget.
+- Motivo.
+- Metadata opcional para auditoría.
+
+---
+
+## 13.3 Implementaciones iniciales
+
+- Static Allocation.
+- Passive Glidepath.
+- Active Glidepath.
+
+---
+
+## 13.4 Active Glidepath
+
+El Active Glidepath seguirá exactamente la definición utilizada en EarlyRetirementNow.
+
+La pendiente únicamente avanzará cuando:
+
+isUnderwater == true
+
+Cuando:
+
+isATH == true
+
+la Allocation permanecerá congelada.
+
+---
+
+## 13.5 Restricciones
+
+AllocationPolicy nunca:
+
+- modificará el Portfolio,
+- ejecutará rebalanceos,
+- accederá al Dataset completo,
+- realizará cálculos fuera del DecisionContext.
+
+# 14. WithdrawalPolicy
+
+## 14.1 Objetivo
+
+WithdrawalPolicy es una especialización de Policy.
+
+Determina cuánto dinero deberá retirarse durante el periodo actual.
+
+Nunca ejecuta la retirada.
+
+---
+
+## 14.2 Resultado
+
+Toda WithdrawalPolicy devolverá un WithdrawalDecision.
+
+WithdrawalDecision heredará de PolicyDecision.
+
+Como mínimo contendrá:
+
+- Importe nominal.
+- Importe real.
+- Motivo.
+- Metadata opcional.
+
+---
+
+## 14.3 Implementación inicial
+
+La primera implementación será:
+
+Constant Inflation Adjusted Withdrawal.
+
+Su comportamiento reproducirá exactamente el estudio de EarlyRetirementNow.
+
+---
+
+## 14.4 Implementaciones futuras
+
+- Guyton-Klinger.
+- VPW.
+- Floor & Ceiling.
+- CAPE.
+- Dynamic Spending.
+
+---
+
+## 14.5 Restricciones
+
+WithdrawalPolicy nunca modificará el Portfolio.
+
+Nunca ejecutará retiradas.
+
+Toda la información necesaria estará disponible mediante DecisionContext.
+
+# 15. SimulationContext
+
+## 15.1 Objetivo
+
+SimulationContext contiene toda la configuración inmutable necesaria para ejecutar una Simulation.
+
+Se construye exactamente una vez antes del inicio de la simulación.
+
+Nunca cambia durante toda su ejecución.
+
+---
+
+## 15.2 Contenido
+
+Como mínimo contendrá:
+
+- ExperimentDefinition.
+- Cohorte.
+- Fecha de inicio.
+- Horizonte.
+- Patrimonio inicial.
+- Dataset.
+- AllocationPolicy.
+- WithdrawalPolicy.
+- Optimizer.
+- Objetivo final.
+
+---
+
+## 15.3 Filosofía
+
+SimulationContext representa exclusivamente configuración.
+
+Nunca contendrá estado.
+
+Nunca contendrá resultados.
+
+Nunca contendrá estadísticas.
+
+---
+
+## 15.4 Restricciones
+
+Nunca contendrá:
+
+- Portfolio.
+- Allocation.
+- AllocationTarget.
+- AllocationDrift.
+- Patrimonio actual.
+- Timeline.
+- MonthlyResult.
+- SimulationStatistics.
+
+# 16. SimulationState
+
+## 16.1 Objetivo
+
+SimulationState representa el estado mutable de una Simulation.
+
+Representa exclusivamente el instante actual de la simulación.
 
 ---
 
 ## 16.2 Contenido
 
-SimulationState contendrá
+Como mínimo contendrá:
 
-Mes actual
-
-Portfolio actual
-
-Historial de retiradas
-
-Historial de rebalanceos
-
-Historial de Allocation
-
-Eventos
-
-Estadísticas temporales
+- Fecha actual.
+- Número de periodo.
+- Portfolio.
+- Allocation actual.
+- AllocationTarget.
+- AllocationDrift.
+- WithdrawalDecision actual.
+- MarketSnapshot actual.
+- Patrimonio actual.
+- Máximo patrimonio alcanzado.
 
 ---
 
-## 16.3 Inmutabilidad
+## 16.3 Filosofía
 
-SimulationContext
+SimulationState representa únicamente el presente.
 
-↓
+No almacena resultados históricos.
 
-Inmutable
-
-SimulationState
-
-↓
-
-Mutable
+No almacena estadísticas.
 
 ---
 
-## 16.4 Ventajas
+## 16.4 Mutabilidad
 
-Esta separación permite
+SimulationState podrá modificarse durante la simulación.
 
-- Reanudar simulaciones.
-- Depuración.
-- Checkpoints.
-- Ejecución distribuida.
-- Serialización.
+Será el único objeto del dominio cuyo contenido evolucione continuamente.
 
 ---
 
-# 17. SimulationResult
+## 16.5 Restricciones
 
-## 17.1 Filosofía
+Nunca contendrá:
 
-Toda simulación devuelve exactamente un objeto.
+- SimulationStatistics.
+- SimulationTimeline.
+- MonthlyResult.
+- Summary.
+- Diagnostics.
 
-SimulationResult
+# 17. SimulationStatistics
 
-Nunca múltiples estructuras.
+## 17.1 Objetivo
+
+SimulationStatistics almacena todas las métricas agregadas calculadas durante una Simulation.
+
+No participa en la lógica financiera.
+
+No modifica el comportamiento del Engine.
 
 ---
 
 ## 17.2 Contenido
 
-SimulationResult contendrá
+Como mínimo contendrá:
 
-SimulationMetadata
-
-PortfolioHistory
-
-WithdrawalHistory
-
-AllocationHistory
-
-RebalanceHistory
-
-MonthlyStatistics
-
-FinalStatistics
-
-Eventos
-
-Warnings
-
-ExecutionStatistics
+- Meses simulados.
+- Número de retiradas.
+- Número de rebalanceos.
+- Número de compras.
+- Número de ventas.
+- Capital retirado.
+- Capital negociado.
+- Máximo patrimonio.
+- Patrimonio mínimo.
+- Máximo drawdown.
+- CAGR.
+- Tiempo de ejecución.
 
 ---
 
-## 17.3 Estadísticas mínimas
+## 17.3 Actualización
 
-Valor final
+Será actualizado automáticamente durante la simulación.
 
-CAGR
-
-Rentabilidad anualizada
-
-Máximo Drawdown
-
-Drawdown medio
-
-Número de rebalanceos
-
-Número de compras
-
-Número de ventas
-
-Retirada total
-
-Retirada real
-
-Retirada nominal
-
-Tiempo de ejecución
-
-Iteraciones Binary Search
+Las Policies nunca modificarán este objeto.
 
 ---
 
-## 17.4 Persistencia
+## 17.4 Restricciones
 
-SQLite nunca accederá al motor.
+Nunca contendrá:
 
-Persistirá exclusivamente
+- MonthlyResult.
+- Portfolio.
+- Allocation.
+- Eventos.
+- Configuración.
 
-SimulationResult.
+# 18. SimulationTimeline
 
----
+## 18.1 Objetivo
 
-# 18. Persistencia
+SimulationTimeline almacena la evolución completa de una Simulation.
 
-## 18.1 Filosofía
-
-Toda persistencia pertenece a Infrastructure.
-
-Nunca al dominio.
-
----
-
-## 18.2 Tecnología
-
-SQLAlchemy
-
-Backend inicial
-
-SQLite
-
-El diseño permitirá migrar posteriormente a
-
-PostgreSQL
-
-DuckDB
-
-MariaDB
-
-sin modificar el dominio.
+Contendrá un MonthlyResult por cada periodo simulado.
 
 ---
 
-## 18.3 Tablas
+## 18.2 Contenido
 
-Experiment
-
-Run
-
-Strategy
-
-Dataset
-
-Simulation
-
-MonthlyResult
-
-Statistics
-
-Asset
-
-Configuration
-
-Event
+Contendrá una colección cronológica de MonthlyResult.
 
 ---
 
-## 18.4 Versionado
+## 18.3 Persistencia
 
-Nunca sobrescribir resultados.
+Su almacenamiento será configurable.
 
-Cada ejecución genera un nuevo Run.
-
----
-
-## 18.5 Integridad
-
-Toda clave foránea deberá existir.
-
-No se permiten registros huérfanos.
+Cuando esté deshabilitado únicamente se conservarán Summary y SimulationStatistics.
 
 ---
 
-# 19. Runner
+## 18.4 Restricciones
 
-## 19.1 Responsabilidad
+Nunca contendrá lógica.
 
-El Runner coordina la ejecución de experimentos.
+Nunca modificará la simulación.
 
-No conoce lógica financiera.
-
----
-
-## 19.2 Flujo
-
-Cargar configuración
-
-↓
-
-Construir Experiment
-
-↓
-
-Validar
-
-↓
-
-Preprocesar Dataset
-
-↓
-
-Crear Simulations
-
-↓
-
-Ejecutar
-
-↓
-
-Persistir
-
-↓
-
-Generar estadísticas
-
-↓
-
-Finalizar
+Será únicamente un contenedor de datos.
 
 ---
 
-## 19.3 Paralelización
+## 18.5 Orden
 
-La unidad de paralelización será
+Los MonthlyResult deberán almacenarse cronológicamente.
 
-Simulation.
+No podrán existir meses duplicados ni huecos temporales.
 
-Cada proceso ejecutará múltiples cohortes consecutivas.
+# 19. SimulationEvent
 
-Nunca se paralelizará el Binary Search.
+## 19.1 Objetivo
 
----
+SimulationEvent representa un hecho ocurrido durante una Simulation.
 
-## 19.4 Recuperación
-
-Si una simulación falla
-
-el Runner continuará con el resto.
-
-Los errores quedarán registrados.
+Todos los eventos serán completamente inmutables.
 
 ---
 
-# 20. Configuración
+## 19.2 Contenido
 
-## 20.1 Filosofía
+Todo evento contendrá como mínimo:
 
-Toda configuración será externa.
-
-Nunca hardcodeada.
-
----
-
-## 20.2 Archivos
-
-config.yaml
-
-experiment.yaml
-
-strategies/
-
-datasets/
+- Fecha.
+- Tipo.
+- Payload.
 
 ---
 
-## 20.3 Configuración Global
+## 19.3 Tipos iniciales
 
-La configuración global incluirá
+La primera versión implementará:
 
-Base de datos
-
-Logging
-
-Paralelización
-
-Precisión
-
-Horizonte por defecto
-
-Binary Search
-
-Directorios
-
-Exportación
+- SimulationStarted.
+- AllocationCalculated.
+- WithdrawalCalculated.
+- WithdrawalExecuted.
+- RebalanceExecuted.
+- MarketReturnApplied.
+- GlidepathAdvanced.
+- GlidepathFrozen.
+- SimulationFinished.
 
 ---
 
-## 20.4 Configuración del Experimento
+## 19.4 Restricciones
 
-Cada experimento declarará
+Los eventos representan hechos.
 
-Dataset
+Nunca representan decisiones futuras.
 
-Horizonte
+Nunca contienen lógica.
 
-Targets
+Nunca modifican el estado.
 
-Strategies
+# 20. MonthlyResult
 
-Withdrawal Rules
+## 20.1 Objetivo
 
-Semilla (si aplica)
-
-Opciones de exportación
-
----
-
-## 20.5 Configuración de Estrategias
-
-Cada estrategia tendrá un fichero independiente.
-
-Ejemplo
-
-strategy_glidepath_active.yaml
-
-strategy_static_60_40.yaml
-
-strategy_static_80_20.yaml
-
----
-
-## 20.6 Configuración Inmutable
-
-Una vez comienza una simulación
-
-la configuración queda congelada.
-
-No puede modificarse durante la ejecución.
-
----
-
-## 20.7 Validación
-
-Toda configuración será validada antes de comenzar.
-
-Errores posibles
-
-InvalidConfiguration
-
-MissingDataset
-
-MissingStrategy
-
-InvalidTarget
-
-InvalidAllocation
-
-InvalidWithdrawalRule
-
-etc.
-
-# 21. MarketSnapshot
-
-## 21.1 Filosofía
-
-El MarketSnapshot representa el estado del mercado para un único mes.
+MonthlyResult representa el estado completo de una Simulation al finalizar un periodo.
 
 Es completamente inmutable.
 
-Nunca conoce el pasado ni el futuro.
+---
 
-Únicamente contiene la información correspondiente al mes actual.
+## 20.2 Contenido
+
+### Tiempo
+
+- Fecha.
+- Número de periodo.
+
+### Mercado
+
+- MarketSnapshot.
+
+### Portfolio
+
+- Patrimonio.
+- Allocation.
+- AllocationTarget.
+- AllocationDrift.
+
+### Operaciones
+
+- WithdrawalDecision.
+- RebalanceResult.
+
+### Estadísticas
+
+- Drawdown.
+- Rentabilidad acumulada.
+- Inflación acumulada.
+
+### Eventos
+
+- Colección de SimulationEvent ocurridos durante el periodo.
 
 ---
 
-## 21.2 Contenido
+## 20.3 Objetivo
 
-Fecha
-
-Retorno mensual de cada activo
-
-Inflación mensual
-
-Inflación acumulada
-
-Índices acumulados
-
-ATH
-
-is_ath
-
-is_underwater
-
-Drawdown
-
-Metadatos
+MonthlyResult deberá contener toda la información necesaria para reconstruir el estado de una Simulation en cualquier instante temporal.
 
 ---
 
-## 21.3 Construcción
+## 20.4 Restricciones
 
-Se construye automáticamente a partir del preprocesado.
+Nunca contendrá referencias mutables.
 
-Nunca durante la simulación.
+Nunca contendrá lógica.
 
----
+# 21. SimulationResult
 
-## 21.4 Objetivo
+## 21.1 Objetivo
 
-Evitar que las estrategias conozcan el Dataset completo.
+SimulationResult representa el resultado completo producido por una única Simulation.
 
-Toda estrategia recibe únicamente el estado del mercado del mes actual.
+Es completamente inmutable.
 
----
-
-# 22. DecisionContext
-
-## 22.1 Filosofía
-
-DecisionContext representa toda la información necesaria para tomar decisiones.
-
-Las estrategias únicamente recibirán este objeto.
-
-Nunca accederán directamente al Portfolio ni al Dataset.
+Se construye exactamente una vez al finalizar la simulación.
 
 ---
 
-## 22.2 Contenido
+## 21.2 Composición
 
-SimulationContext
+SimulationResult estará compuesto por:
 
-SimulationState
-
-MarketSnapshot
-
-Portfolio actual
-
-Allocation actual
-
-Mes actual
-
-Horizonte restante
-
-Patrimonio inicial
-
-Patrimonio actual
-
-Máximo patrimonio alcanzado
-
-Historial necesario
-
-Metadatos
+- SimulationContext.
+- SimulationStatistics.
+- SimulationTimeline.
+- Summary.
+- Diagnostics.
 
 ---
 
-## 22.3 Restricciones
+## 21.3 Summary
 
-DecisionContext es completamente de solo lectura.
+Summary contendrá la información mínima necesaria para identificar el resultado de la simulación.
 
-Las estrategias nunca podrán modificarlo.
+Como mínimo:
 
----
-
-## 22.4 Resultado
-
-La estrategia devolverá exclusivamente
-
-AllocationTarget
-
-Nunca ejecutará operaciones.
-
-Nunca modificará dinero.
-
-Nunca modificará el Portfolio.
-
-# 23. Sistema de Eventos
-
-## 23.1 Filosofía
-
-El dominio emitirá eventos.
-
-Nunca ejecutará acciones secundarias.
-
-Los eventos únicamente informan de que algo ha ocurrido.
+- Nombre de la estrategia.
+- Cohorte.
+- Fecha de inicio.
+- Fecha final.
+- SWR utilizado.
+- Patrimonio final.
+- Objetivo alcanzado.
+- Estado final de la simulación.
 
 ---
 
-## 23.2 Eventos previstos
+## 21.4 Diagnostics
 
-ExperimentStarted
+Diagnostics contendrá información útil para depuración.
 
-ExperimentFinished
+Ejemplos:
 
-SimulationStarted
+- Tiempo de construcción.
+- Tiempo de simulación.
+- Número de iteraciones.
+- Versión del Engine.
+- Versión del Dataset.
 
-SimulationFinished
-
-MonthStarted
-
-MonthFinished
-
-WithdrawalCalculated
-
-WithdrawalExecuted
-
-PortfolioRebalanced
-
-AllocationChanged
-
-BinarySearchIteration
-
-TargetReached
-
-SimulationFailed
+Nunca modificará el resultado matemático.
 
 ---
 
-## 23.3 Uso
+## 21.5 Inmutabilidad
 
-Los eventos permitirán
+Una vez construido, SimulationResult nunca podrá modificarse.
 
-Logging
+# 22. Application Layer
 
-Persistencia
+## 22.1 Objetivo
 
-Métricas
+La Application Layer coordina la ejecución de las simulaciones.
 
-Visualización
+No implementa reglas financieras.
 
-Depuración
+No implementa reglas matemáticas.
 
-Plugins
-
-sin modificar el dominio.
+Únicamente orquesta el dominio.
 
 ---
 
-# 24. Logging
+## 22.2 Componentes
 
-Todo experimento deberá registrar
+La primera versión estará formada por:
 
-Fecha
-
-Hora
-
-Duración
-
-Uso de RAM
-
-Uso de CPU
-
-Tiempo por simulación
-
-Tiempo por Binary Search
-
-Errores
-
-Warnings
-
-Configuración utilizada
+- SimulationExecutor.
+- SimulationRunner.
+- SimulationPipeline.
 
 ---
 
-El logging nunca podrá modificar el comportamiento del framework.
+## 22.3 Dependencias
+
+La Application Layer podrá depender del Dominio.
+
+El Dominio nunca dependerá de la Application Layer.
 
 ---
 
-# 25. Validación
+## 22.4 Responsabilidades
 
-Todo objeto del dominio será válido desde el momento de su creación.
+Será responsable de:
 
-No existirán objetos parcialmente válidos.
+- Crear simulaciones.
+- Ejecutarlas.
+- Gestionar el paralelismo.
+- Gestionar cancelaciones.
+- Construir resultados.
+- Persistir resultados.
 
-Toda validación se realizará en el constructor.
+Nunca decidirá AllocationTarget.
 
----
+Nunca decidirá WithdrawalDecision.
 
-Ejemplos
+# 23. SimulationExecutor
 
-Allocation suma 100%
+## 23.1 Objetivo
 
-Pesos positivos
+SimulationExecutor coordina la ejecución de múltiples Simulation.
 
-Horizonte positivo
-
-Dataset existente
-
-Strategy existente
-
----
-
-# 26. Sistema de Errores
-
-Nunca utilizar
-
-exit()
-
-return None
-
-Errores silenciosos
+Su principal responsabilidad es maximizar el paralelismo disponible.
 
 ---
 
-Todos los errores serán excepciones tipadas.
+## 23.2 Entrada
 
-Ejemplos
-
-InvalidDatasetException
-
-InvalidStrategyException
-
-InvalidAllocationException
-
-InvalidPortfolioException
-
-InvalidConfigurationException
-
-BinarySearchDidNotConvergeException
-
-SimulationException
-
-ExperimentException
+Recibirá un ExperimentRun.
 
 ---
 
-# 27. Paralelización
+## 23.3 Salida
 
-La unidad mínima será
-
-Simulation.
-
-Cada proceso ejecutará múltiples cohortes consecutivas.
+Generará un SimulationResult por cada Simulation ejecutada.
 
 ---
 
-Nunca se compartirán objetos mutables entre procesos.
+## 23.4 Responsabilidades
+
+Como mínimo:
+
+- Crear SimulationRunner.
+- Distribuir simulaciones.
+- Gestionar procesos.
+- Gestionar errores.
+- Gestionar cancelaciones.
+- Recoger resultados.
 
 ---
 
-SimulationContext
+## 23.5 Paralelismo
 
-puede compartirse.
+Las simulaciones serán completamente independientes.
 
-SimulationState
+Podrán ejecutarse:
 
-nunca.
+- Secuencialmente.
+- Multiprocessing.
+- Distribuidas.
 
----
-
-# 28. Rendimiento
-
-No optimizar prematuramente.
-
-Primero
-
-correctitud.
-
-Después
-
-perfilado.
-
-Finalmente
-
-optimización.
+El resultado nunca dependerá del orden de ejecución.
 
 ---
 
-Toda optimización deberá demostrar
+## 23.6 Restricciones
 
-reducción de tiempo
+Nunca contendrá lógica financiera.
 
-o
+Nunca modificará el estado interno de una Simulation.
 
-reducción de memoria
+# 24. SimulationRunner
 
-mediante benchmark.
+## 24.1 Objetivo
 
----
+SimulationRunner ejecuta exactamente una Simulation.
 
-# 29. Caché
-
-La caché nunca podrá modificar resultados.
-
-Únicamente reducir tiempo de ejecución.
+Coordina todas las fases necesarias para completar la simulación.
 
 ---
 
-Elementos cacheables
+## 24.2 Responsabilidades
 
-Dataset preprocesado
+Será responsable de:
 
-Glidepaths
-
-Binary Search inicial
-
-Índices
-
-ATH
-
-Drawdowns
+- Construir el DecisionContext.
+- Ejecutar las Policies.
+- Coordinar PortfolioServices.
+- Actualizar SimulationState.
+- Actualizar SimulationStatistics.
+- Construir MonthlyResult.
+- Construir SimulationResult.
 
 ---
 
-# 30. Definición de Correctitud
+## 24.3 Restricciones
 
-Una simulación se considera correcta únicamente cuando
+Nunca leerá directamente archivos CSV.
 
-Produce exactamente los mismos resultados utilizando
+Nunca escribirá SQLite.
 
-el mismo Dataset
+Nunca ejecutará varias simulaciones.
 
-la misma Configuración
+Nunca realizará optimizaciones.
 
-la misma Estrategia
+---
 
-la misma versión del framework
+## 24.4 Dependencias
 
-independientemente del número de procesos utilizados.
+Podrá utilizar:
 
+- SimulationPipeline.
+- PortfolioServices.
+- Policies.
+- Optimizer.
+- EventFactory.
 
-# 31. Policies
+Nunca accederá directamente a la capa de persistencia.
+
+# 25. SimulationPipeline
+
+## 25.1 Objetivo
+
+SimulationPipeline define las fases de ejecución de una Simulation.
+
+Cada fase tendrá una única responsabilidad.
+
+---
+
+## 25.2 Orden de ejecución
+
+Cada periodo mensual seguirá exactamente el siguiente flujo:
+
+1. Construcción del MarketSnapshot.
+2. Construcción del DecisionContext.
+3. Ejecución de AllocationPolicy.
+4. Ejecución de WithdrawalPolicy.
+5. Ejecución de la retirada.
+6. Rebalanceo del Portfolio si fuese necesario.
+7. Aplicación de los retornos del mercado.
+8. Actualización de SimulationState.
+9. Actualización de SimulationStatistics.
+10. Generación de SimulationEvent.
+11. Construcción de MonthlyResult.
+12. Inserción en SimulationTimeline.
+
+---
+
+## 25.3 Inmutabilidad
+
+El orden de las fases será fijo.
+
+Todas las simulaciones seguirán exactamente la misma secuencia.
+
+---
+
+## 25.4 Extensibilidad
+
+Será posible añadir nuevas fases sin modificar las existentes.
+
+Las nuevas fases deberán definir explícitamente su posición dentro del Pipeline.
+
+# 26. ExperimentDefinition
+
+## 26.1 Objetivo
+
+ExperimentDefinition describe un experimento completo.
+
+No ejecuta simulaciones.
+
+No contiene resultados.
+
+Únicamente define qué simulaciones deben ejecutarse.
+
+---
+
+## 26.2 Filosofía
+
+ExperimentDefinition representa una especificación.
+
+Nunca representa una ejecución.
+
+---
+
+## 26.3 Contenido
+
+Como mínimo contendrá:
+
+- Nombre.
+- Descripción.
+- Dataset.
+- Horizonte.
+- Cohortes.
+- AllocationPolicies.
+- WithdrawalPolicies.
+- Targets finales.
+- Optimizer.
+
+---
+
+## 26.4 Inmutabilidad
+
+ExperimentDefinition será completamente inmutable.
+
+---
+
+## 26.5 Restricciones
+
+Nunca contendrá:
+
+- SimulationResult.
+- MonthlyResult.
+- Portfolio.
+- Estadísticas.
+- Timeline.
+
+# 27. ExperimentRun
+
+## 27.1 Objetivo
+
+ExperimentRun representa una ejecución concreta de un ExperimentDefinition.
+
+---
+
+## 27.2 Contenido
+
+Como mínimo contendrá:
+
+- ExperimentDefinition.
+- Fecha de ejecución.
+- Identificador único.
+- Estado.
+- Configuración de ejecución.
+
+---
+
+## 27.3 Estados
+
+Un ExperimentRun podrá encontrarse en uno de los siguientes estados:
+
+- Pending.
+- Running.
+- Completed.
+- Cancelled.
+- Failed.
+
+---
+
+## 27.4 Responsabilidades
+
+Será responsable de agrupar todas las Simulation pertenecientes al mismo experimento.
+
+---
+
+## 27.5 Restricciones
+
+Nunca contendrá lógica financiera.
+
+Nunca modificará los resultados.
+
+# 28. Optimizer
+
+## 28.1 Objetivo
+
+Optimizer calcula el Safe Withdrawal Rate asociado a una Simulation.
+
+Nunca ejecuta simulaciones directamente.
+
+Únicamente coordina múltiples ejecuciones.
+
+---
+
+## 28.2 Filosofía
+
+Optimizer es completamente independiente del dominio financiero.
+
+Su única responsabilidad consiste en encontrar un valor óptimo.
+
+---
+
+## 28.3 Entrada
+
+Recibirá:
+
+- SimulationFactory.
+- SimulationContext.
+- Objetivo final.
+- Intervalo de búsqueda.
+
+---
+
+## 28.4 Salida
+
+Devolverá:
+
+- Safe Withdrawal Rate.
+- Número de iteraciones.
+- Historial de convergencia.
+
+---
+
+## 28.5 Implementación inicial
+
+La primera implementación utilizará búsqueda binaria.
+
+---
+
+## 28.6 Implementaciones futuras
+
+La arquitectura permitirá añadir:
+
+- Newton-Raphson.
+- Brent.
+- Golden Search.
+- Algoritmos híbridos.
+
+Sin modificar el resto del Engine.
+
+# 29. Persistence Layer
+
+## 29.1 Objetivo
+
+La Persistence Layer será responsable del almacenamiento permanente de los resultados.
+
+Nunca contendrá lógica financiera.
+
+Nunca modificará el dominio.
+
+---
+
+## 29.2 Responsabilidades
+
+Como mínimo:
+
+- Guardar ExperimentRun.
+- Guardar SimulationResult.
+- Guardar SimulationStatistics.
+- Guardar MonthlyResult.
+- Recuperar resultados.
+
+---
+
+## 29.3 Implementación inicial
+
+La primera implementación utilizará SQLite.
+
+---
+
+## 29.4 Extensibilidad
+
+Será posible implementar posteriormente:
+
+- PostgreSQL.
+- DuckDB.
+- Parquet.
+- CSV.
+- Apache Arrow.
+
+Sin modificar el dominio.
+
+---
+
+## 29.5 Restricciones
+
+El dominio nunca dependerá de la Persistence Layer.
+
+# 30. Repository
+
+## 30.1 Objetivo
+
+Un Repository abstrae el acceso a la persistencia.
+
+El dominio nunca conocerá la implementación concreta.
+
+---
+
+## 30.2 Repositories iniciales
+
+La primera versión implementará:
+
+- ExperimentRepository.
+- SimulationRepository.
+- StatisticsRepository.
+- TimelineRepository.
+
+---
+
+## 30.3 Responsabilidades
+
+Los Repository serán responsables de:
+
+- Guardar.
+- Recuperar.
+- Buscar.
+- Actualizar metadatos.
+
+Nunca realizarán cálculos financieros.
+
+---
+
+## 30.4 Restricciones
+
+Nunca contendrán lógica de simulación.
+
+Nunca contendrán lógica de optimización.
+
+Nunca modificarán el contenido del dominio.
+
+---
+
+## 30.5 Sustituibilidad
+
+Será posible cambiar completamente el motor de persistencia sin modificar ninguna clase del dominio.
+
+# 31. Dataset
 
 ## 31.1 Objetivo
 
-Toda decisión tomada durante una simulación deberá implementarse mediante una **Policy**.
+Dataset representa el conjunto completo de datos históricos utilizados por las simulaciones.
 
-Una Policy nunca modifica el estado del sistema.
+Es completamente inmutable.
 
-Su única responsabilidad es recibir un contexto y devolver una decisión.
-
----
-
-## 31.2 Interface
-
-Todas las Policies implementarán el mismo ciclo de vida.
-
-```python
-initialize(context)
-
-decide(decision_context)
-
-finish()
-```
+Todas las Simulation referenciarán el mismo Dataset.
 
 ---
 
-## 31.3 Tipos de Policies
+## 31.2 Filosofía
 
-Primera versión
+Dataset representa una colección de series temporales ya cargadas en memoria.
 
-- StrategyPolicy
-- WithdrawalPolicy
+Nunca accederá directamente a archivos.
 
-Versiones futuras
+Nunca realizará cálculos financieros.
 
-- RebalancePolicy
-- TaxPolicy
-- ContributionPolicy
-- RiskPolicy
-- AllocationPolicy
-- OptimizationPolicy
+---
+
+## 31.3 Contenido
+
+Como mínimo contendrá:
+
+- Lista de AssetSeries.
+- Fecha mínima.
+- Fecha máxima.
+- Frecuencia temporal.
+- Versión del Dataset.
 
 ---
 
 ## 31.4 Restricciones
 
-Una Policy
+Nunca contendrá:
 
-- Nunca conoce SQLite.
-- Nunca escribe archivos.
-- Nunca modifica el Portfolio.
-- Nunca modifica SimulationState.
-- Nunca modifica SimulationContext.
-
-Devuelve únicamente una decisión.
+- Portfolio.
+- Simulation.
+- Policies.
+- Resultados.
 
 ---
 
-## 31.5 Composición
+## 31.5 Compartición
 
-Las Policies deberán poder componerse.
+El mismo Dataset podrá ser utilizado simultáneamente por miles de Simulation sin duplicar memoria.
 
-Ejemplo
+# 32. AssetSeries
 
-```
-WithdrawalPolicy
+## 32.1 Objetivo
 
-↓
-
-TaxPolicy
-
-↓
-
-RebalancePolicy
-```
-
-Cada una trabaja sobre la salida de la anterior.
+AssetSeries representa la serie histórica completa de una única AssetClass.
 
 ---
 
-# 32. Máquinas de Estado
+## 32.2 Filosofía
 
-Todo objeto con ciclo de vida implementará una máquina de estados explícita.
+Una AssetSeries representa exclusivamente datos históricos.
 
-Nunca podrán existir estados imposibles.
-
----
-
-## 32.1 Experiment
-
-Estados
-
-CREATED
-
-↓
-
-VALIDATED
-
-↓
-
-PREPROCESSED
-
-↓
-
-RUNNING
-
-↓
-
-FINISHED
-
-↓
-
-ARCHIVED
+Nunca contiene lógica de simulación.
 
 ---
 
-Transiciones inválidas lanzarán
+## 32.3 Contenido
 
-InvalidExperimentStateException
+Como mínimo contendrá:
 
----
-
-## 32.2 Simulation
-
-Estados
-
-CREATED
-
-↓
-
-INITIALIZED
-
-↓
-
-RUNNING
-
-↓
-
-FINISHED
-
-↓
-
-PERSISTED
+- AssetClass.
+- Serie temporal.
+- Fecha inicial.
+- Fecha final.
 
 ---
 
-## 32.3 Binary Search
+## 32.4 Datos
 
-Estados
+Cada registro contendrá:
 
-CREATED
-
-↓
-
-RUNNING
-
-↓
-
-CONVERGED
-
-↓
-
-FINISHED
-
-o
-
-FAILED
+- Fecha.
+- Valor Total Return.
+- Inflación (si aplica a la serie).
+- Metadatos opcionales.
 
 ---
 
-## 32.4 State Machine
+## 32.5 Restricciones
 
-Cada objeto conocerá únicamente
+Los datos deberán estar ordenados cronológicamente.
 
-su estado actual
+No podrán existir fechas duplicadas.
 
-y
+No podrán existir fechas ausentes dentro del rango de la serie.
 
-las transiciones válidas.
+# 33. MarketSnapshot
 
-Nunca podrá saltar estados.
+## 33.1 Objetivo
 
----
+MarketSnapshot representa el estado del mercado durante un único periodo de simulación.
 
-# 33. Reproducibilidad
-
-Toda ejecución deberá poder reproducirse exactamente.
+Es completamente inmutable.
 
 ---
 
-## 33.1 Metadata obligatoria
+## 33.2 Filosofía
 
-Framework Version
+MarketSnapshot contiene únicamente la información correspondiente al periodo actual.
 
-Git Commit
+Nunca conoce el pasado completo.
 
-Git Branch
-
-Git Dirty
-
-Python Version
-
-Sistema Operativo
-
-Arquitectura CPU
-
-Número de núcleos
-
-RAM detectada
-
-Fecha de inicio
-
-Fecha de finalización
-
-Duración
-
-Hash SHA256 del Dataset
-
-Hash SHA256 del fichero de configuración
-
-Hash SHA256 de todas las estrategias
-
-Hash SHA256 de las Withdrawal Policies
-
-Semilla aleatoria (aunque no se utilice)
+Nunca conoce el futuro.
 
 ---
 
-## 33.2 Reglas
+## 33.3 Contenido
 
-Dos ejecuciones con
+Como mínimo contendrá:
 
-- mismo Dataset
-- misma Configuración
-- mismas Policies
-- misma versión
-
-deberán producir exactamente los mismos resultados.
+- Fecha.
+- Retorno mensual de cada AssetClass.
+- Valor Total Return de cada AssetClass.
+- Inflación del periodo.
 
 ---
 
-## 33.3 Trazabilidad
+## 33.4 Información derivada
 
-Toda simulación deberá indicar
+Durante su construcción se calcularán también:
 
-qué configuración produjo ese resultado.
+- isATH.
+- isUnderwater.
+- Máximo histórico alcanzado hasta la fecha.
 
-Nunca podrán existir resultados anónimos.
-
----
-
-# 34. Architecture Decision Records
-
-Todo cambio arquitectónico deberá documentarse.
+Estos valores se calculan utilizando exclusivamente la serie histórica hasta el periodo actual.
 
 ---
 
-## 34.1 Ubicación
+## 33.5 Restricciones
 
-```
-docs/
+MarketSnapshot nunca accederá directamente al Dataset.
 
-    adr/
+Será construido por un componente especializado a partir del Dataset.
 
-        ADR-001.md
+# 34. DatasetProvider
 
-        ADR-002.md
+## 34.1 Objetivo
 
-        ...
-```
+DatasetProvider es responsable de construir un Dataset a partir de una fuente de datos.
 
 ---
 
-## 34.2 Contenido
+## 34.2 Implementación inicial
 
-Cada ADR contendrá
-
-Contexto
-
-Problema
-
-Alternativas
-
-Decisión
-
-Consecuencias
-
-Estado
-
-Fecha
+La primera implementación utilizará un único fichero CSV.
 
 ---
 
-## 34.3 Inmutabilidad
+## 34.3 Implementaciones futuras
 
-Los ADR aceptados nunca se modifican.
+Será posible implementar posteriormente:
 
-Si cambia una decisión
+- SQLite.
+- PostgreSQL.
+- Parquet.
+- APIs.
+- DuckDB.
 
-se crea un nuevo ADR.
-
----
-
-## 34.4 ADR iniciales
-
-ADR-001
-
-Trabajar con retornos mensuales.
-
-ADR-002
-
-El Portfolio almacena euros.
-
-ADR-003
-
-El rebalanceo es un problema matemático.
-
-ADR-004
-
-SimulationContext y SimulationState están separados.
-
-ADR-005
-
-Las Strategies únicamente devuelven AllocationTarget.
-
-ADR-006
-
-Las Policies nunca modifican el estado.
-
-ADR-007
-
-El dominio no conoce Infrastructure.
+Sin modificar el dominio.
 
 ---
 
-# 35. Benchmarks
+## 34.4 Validación
 
-Existirá un proyecto de benchmarks independiente.
+Durante la carga deberán validarse:
 
----
-
-## 35.1 Objetivos
-
-Medir
-
-Tiempo
-
-RAM
-
-CPU
-
-Escalabilidad
-
-Iteraciones Binary Search
-
-Tiempo por cohorte
+- Orden cronológico.
+- Duplicados.
+- Valores nulos.
+- Frecuencia temporal.
+- Integridad de las AssetSeries.
 
 ---
 
-## 35.2 Benchmarks mínimos
+## 34.5 Resultado
 
-Carga del Dataset
+Si la validación finaliza correctamente devolverá un Dataset completamente construido.
 
-Preprocesado
+# 35. CSV Specification
 
-Simulación única
+## 35.1 Objetivo
 
-100 simulaciones
-
-1000 simulaciones
-
-10000 simulaciones
+Definir el formato oficial del fichero CSV utilizado por la primera versión del simulador.
 
 ---
 
-## 35.3 Reglas
+## 35.2 Estructura
 
-Toda optimización deberá demostrar
-
-una mejora medible.
-
-No se aceptarán optimizaciones sin benchmark.
+Cada fila representará un único periodo temporal.
 
 ---
 
-## 35.4 Comparación
+## 35.3 Columnas mínimas
 
-Los benchmarks deberán permitir comparar
-
-dos commits
-
-dos ramas
-
-dos versiones
-
-y generar automáticamente un informe.
-
-# 36. Testing
-
-## 36.1 Filosofía
-
-La exactitud del framework es prioritaria frente al rendimiento.
-
-Todo componente público deberá estar cubierto por tests.
+- Date
+- ACWI_TR_EUR
+- EURO_GOV_SHORT_TR_EUR
+- EURO_GOV_LONG_TR_EUR
+- EURO_MONEY_MARKET_TR_EUR
+- CPI
 
 ---
 
-## 36.2 Tipos de tests
+## 35.4 Restricciones
 
-Unit Tests
+La columna Date:
 
-Integration Tests
+- Será única.
+- Estará ordenada.
+- Tendrá frecuencia mensual.
 
-Regression Tests
+Las columnas numéricas:
 
-Golden Tests
-
-Performance Tests
-
-Property Based Tests (Hypothesis)
-
-Smoke Tests
+- No admitirán valores nulos.
+- Utilizarán punto decimal.
 
 ---
 
-## 36.3 Cobertura mínima
+## 35.5 Versionado
 
-Objetivo mínimo
+Todo Dataset deberá indicar explícitamente su versión para garantizar la reproducibilidad de las simulaciones.
 
-90%
+# 36. Validation
 
-La cobertura no sustituye a la calidad de los tests.
+## 36.1 Objetivo
 
----
+Validation garantiza que todos los datos utilizados por el simulador cumplen las reglas definidas por el dominio.
 
-## 36.4 Golden Tests
-
-Existirá un conjunto de simulaciones cuyo resultado será conocido.
-
-Ejemplo
-
-Dataset de 24 meses
-
-3 activos
-
-Static 60/40
-
-Constant Real Withdrawal
-
-Resultado esperado
-
-- Valor final
-- Retirada total
-- Número de rebalanceos
-- Allocation mensual
-- Drawdown
-- SWR
-
-Nunca podrán modificarse estos resultados sin una justificación documentada.
+La validación se realizará antes de ejecutar cualquier Simulation.
 
 ---
 
-## 36.5 Property Based Testing
+## 36.2 Alcance
 
-Se utilizará Hypothesis para comprobar propiedades matemáticas.
+Como mínimo se validarán:
 
-Ejemplos
-
-La suma de Allocation siempre es 100%.
-
-El patrimonio nunca es negativo.
-
-La suma de activos coincide con el patrimonio.
-
-La retirada nunca crea dinero.
-
-El rebalanceo conserva el patrimonio.
+- Dataset.
+- ExperimentDefinition.
+- AllocationPolicy.
+- WithdrawalPolicy.
+- Targets finales.
+- Horizonte.
+- Cohortes.
 
 ---
 
-## 36.6 Regression Tests
+## 36.3 Tipos de validación
 
-Cada bug corregido deberá incluir un test que reproduzca el problema.
+Existirán dos tipos:
 
----
-
-# 37. SimulationTrace
-
-## 37.1 Filosofía
-
-Opcionalmente una simulación podrá generar un registro completo de todas las decisiones tomadas.
-
-Su objetivo es facilitar
-
-- depuración
-- auditoría
-- comparación entre versiones
-- validación científica
+- Validación estructural.
+- Validación de dominio.
 
 ---
 
-## 37.2 Activación
+## 36.4 Validación estructural
 
-SimulationTrace únicamente se generará cuando
+Comprobará:
 
-debug = true
-
----
-
-## 37.3 Contenido
-
-Cada mes almacenará
-
-Fecha
-
-MarketSnapshot
-
-DecisionContext
-
-Allocation objetivo
-
-Allocation anterior
-
-Retirada solicitada
-
-Retirada ejecutada
-
-Compras
-
-Ventas
-
-Rebalanceo
-
-Eventos
-
-Warnings
-
-Motivos de cada decisión
+- Tipos.
+- Campos obligatorios.
+- Formato.
+- Duplicados.
+- Integridad.
 
 ---
 
-## 37.4 Auditoría
+## 36.5 Validación de dominio
 
-Toda decisión deberá poder explicarse.
+Comprobará:
 
-Ejemplos
-
-"Glidepath no avanza porque el índice está en ATH."
-
-"Se vende RF porque la retirada permite acercarse al AllocationTarget."
-
-"No se rebalancea porque la retirada ya ha alcanzado el AllocationTarget."
-
-Nunca registrar únicamente la acción.
-
-Registrar también el motivo.
+- Allocation = 100%.
+- Pesos no negativos.
+- Horizonte válido.
+- Cohortes válidas.
+- Dataset suficiente para la simulación.
 
 ---
 
-## 37.5 Persistencia
+## 36.6 Resultado
 
-SimulationTrace podrá persistirse independientemente del resto de resultados.
+Toda validación devolverá un ValidationResult.
 
-Podrá deshabilitarse completamente para ahorrar memoria.
+Nunca lanzará excepciones por errores esperables del usuario.
+
+# 37. ValidationResult
+
+## 37.1 Objetivo
+
+ValidationResult representa el resultado producido por una validación.
 
 ---
 
-# 38. Plugins
+## 37.2 Contenido
+
+Como mínimo contendrá:
+
+- Estado.
+- Lista de errores.
+- Lista de advertencias.
+
+---
+
+## 37.3 Estados
+
+Podrán existir:
+
+- Success.
+- Warning.
+- Error.
+
+---
+
+## 37.4 Filosofía
+
+Un ValidationResult podrá contener múltiples errores simultáneamente.
+
+El usuario deberá poder corregir todos ellos antes de volver a ejecutar el proceso.
+
+---
+
+## 37.5 Inmutabilidad
+
+ValidationResult será completamente inmutable.
+
+# 38. Logging
 
 ## 38.1 Objetivo
 
-El framework deberá poder ampliarse sin modificar el código existente.
+El sistema registrará información relevante para facilitar la depuración y el diagnóstico.
 
 ---
 
-## 38.2 Plugins previstos
+## 38.2 Niveles
 
-Strategies
+Como mínimo existirán:
 
-Withdrawal Rules
-
-Policies
-
-Assets
-
-Analysis
-
-Exportadores
-
-Benchmarks
+- TRACE.
+- DEBUG.
+- INFO.
+- WARNING.
+- ERROR.
 
 ---
 
-## 38.3 Registro
+## 38.3 Restricciones
 
-Todo plugin deberá registrarse automáticamente durante el arranque.
+El Logging nunca modificará el comportamiento del dominio.
 
----
-
-## 38.4 Restricciones
-
-Un plugin nunca podrá modificar el dominio.
-
-Únicamente podrá registrar nuevos componentes.
+Nunca alterará los resultados de una simulación.
 
 ---
 
-## 38.5 Compatibilidad
+## 38.4 Rendimiento
 
-Todo plugin declarará
-
-Nombre
-
-Versión
-
-Dependencias
-
-Versión mínima del framework
-
-Licencia
-
-Autor
+El Logging deberá poder deshabilitarse completamente para maximizar el rendimiento durante simulaciones masivas.
 
 ---
 
-# 39. Documentación
+## 38.5 Destinos
 
-## 39.1 Filosofía
+La primera implementación permitirá registrar información en:
 
-La documentación forma parte del proyecto.
+- Consola.
+- Archivo.
 
-No es un añadido.
+# 39. Configuration
 
----
+## 39.1 Objetivo
 
-## 39.2 Documentación mínima
+Configuration centraliza toda la configuración técnica del simulador.
 
-README.md
-
-PROJECT_PLAN.md
-
-Architecture.md
-
-DeveloperGuide.md
-
-Math.md
-
-PluginGuide.md
-
-Rebalance.md
-
-Withdrawal.md
-
-Glidepath.md
-
-BinarySearch.md
-
-DatasetFormat.md
-
-ADR/
+No contiene reglas financieras.
 
 ---
 
-## 39.3 Docstrings
+## 39.2 Configuración inicial
 
-Todo elemento público deberá estar documentado.
+Como mínimo permitirá configurar:
 
-Formato
-
-Google Style Docstrings
-
----
-
-## 39.4 Diagramas
-
-El repositorio contendrá
-
-Diagramas UML
-
-Diagramas de secuencia
-
-Diagramas de estados
-
-Diagramas de componentes
-
-Todos en formato editable.
+- Número máximo de procesos.
+- Persistencia del Timeline.
+- Nivel de Logging.
+- Tamaño de lote.
+- Directorio de salida.
 
 ---
 
-# 40. Definición de Finalización
+## 39.3 Restricciones
+
+Configuration nunca modificará el dominio.
+
+Nunca modificará una Simulation.
+
+---
+
+## 39.4 Inmutabilidad
+
+Una vez iniciado un ExperimentRun, la Configuration permanecerá inmutable.
+
+# 40. Extensibility
 
 ## 40.1 Objetivo
 
-El proyecto se considerará terminado cuando sea capaz de reproducir completamente el estudio de EarlyRetirementNow utilizando:
+Toda la arquitectura deberá diseñarse siguiendo el principio Open/Closed.
 
-- ACWI Total Return EUR
-- RF gubernamental europea
-- Monetario EUR
-
-y permita modificar cualquiera de esos componentes sin alterar el motor.
+El sistema deberá ser fácilmente extensible sin modificar el código existente.
 
 ---
 
-## 40.2 Requisitos mínimos
+## 40.2 Nuevas AssetClass
 
-Reproducir todos los experimentos definidos.
+Será posible añadir nuevas AssetClass sin modificar:
 
-Ejecutar todas las cohortes históricas.
-
-Persistir resultados.
-
-Generar tablas comparativas.
-
-Generar gráficos.
-
-Permitir añadir nuevas estrategias.
-
-Permitir añadir nuevas Withdrawal Policies.
-
-Permitir añadir nuevos activos.
-
-Permitir añadir nuevos experimentos.
+- Simulation.
+- Policies.
+- Portfolio.
+- Optimizer.
 
 ---
 
-## 40.3 Objetivo científico
+## 40.3 Nuevas Policies
 
-El framework deberá servir como plataforma de investigación.
+Será posible añadir nuevas Policy sin modificar:
 
-No estará limitado al estudio original.
-
-Deberá permitir responder preguntas como
-
-- ¿Cuál es el glidepath óptimo?
-
-- ¿Qué SWR maximiza el patrimonio final?
-
-- ¿Qué estrategia minimiza el riesgo de Sequence of Returns?
-
-- ¿Cómo cambia la SWR utilizando ACWI frente al S&P500?
-
-- ¿Qué ocurre utilizando bonos europeos?
-
-- ¿Qué impacto tiene añadir monetarios?
-
-- ¿Qué ocurre modificando la velocidad del glidepath?
-
-Todo ello sin modificar el núcleo del framework.
+- SimulationRunner.
+- SimulationExecutor.
+- SimulationPipeline.
 
 ---
 
-## 40.4 Principio Rector
+## 40.4 Nuevos motores de persistencia
 
-Siempre se priorizará
+Será posible sustituir SQLite por cualquier otro sistema de persistencia implementando los Repository correspondientes.
 
-1. Correctitud matemática.
+---
 
-2. Reproducibilidad.
+## 40.5 Nuevos formatos de Dataset
 
-3. Trazabilidad.
+Será posible añadir nuevos DatasetProvider sin modificar el dominio.
 
-4. Extensibilidad.
+---
 
-5. Rendimiento.
+## 40.6 Compatibilidad
+
+Toda ampliación deberá mantener la compatibilidad con los experimentos existentes siempre que la semántica del dominio no cambie.
+
+---
+
+## 40.7 Reproducibilidad
+
+Dos ejecuciones con:
+
+- el mismo Dataset,
+- la misma Configuration,
+- el mismo ExperimentDefinition,
+- la misma versión del código,
+
+deberán producir exactamente los mismos resultados.
+
+# 41. SQLite Schema
+
+## 41.1 Objetivo
+
+Definir el esquema lógico de la base de datos SQLite utilizada para persistir los resultados de las simulaciones.
+
+---
+
+## 41.2 Filosofía
+
+La base de datos almacenará únicamente resultados.
+
+Nunca será utilizada como fuente de datos durante una Simulation.
+
+---
+
+## 41.3 Tablas iniciales
+
+La primera versión implementará como mínimo:
+
+- experiment_run
+- simulation
+- simulation_summary
+- simulation_statistics
+- monthly_result
+
+---
+
+## 41.4 Claves
+
+Todas las tablas dispondrán de una clave primaria estable.
+
+Las relaciones utilizarán claves foráneas.
+
+---
+
+## 41.5 Restricciones
+
+Nunca se almacenarán objetos serializados completos cuando puedan normalizarse mediante tablas relacionadas.
+
+# 42. Indexing Strategy
+
+## 42.1 Objetivo
+
+Definir la estrategia de índices utilizada por SQLite.
+
+---
+
+## 42.2 Índices mínimos
+
+Como mínimo existirán índices sobre:
+
+- experiment_id
+- simulation_id
+- cohort
+- strategy_name
+- start_date
+
+---
+
+## 42.3 Objetivo
+
+Los índices deberán optimizar principalmente consultas analíticas.
+
+La velocidad de escritura será un objetivo secundario.
+
+---
+
+## 42.4 Restricciones
+
+No deberán existir índices redundantes.
+
+Cada índice deberá estar justificado por un caso de uso.
+
+# 43. Benchmark Suite
+
+## 43.1 Objetivo
+
+Medir el rendimiento del simulador entre versiones.
+
+---
+
+## 43.2 Métricas
+
+Como mínimo se medirán:
+
+- Simulaciones por segundo.
+- Meses simulados por segundo.
+- Tiempo medio por Simulation.
+- Uso máximo de memoria.
+- Uso medio de CPU.
+
+---
+
+## 43.3 Escenarios
+
+La primera versión incluirá:
+
+- Ejecución secuencial.
+- Multiprocessing.
+- Diferentes tamaños de Dataset.
+
+---
+
+## 43.4 Reproducibilidad
+
+Todos los benchmarks deberán ejecutarse utilizando exactamente los mismos datos.
+
+# 44. Testing Strategy
+
+## 44.1 Objetivo
+
+Garantizar la corrección matemática y funcional del simulador.
+
+---
+
+## 44.2 Tipos de pruebas
+
+Como mínimo existirán:
+
+- Unit Tests.
+- Integration Tests.
+- Property Tests.
+- Regression Tests.
+
+---
+
+## 44.3 Regression Tests
+
+Toda corrección de un error deberá incorporar un test que impida su reaparición.
+
+---
+
+## 44.4 Casos de referencia
+
+Existirán simulaciones conocidas cuyos resultados deberán mantenerse entre versiones.
+
+---
+
+## 44.5 Determinismo
+
+Todos los tests deberán ser completamente deterministas.
+
+# 45. Acceptance Criteria
+
+## 45.1 Objetivo
+
+Definir cuándo una versión del simulador puede considerarse válida.
+
+---
+
+## 45.2 Correctitud
+
+El simulador deberá reproducir exactamente el comportamiento especificado para:
+
+- Static Allocation.
+- Passive Glidepath.
+- Active Glidepath.
+
+---
+
+## 45.3 Validación
+
+Los resultados obtenidos deberán ser comparables con el estudio de EarlyRetirementNow utilizando datos equivalentes.
+
+Las diferencias únicamente podrán atribuirse a:
+
+- Dataset distinto.
+- Activos distintos.
+- Redondeos definidos explícitamente.
+
+---
+
+## 45.4 Rendimiento
+
+El simulador deberá ser capaz de ejecutar miles de simulaciones utilizando todos los núcleos disponibles.
+
+---
+
+## 45.5 Reproducibilidad
+
+Dos ejecuciones idénticas deberán producir exactamente los mismos resultados.
+
+---
+
+## 45.6 Trazabilidad
+
+Toda decisión tomada durante una Simulation deberá poder reconstruirse utilizando:
+
+- SimulationTimeline.
+- MonthlyResult.
+- SimulationEvent.
+
+
+# 46. Numerical Precision
+
+## 46.1 Objetivo
+
+Definir las reglas de precisión numérica utilizadas por el simulador.
+
+---
+
+## 46.2 Filosofía
+
+Todas las simulaciones deberán producir exactamente el mismo resultado independientemente del hardware utilizado.
+
+---
+
+## 46.3 Tipo numérico
+
+Los importes monetarios se representarán utilizando Decimal.
+
+Nunca se utilizarán números en coma flotante para representar dinero.
+
+---
+
+## 46.4 Redondeo
+
+La política de redondeo será única para todo el proyecto.
+
+Toda operación monetaria utilizará la misma estrategia.
+
+---
+
+## 46.5 Comparaciones
+
+Las comparaciones entre importes monetarios deberán realizarse utilizando Decimal.
+
+Nunca se compararán valores monetarios utilizando float.
+
+---
+
+## 46.6 Configuración
+
+La precisión y el modo de redondeo estarán centralizados en un único componente.
+
+# 47. Performance Strategy
+
+## 47.1 Objetivo
+
+Definir las decisiones de diseño destinadas a maximizar el rendimiento del simulador.
+
+---
+
+## 47.2 Principios
+
+Se priorizará:
+
+- Reducir asignaciones de memoria.
+- Evitar copias innecesarias.
+- Compartir estructuras inmutables.
+- Minimizar sincronización entre procesos.
+
+---
+
+## 47.3 Paralelización
+
+Las simulaciones deberán poder ejecutarse de forma completamente independiente.
+
+La comunicación entre procesos será mínima.
+
+---
+
+## 47.4 Memoria
+
+El Dataset será compartido siempre que sea posible.
+
+Nunca se duplicará innecesariamente.
+
+---
+
+## 47.5 Persistencia
+
+La escritura en SQLite deberá realizarse por lotes cuando resulte beneficioso para el rendimiento.
+
+# 48. Versioning
+
+## 48.1 Objetivo
+
+Garantizar la reproducibilidad completa de cualquier resultado almacenado.
+
+---
+
+## 48.2 Versiones registradas
+
+Toda SimulationResult almacenará:
+
+- Versión del simulador.
+- Versión del Dataset.
+- Versión del esquema SQLite.
+- Versión de la especificación.
+
+---
+
+## 48.3 Compatibilidad
+
+Toda modificación incompatible incrementará la versión mayor del simulador.
+
+---
+
+## 48.4 Auditoría
+
+Será posible conocer exactamente con qué versión del sistema se generó cualquier resultado.
+
+# 49. Error Handling
+
+## 49.1 Objetivo
+
+Definir el comportamiento del sistema ante errores.
+
+---
+
+## 49.2 Errores recuperables
+
+Ejemplos:
+
+- Dataset inválido.
+- Configuración incorrecta.
+- Cohorte inexistente.
+
+Estos errores deberán notificarse mediante ValidationResult.
+
+---
+
+## 49.3 Errores no recuperables
+
+Ejemplos:
+
+- Corrupción de memoria.
+- Error interno del simulador.
+- Inconsistencia del dominio.
+
+Estos errores finalizarán la ejecución correspondiente.
+
+---
+
+## 49.4 Registro
+
+Todo error deberá registrarse mediante el sistema de Logging.
+
+---
+
+## 49.5 Aislamiento
+
+Un fallo en una Simulation nunca deberá provocar el fallo del resto del ExperimentRun.
+
+# 50. Roadmap
+
+## 50.1 Objetivo
+
+Definir el orden recomendado de implementación del simulador.
+
+---
+
+## 50.2 Fase 1
+
+Infraestructura:
+
+- Dominio.
+- Dataset.
+- CSV Loader.
+- Validación.
+
+---
+
+## 50.3 Fase 2
+
+Motor:
+
+- Portfolio.
+- Policies.
+- SimulationRunner.
+- Optimizer.
+
+---
+
+## 50.4 Fase 3
+
+Persistencia:
+
+- SQLite.
+- Repository.
+- Timeline.
+- Statistics.
+
+---
+
+## 50.5 Fase 4
+
+Optimización:
+
+- Multiprocessing.
+- Benchmarks.
+- Profiling.
+
+---
+
+## 50.6 Fase 5
+
+Extensiones:
+
+- Nuevas Policies.
+- Nuevas AssetClass.
+- Nuevos DatasetProvider.
+- Nuevos motores de persistencia.
+
+---
+
+## 50.7 Objetivo final
+
+El simulador deberá permitir reproducir, extender y comparar estudios de Safe Withdrawal Rate de forma determinista, reproducible, auditable y eficiente.
+
+# 51. Domain Invariants
+
+## 51.1 Objetivo
+
+Definir todas las reglas que nunca podrán incumplirse durante una Simulation.
+
+Estas reglas deberán verificarse mediante assertions internas o validaciones del dominio.
+
+---
+
+## 51.2 Portfolio
+
+En todo momento deberá cumplirse:
+
+- El patrimonio será mayor o igual que cero.
+- Ningún AssetHolding podrá ser negativo.
+- La suma de todos los AssetHolding será igual al patrimonio total.
+
+---
+
+## 51.3 Allocation
+
+Toda Allocation deberá cumplir:
+
+- La suma de pesos será exactamente 100%.
+- Ningún peso será negativo.
+- Ningún AssetClass aparecerá dos veces.
+
+---
+
+## 51.4 AllocationTarget
+
+Toda AllocationTarget deberá cumplir las mismas restricciones que Allocation.
+
+---
+
+## 51.5 Timeline
+
+Todo SimulationTimeline deberá cumplir:
+
+- Los meses estarán ordenados.
+- No existirán duplicados.
+- No existirán huecos.
+
+---
+
+## 51.6 Simulation
+
+Toda Simulation finalizará exactamente en uno de estos estados:
+
+- Completed.
+- Failed.
+- Cancelled.
+
+# 52. Determinism
+
+## 52.1 Objetivo
+
+Garantizar que cualquier experimento sea completamente reproducible.
+
+---
+
+## 52.2 Principio
+
+Dados:
+
+- El mismo código.
+- El mismo Dataset.
+- La misma configuración.
+- El mismo ExperimentDefinition.
+
+El resultado deberá ser idéntico.
+
+---
+
+## 52.3 Orden de ejecución
+
+El orden en que se ejecuten las Simulation nunca modificará los resultados.
+
+---
+
+## 52.4 Paralelización
+
+El uso de múltiples procesos nunca alterará los cálculos.
+
+---
+
+## 52.5 Persistencia
+
+La base de datos nunca modificará el resultado de una Simulation.
+
+Únicamente almacenará información.
+
+# 53. Public API
+
+## 53.1 Objetivo
+
+Definir la API pública del simulador.
+
+---
+
+## 53.2 Principio
+
+Los usuarios del proyecto únicamente interactuarán con la Application Layer.
+
+Nunca directamente con el dominio.
+
+---
+
+## 53.3 Entrada principal
+
+La ejecución estándar será:
+
+ExperimentDefinition
+
+↓
+
+ExperimentExecutor
+
+↓
+
+ExperimentResult
+
+---
+
+## 53.4 API estable
+
+Las interfaces públicas deberán mantenerse estables entre versiones menores.
+
+---
+
+## 53.5 API interna
+
+Las clases internas podrán modificarse sin afectar a la API pública.
+
+# 54. Coding Standards
+
+## 54.1 Objetivo
+
+Definir los criterios mínimos de implementación.
+
+---
+
+## 54.2 Principios
+
+Todo el código deberá seguir:
+
+- SOLID.
+- Clean Architecture.
+- Domain Driven Design.
+- Composition over inheritance.
+
+---
+
+## 54.3 Complejidad
+
+Se evitarán métodos largos.
+
+Se evitarán clases con múltiples responsabilidades.
+
+---
+
+## 54.4 Dependencias
+
+Las dependencias deberán apuntar siempre hacia el dominio.
 
 Nunca al contrario.
 
 ---
 
-## 40.5 Congelación de la especificación
+## 54.5 Tests
 
-La versión 1.0 de esta especificación se considera congelada.
+Toda nueva funcionalidad deberá incorporar sus correspondientes pruebas.
 
-Toda modificación incompatible deberá documentarse mediante un ADR y supondrá un incremento de versión MAJOR siguiendo Semantic Versioning.
+# 55. Future Extensions
+
+## 55.1 Objetivo
+
+Documentar posibles ampliaciones futuras del proyecto.
+
+---
+
+## 55.2 AllocationPolicy
+
+Posibles implementaciones:
+
+- Threshold Rebalancing.
+- CAPE.
+- Momentum.
+- Valuation.
+- Glidepath con pausas.
+- Glidepath no lineal.
+
+---
+
+## 55.3 WithdrawalPolicy
+
+Posibles implementaciones:
+
+- Guyton-Klinger.
+- VPW.
+- Floor & Ceiling.
+- Guardrails.
+- Dynamic Spending.
+
+---
+
+## 55.4 AssetClass
+
+Posibles nuevas clases:
+
+- Oro.
+- REITs.
+- Commodities.
+- TIPS.
+- Corporate Bonds.
+- Small Cap.
+- Value.
+
+---
+
+## 55.5 Objetivo
+
+Todas estas ampliaciones deberán implementarse sin modificar el dominio existente.
+
