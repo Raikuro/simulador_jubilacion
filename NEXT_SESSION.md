@@ -1,8 +1,8 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-22 (CohortGenerator Implementation — Sub-Milestone v0.2.1)
-**Current Status:** Sub-milestone v0.2.1 complete and committed. Beginning v0.2.2.
-**Next Phase:** ParameterSweepEngine — Sub-Milestone v0.2.2 (Behavioural Specification)
+**Previous Session:** 2026-07-22 (ParameterSweepEngine Implementation — Sub-Milestone v0.2.2)
+**Current Status:** Sub-milestone v0.2.2 is complete and frozen (tag: `v0.2.2-parameter-sweep`).
+**Next Phase:** ResearchExecutor (Behavioural Specification)
 
 ---
 
@@ -25,6 +25,14 @@
   - `from_start_dates`: strict fail-fast validation per explicitly requested date.
 - All three components exported from `research` top-level package.
 - 231 / 231 tests passing. mypy: 0 errors.
+
+### Complete (v0.2.2 — frozen, tag: `v0.2.2-parameter-sweep`)
+
+- `ParameterConfiguration`: immutable, hashable, domain-agnostic named scalar assignment.
+- `ParameterAxis`: immutable, validated construction-time parameter dimension.
+- `ParameterSweepEngine`: stateless deterministic range/axis and Cartesian-product generator.
+- Public parameter types exported from `research`.
+- 276 / 276 tests passing; 45 dedicated parameter-sweep tests passing.
 
 ---
 
@@ -55,16 +63,15 @@ mypy: **0 errors (12 research source files)**.
 
 ## Exact Next Task
 
-Begin Sub-Milestone v0.2.2: `ParameterSweepEngine`.
+Begin `ResearchExecutor` design work.
 
-Mandatory workflow step 1: produce `PARAMETER_SWEEP_ENGINE_SPECIFICATION.md`.
+Mandatory workflow step 1: produce `RESEARCH_EXECUTOR_SPECIFICATION.md`.
 
 Do not implement code until the specification is approved.
 
-### ParameterSweepEngine Context (from roadmap)
+### ResearchExecutor Context (from roadmap)
 
-- **Responsibility:** Generates multi-dimensional parameter grids and search spaces for research studies.
-- **Scope:** Emits Cartesian products of policy settings (e.g., equity allocation steps, glidepath start/end ratios and duration, withdrawal rates).
-- **Invariant:** Emits structured collections of parameterised policy configurations without executing them.
-- **Consumer:** `ResearchExecutor` (v0.2.2) — not `CohortGenerator`.
-- **Target ERN studies:** SWR Part 19 (Equity Glidepaths), SWR Part 20/25 (Dynamic Withdrawals), SWR Part 28 (CAPE-based Allocation).
+- **Responsibility:** Coordinate cohort and parameter configurations into research simulation tasks.
+- **Boundary:** Own policy materialisation and orchestration; do not alter the frozen v0.1 execution engine.
+- **Inputs:** `ExperimentDefinition`, `CohortGenerator`, and `ParameterSweepEngine` outputs.
+- **First action:** Define the frozen behavioural contract before architecture, API, or implementation work.

@@ -172,7 +172,7 @@ gantt
     section Sub-Milestone v0.2.1
     Experiment Schema & Cohort Generator   : active, m1, 2026-07-23, 5d
     section Sub-Milestone v0.2.2
-    Parameter Sweeps & ResearchExecutor    : m2, after m1, 5d
+    Parameter Sweep Engine                 : done, m2, after m1, 5d
     section Sub-Milestone v0.2.3
     ResultAggregator & Reproducibility     : m3, after m2, 5d
     section Freeze & v0.2 Tag
@@ -184,10 +184,15 @@ gantt
 - **Deliverables:** Declarative experiment schema, rolling monthly cohort windowing, historical dataset cohort extraction.
 - **Tag:** `v0.2.1-cohort-schema`
 
-### Sub-Milestone `v0.2.2`: Parameter Sweeps & Research Executor
-- **Components:** `ParameterSweepEngine`, `ResearchExecutor`.
-- **Deliverables:** Multi-dimensional policy grid builder, multi-simulation study orchestration across `SimulationRunner`, deterministic execution ordering, progress tracking.
-- **Tag:** `v0.2.2-research-executor`
+### Sub-Milestone `v0.2.2`: Parameter Sweep Engine — Complete & Frozen
+- **Components:** `ParameterConfiguration`, `ParameterAxis`, `ParameterSweepEngine`.
+- **Deliverables:** Immutable primitive parameter configurations, validated named axes, and deterministic multi-dimensional policy-grid generation.
+- **Tag:** `v0.2.2-parameter-sweep`
+- **Status:** Complete and frozen.
+
+### Next Component: `ResearchExecutor`
+- **Status:** Not started.
+- **Mandatory first step:** Produce `RESEARCH_EXECUTOR_SPECIFICATION.md` before any architecture, API, or implementation work.
 
 ### Sub-Milestone `v0.2.3`: Result Aggregation & Reproducibility
 - **Components:** `ResultAggregator`, `ResearchReproducibilityManager`.
@@ -266,4 +271,4 @@ Every sub-milestone in `v0.2` will strictly adhere to the mandatory 9-step devel
 
 ## 9. Next Immediate Step
 
-With `RESEARCH_LAYER_FINAL_ROADMAP.md` now frozen and authoritative, the next task is to produce the **Behavioural Specification** for **Sub-Milestone `v0.2.1`: Experiment Schema & Cohort Generation**.
+With `RESEARCH_LAYER_FINAL_ROADMAP.md` now frozen and authoritative, the next task is to produce the **Behavioural Specification** for `ResearchExecutor`.
