@@ -1,8 +1,8 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-22 (Execution Engine Stabilization)  
-**Current Status:** Ready to commit  
-**Next Phase:** SimulationExecutor implementation
+**Previous Session:** 2026-07-22 (SimulationExecutor Implementation & Zero-Horizon SimulationRunner Fix)
+**Current Status:** Ready to commit
+**Next Phase:** Portfolio & Research Layer Integration / Next Architecture Phase
 
 ---
 
@@ -11,68 +11,42 @@
 ### Completed
 
 - Domain model, services, and policies required by the monthly execution flow.
-- `SimulationRunner`: context validation, state initialization, execution-loop control, and immutable result construction.
+- `SimulationRunner`: context validation, state initialization, execution-loop control, zero-horizon handling, and immutable result construction.
 - `SimulationStatisticsBuilder` abstraction and `DefaultSimulationStatisticsBuilder` implementation.
 - Eight-step monthly pipeline, including `SimulationStateUpdateStep`.
-- Pipeline contract integration: every concrete step now inherits `PipelineStep`, and the complete ordered pipeline can be instantiated.
+- `SimulationExecutor`: multi-simulation experiment lifecycle management, runner coordination, and result aggregation (`ExperimentDefinition`, `ExperimentRun`).
+- Complete test suite across domain, application steps, runner, statistics builder, and executor.
 
-### Stabilization Completed This Session
+### Recent Fixes & Adjustments
 
-- Corrected the pipeline integration defect found during review.
-- Added regression coverage that constructs all eight pipeline steps through `SimulationPipeline`.
-- Removed the standalone print-based harness from the StatisticsBuilder pytest module.
-- Confirmed no production debug statements or generated temporary files are present.
+- Corrected `SimulationRunner._initialize_state()` to handle `horizon_months == 0` without requiring `dataset[0]`.
+- Enforced strict validation for positive horizons (`horizon_months > 0`), ensuring an initial dataset snapshot exists and its date matches `start_date`.
+- Updated test fixtures in `tests/test_simulation_runner.py` and `tests/test_simulation_runner_integration.py` to conform with current domain type signatures.
+- Added comprehensive regression tests for zero-horizon and positive-horizon edge cases.
 
 ---
 
 ## Validation Status
 
-Available validation passed:
+Full test suite validation passed:
 
-- Syntax compilation for every `src/` and `tests/` Python module.
-- `DefaultSimulationStatisticsBuilder`: 34 tests passed.
-- `SimulationStateUpdateStep`: 5 tests passed, including complete-pipeline construction.
-- Direct construction of the eight-step `SimulationPipeline` succeeds.
-- `git diff --check` succeeds.
-
-`pytest` is declared in the `dev` dependency group but is not installed in the current shell. Before or during the next implementation phase, run the full suite in the configured development environment:
-
-```bash
-python -m pytest tests/
-```
+- All 161 tests across 24 test modules pass (`.venv/bin/pytest`).
+- `git diff --check` passes cleanly.
+- Zero failures, zero regressions.
 
 ---
 
 ## Important Architectural Invariants
 
-1. **Pure orchestration:** the application layer coordinates services and steps; financial operations remain in the domain layer.
-2. **Pipeline contract:** every concrete monthly step subclasses `PipelineStep` and has a unique ascending `sequence_order`.
-3. **Dependency injection:** orchestration components accept collaborators instead of hardcoding them.
-4. **Immutable results:** published simulation results and statistics remain frozen.
-5. **Determinism:** equal inputs must produce equal results.
+1. **Pure orchestration:** application services (`SimulationRunner`, `SimulationExecutor`) coordinate execution without containing financial calculation logic.
+2. **Pipeline contract:** every concrete monthly step subclasses `PipelineStep` and maintains strict sequence ordering.
+3. **Dependency injection:** components accept collaborators rather than hardcoding concrete implementations.
+4. **Immutable results:** `SimulationResult`, `SimulationState`, and `ExperimentRun` remain frozen/immutable once produced.
+5. **Determinism & Zero-Horizon handling:** equal inputs yield equal outputs, and zero-horizon runs produce zero-month results immediately without dataset snapshot requirements.
 
 ---
 
 ## Exact Next Task
 
-### Implement `SimulationExecutor`
-
-Do not alter the established financial pipeline. The executor should sit above `SimulationRunner` and:
-
-1. Manage the experiment lifecycle.
-2. Coordinate multi-simulation flows.
-3. Aggregate results for the research layer.
-4. Remain free of financial calculations.
-
-Suggested first steps:
-
-1. Create and approve `SIMULATION_EXECUTOR_SPECIFICATION.md`.
-2. Implement `src/engine/application/executor.py` using dependency injection.
-3. Add `tests/test_simulation_executor.py` for unit and runner-integration coverage.
-4. Run the full regression suite and obtain review approval before proceeding.
-
----
-
-## Repository Handoff
-
-The current worktree is ready to commit as the execution-engine and pipeline-integration stabilization checkpoint. Commit it before beginning `SimulationExecutor`.
+Wait for user approval to execute git commit.
+Propose commit message covering `SimulationExecutor` implementation and `SimulationRunner` zero-horizon correction.
