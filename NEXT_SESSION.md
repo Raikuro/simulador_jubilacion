@@ -1,52 +1,70 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-22 (SimulationExecutor Implementation & Zero-Horizon SimulationRunner Fix)
-**Current Status:** Ready to commit
-**Next Phase:** Portfolio & Research Layer Integration / Next Architecture Phase
+**Previous Session:** 2026-07-22 (CohortGenerator Implementation — Sub-Milestone v0.2.1)
+**Current Status:** Sub-milestone v0.2.1 complete and committed. Beginning v0.2.2.
+**Next Phase:** ParameterSweepEngine — Sub-Milestone v0.2.2 (Behavioural Specification)
 
 ---
 
 ## Current Architecture Status
 
-### Completed
+### Frozen (v0.1 Execution Engine — permanently frozen)
 
 - Domain model, services, and policies required by the monthly execution flow.
-- `SimulationRunner`: context validation, state initialization, execution-loop control, zero-horizon handling, and immutable result construction.
-- `SimulationStatisticsBuilder` abstraction and `DefaultSimulationStatisticsBuilder` implementation.
-- Eight-step monthly pipeline, including `SimulationStateUpdateStep`.
-- `SimulationExecutor`: multi-simulation experiment lifecycle management, runner coordination, and result aggregation (`ExperimentDefinition`, `ExperimentRun`).
-- Complete test suite across domain, application steps, runner, statistics builder, and executor.
+- `SimulationRunner`, `SimulationStatisticsBuilder`, eight-step monthly pipeline.
+- `SimulationExecutor`: multi-simulation experiment lifecycle management.
+- Full test suite: 183 tests as of v0.1 baseline (now 231 with Research Layer tests).
 
-### Recent Fixes & Adjustments
+### Complete (v0.2.1 — committed, tag: v0.2.1-cohort-schema)
 
-- Corrected `SimulationRunner._initialize_state()` to handle `horizon_months == 0` without requiring `dataset[0]`.
-- Enforced strict validation for positive horizons (`horizon_months > 0`), ensuring an initial dataset snapshot exists and its date matches `start_date`.
-- Updated test fixtures in `tests/test_simulation_runner.py` and `tests/test_simulation_runner_integration.py` to conform with current domain type signatures.
-- Added comprehensive regression tests for zero-horizon and positive-horizon edge cases.
+- `CohortSpecification`: immutable frozen dataclass value object. Canonical identity is `start_date`. External `id` defaults to `start_date.isoformat()`.
+- `ExperimentDefinition`: immutable declarative research study blueprint. Public Research Domain Contract. Validates only intrinsic local invariants.
+- `CohortGenerator`: stateless temporal windowing utility.
+  - `generate_rolling_monthly`: full dataset scan, silent tail exclusion.
+  - `generate_range`: era-bounded scan, silent tail exclusion, ValueError on empty result.
+  - `from_start_dates`: strict fail-fast validation per explicitly requested date.
+- All three components exported from `research` top-level package.
+- 231 / 231 tests passing. mypy: 0 errors.
+
+---
+
+## Mandatory Architectural Invariants
+
+1. The v0.1 Execution Engine is permanently frozen. No changes permitted.
+2. `CohortGenerator` is completely decoupled from `ExperimentDefinition` at the implementation level. `ResearchExecutor` extracts primitive arguments before calling `CohortGenerator`.
+3. Canonical identity of `CohortSpecification` is strictly `start_date`. `id` is a reporting/serialization field only.
+4. `ExperimentDefinition` validates only intrinsic local invariants. Dataset snapshot completeness is a `CohortGenerator` / execution planning concern.
+5. All output tuples from `CohortGenerator` are ordered by `start_date` ascending, unconditionally.
+
+---
+
+## Key API Design Decisions (Frozen)
+
+- `generate_range` raises `ValueError` on empty feasible cohort set (misconfigured study era, not a natural boundary).
+- `from_start_dates` deduplicates via `dict.fromkeys`; insertion order is discarded; chronological sort always takes precedence.
+- `ExperimentDefinition` duplicate cohort check uses canonical `start_date`, not external `id`.
 
 ---
 
 ## Validation Status
 
-Full test suite validation passed:
-
-- All 161 tests across 24 test modules pass (`.venv/bin/pytest`).
-- `git diff --check` passes cleanly.
-- Zero failures, zero regressions.
-
----
-
-## Important Architectural Invariants
-
-1. **Pure orchestration:** application services (`SimulationRunner`, `SimulationExecutor`) coordinate execution without containing financial calculation logic.
-2. **Pipeline contract:** every concrete monthly step subclasses `PipelineStep` and maintains strict sequence ordering.
-3. **Dependency injection:** components accept collaborators rather than hardcoding concrete implementations.
-4. **Immutable results:** `SimulationResult`, `SimulationState`, and `ExperimentRun` remain frozen/immutable once produced.
-5. **Determinism & Zero-Horizon handling:** equal inputs yield equal outputs, and zero-horizon runs produce zero-month results immediately without dataset snapshot requirements.
+Full test suite: **231 / 231 tests passing**.
+mypy: **0 errors (12 research source files)**.
 
 ---
 
 ## Exact Next Task
 
-Wait for user approval to execute git commit.
-Propose commit message covering `SimulationExecutor` implementation and `SimulationRunner` zero-horizon correction.
+Begin Sub-Milestone v0.2.2: `ParameterSweepEngine`.
+
+Mandatory workflow step 1: produce `PARAMETER_SWEEP_ENGINE_SPECIFICATION.md`.
+
+Do not implement code until the specification is approved.
+
+### ParameterSweepEngine Context (from roadmap)
+
+- **Responsibility:** Generates multi-dimensional parameter grids and search spaces for research studies.
+- **Scope:** Emits Cartesian products of policy settings (e.g., equity allocation steps, glidepath start/end ratios and duration, withdrawal rates).
+- **Invariant:** Emits structured collections of parameterised policy configurations without executing them.
+- **Consumer:** `ResearchExecutor` (v0.2.2) — not `CohortGenerator`.
+- **Target ERN studies:** SWR Part 19 (Equity Glidepaths), SWR Part 20/25 (Dynamic Withdrawals), SWR Part 28 (CAPE-based Allocation).
