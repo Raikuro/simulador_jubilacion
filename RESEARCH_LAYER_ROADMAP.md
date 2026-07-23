@@ -1,5 +1,11 @@
 # Research Layer Roadmap (`v0.2-research-layer`)
 
+> NOTE: This file is a historical planning document. The authoritative and
+> current roadmap for future planning and milestone scoping is
+> `RESEARCH_LAYER_FINAL_ROADMAP.md`. Do not use this document for active
+> planning without reconciling it against the final roadmap.
+
+
 ## Executive Summary
 
 This document establishes the architectural roadmap and component specifications for the **Research Layer** of the Retirement Simulator (`simulador_jubilacion`).
