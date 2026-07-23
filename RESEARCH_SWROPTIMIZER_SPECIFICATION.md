@@ -34,13 +34,15 @@ the observable behaviour required to assess a candidate. Both the optimizer
 and callers must treat the evaluator as a black box.
 
 Evaluator contract (behavioural):
-- `evaluate(candidate) -> EvaluationResult`
+- `evaluate(candidate) -> evaluation outcome`
   - Accepts a candidate optimisation value (type-agnostic) and returns an
-    immutable `EvaluationResult` containing at minimum a deterministically
-    computed `success_indicator` and provenance references to source planned
-    unit identities that contributed to the evaluation.
-- The optimizer validates `EvaluationResult` invariants but does not inspect
-  or assume any internal behaviour of the evaluator beyond this contract.
+    immutable observable evaluation outcome containing at minimum a
+    deterministically computed success indicator and provenance references
+    sufficient to identify the source planned unit identities that
+    contributed to the outcome.
+- The optimizer validates observable outcome invariants but does not inspect
+  or assume any internal behaviour of the evaluator beyond this black-box
+  behavioural contract.
 
 Notes:
 - The term `candidate` is intentionally type-agnostic to allow optimisation
@@ -54,46 +56,56 @@ Inputs
   non-empty ordered collection of evaluation artefact identities that the
   caller expects the evaluator to use;
 - an externally supplied success predicate (behavioural contract) that maps
-  an `EvaluationResult` to boolean success/failure; and
+  an observable evaluation outcome to a boolean success/failure value; and
 - a clearly described candidate domain appropriate to the optimisation
   variable (the domain description is type-appropriate and not constrained
   by the optimizer specification).
 
 Outputs
-- an immutable `SWROptimizerResult` containing:
-  - `candidate_value`: the optimisation candidate selected as satisfying the
-    externally supplied success predicate (or an explicit absence value when
-    none found);
-  - `provenance`: canonical references that map back to the `EvaluationResult`
-    objects (and through those to original planned unit identities) used to
-    confirm the candidate; and
+- an immutable optimizer outcome document containing:
+  - `candidate_value`: the optimisation candidate selected according to an
+    externally supplied optimisation ordering/criterion among those
+    candidates that satisfy the externally supplied success predicate within
+    the declared candidate domain, or an explicit absence value when no
+    candidate satisfies the predicate;
+  - `provenance`: canonical references that map back to the observable
+    evaluation outcome objects (and through those to original planned unit
+    identities) used to verify the candidate; and
   - `diagnostic`: a concise, human-readable explanation of the outcome.
 
 Success semantics
-- The optimizer provides an unambiguous decision: whether a candidate that
-  satisfies the externally provided success predicate exists within the
-  declared domain. The semantics of the predicate itself are an external
-  contract and are not defined by `SWROptimizer`.
+ - The optimizer provides an unambiguous decision: whether a candidate that
+   satisfies the externally provided success predicate exists within the
+   declared domain, and — if one or more candidates satisfy the predicate —
+   returns the candidate selected according to an externally supplied
+   optimisation ordering/criterion. The semantics of the predicate and the
+   ordering used to select the returned candidate are external contracts and
+   are not defined by `SWROptimizer`.
 
 Provenance preservation
 - For any reported `candidate_value`, the optimizer must include or reference
-  a lossless mapping back to the `EvaluationResult` object(s) that were used
-  to verify that candidate. This mapping must be sufficient to identify the
-  originating planned unit identities in `v0.2` provenance terms.
+  a lossless mapping back to the observable evaluation outcome object(s)
+  that were used to verify that candidate. This mapping must be sufficient to
+  identify the originating planned unit identities in `v0.2` provenance terms.
 
 Determinism
-- Given the same inputs (including an evaluator that produces identical
-  `EvaluationResult` values for identical candidates), the optimizer must
-  produce identical outputs. Any non-determinism must be declared in the
-  evaluator or predicate contract and surfaced to callers.
+ - Reproducibility guarantee: the optimizer guarantees reproducible outputs
+   for identical inputs provided the supplied `Evaluator`, the externally
+   supplied success predicate, and the externally supplied optimisation
+   ordering are themselves deterministic (i.e., each produces identical
+   observable results for identical inputs). If any of these external
+   contracts exhibits non-deterministic behaviour, reproducibility is not
+   guaranteed and must be declared by those contracts.
 
 Failure behaviour
 - The optimizer validates inputs prior to any evaluation. If inputs are
   invalid (e.g., missing evaluator, empty candidate domain, malformed
-  predicate), it raises `InvalidInputError` and performs no evaluations.
-- If the evaluator raises an error for a candidate, the optimizer wraps the
-  error in `EvaluationError` and propagates it; the optimizer must not swallow
-  exceptions or return misleading partial results.
+  predicate), it raises a descriptive validation error and performs no
+  evaluations.
+- If the evaluator signals an error while assessing a candidate, the
+  optimizer surfaces a descriptive failure to the caller and performs no
+  misleading partial-result reporting; the exact error types and hierarchy
+  are API-level concerns to be defined during the Public API Review.
 
 Non-responsibilities (explicit)
 - Must not: persist results, produce visualisations, schedule or orchestrate
@@ -109,10 +121,15 @@ Dependencies & Architectural Layering
   evaluator implementations.
 
 Acceptance Checklist (behavioural criteria)
-- `Evaluator` behavioural contract is defined and documented.
-- The optimizer returns a clear decision output indicating candidate presence
-  or absence relative to the externally supplied success predicate.
-- Reported candidates include lossless provenance mapping to evaluation and
-  planned-unit identities.
-- Decision outputs are deterministic given identical evaluator outputs and
-  inputs, as stated in the Determinism section.
+- The `Evaluator` behavioural contract is defined and documented.
+- The optimizer returns a clear decision output indicating whether a
+  candidate satisfying the externally supplied success predicate exists in
+  the provided domain, and — when one or more satisfy the predicate — the
+  returned candidate is selected according to an externally supplied
+  optimisation ordering/criterion; provenance is included for reported
+  candidates.
+- The optimizer specifies that outputs are reproducible when the supplied
+  `Evaluator`, the success predicate, and the optimisation ordering are
+  deterministic.
+- The optimisation ordering/selection contract is defined and documented by
+  the caller.
