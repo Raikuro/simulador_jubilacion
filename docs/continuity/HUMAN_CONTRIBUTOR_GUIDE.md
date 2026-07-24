@@ -1,23 +1,42 @@
 # Guide for Human Contributors
 
-**Purpose:** This document explains the workflow for humans collaborating with AI agents in this repository.
+**Purpose:** This document defines the collaboration workflow for human stakeholders interacting with the AI Architect.
 
 ---
 
-## 1. Starting a New AI Session
-When beginning a conversation with an AI agent, attach these references:
-- `docs/continuity/AI_ARCHITECT_GUIDE.md` (AI roles and workflow)
-- `docs/continuity/OPERATIONAL_DASHBOARD.md` (Current project status)
-- `docs/continuity/NEXT_SESSION.md` (Specific task objectives)
+## 1. Initializing an AI Architect
+When starting a session with a new AI Architect, follow this procedure:
+
+1. **Check Repository Access:**
+   - **If the AI has repository access:** You do not need to provide any files. Simply ask the AI to: *"Bootstrap your context by discovering the `DOCUMENTATION_TREE.md` and following the recovery workflow in `AI_ARCHITECT_GUIDE.md`."*
+   - **If the AI lacks repository access:** You must provide the following baseline documents to establish context:
+     - `docs/continuity/PROJECT_CONTEXT.md`
+     - `docs/continuity/OPERATIONAL_DASHBOARD.md`
+     - `docs/continuity/NEXT_SESSION.md`
+     - `docs/continuity/AI_ARCHITECT_GUIDE.md`
 
 ---
 
-## 2. Recommended Workflow
-- **The AI as Architect:** Treat the AI as the Chief Architect. It is responsible for defining specifications, reviewing designs, and making architectural calls.
-- **The Human as Supervisor/Implementer:** You supervise the AI's architectural decisions and act as the partner/implementer for the AI's specifications.
-- **Decision Loop:** If a design ambiguity arises, ask the AI to provide an architectural rationale. Once agreed, ensure it is documented in the appropriate `docs/specifications/` or `docs/architecture/reviews/` file.
+## 2. Collaboration Workflow
+- **Roles:**
+  - **AI Architect:** Responsible for architectural integrity, specification definition, and design rationales.
+  - **Human Stakeholder:** Provides strategic direction, approves architectural plans, and monitors progress.
+  - **Implementation Engineer:** Executes specifications provided by the Architect. (Often this is the same AI, but in a different operational mode).
+
+- **The Responsibility Cycle:**
+  1. **Initialization:** Human sets context or directs AI to discover it.
+  2. **Specification:** Architect produces specifications or designs.
+  3. **Implementation:** Implementation agent executes code.
+  4. **Validation:** Implementation agent provides review against specification.
+  5. **Approval:** Architect confirms compliance; human stakeholder signs off on milestone completion.
 
 ---
 
-## 3. Scope
-This document is **not** an onboarding guide and **not** a project explanation. Its sole responsibility is to define the human-AI collaboration workflow.
+## 3. Session Recovery
+If an AI session loses context, simply repeat the initialization procedure in Section 1. The documentation system is designed to allow the Architect to recover the full architectural state autonomously.
+
+---
+
+## 4. Governance
+- All architectural decisions must be persisted in canonical documentation. If you and the AI agree on a new rule or constraint during a conversation, direct the AI to update the relevant document (e.g., `GOVERNANCE.md` or a specification) immediately.
+- This documentation is the source of truth, not your conversation history.
