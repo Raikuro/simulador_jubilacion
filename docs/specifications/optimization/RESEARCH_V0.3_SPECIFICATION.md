@@ -1,4 +1,4 @@
-# Sub-Milestone v0.3 — Optimization & Strategy Analysis (Superseded Draft)
+# Sub-Milestone v0.3 — Optimization & Strategy Analysis (Approved & Frozen)
 
 Status: Superseded
 

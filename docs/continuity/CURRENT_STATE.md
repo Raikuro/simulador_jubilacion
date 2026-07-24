@@ -16,7 +16,7 @@
 - 📋 **v0.3 (Optimization Layer)** — Specifications approved, ready for implementation
 - 📅 **v0.4+ (Infrastructure & Deployment)** — Planned (SQLite, CLI, parallelization)
 
-**Immediate Next Task:** Begin implementing the SWROptimizer component using binary search algorithm.
+**Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
 ---
 
@@ -95,11 +95,11 @@
 
 ### v0.3 Optimization & Analytics Layer 📋 READY
 
-**Status:** Specifications approved, implementation about to begin
+**Status:** Specifications approved, architecture frozen, implementation pending
 
 **What it will do:**
 - SWROptimizer — Binary search for safe withdrawal rates
-- StrategyComparator — Comparative strategy analysis
+- StrategyComparator — Comparative strategy analysis (Architecture Frozen; Implementation Pending)
 - ResultAggregator — Statistical result synthesis
 - ResearchReproducibilityManager — Audit trails & verification
 
@@ -110,6 +110,7 @@
 
 **Architectural Reviews:**
 - [RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md](../architecture/reviews/RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md)
+- [RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md](../architecture/reviews/RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md)
 
 **Current Implementation Task (IMMEDIATE NEXT STEP):**
 

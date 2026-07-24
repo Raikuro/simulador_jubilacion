@@ -1,6 +1,6 @@
 # Behavioural Specification: StrategyComparator (v0.3)
 
-Status: Behavioural specification (draft)
+Status: Approved & Frozen
 
 ## Purpose
 

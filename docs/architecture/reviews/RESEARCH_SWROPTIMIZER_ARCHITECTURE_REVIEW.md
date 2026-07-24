@@ -1,6 +1,6 @@
-# Architecture Review: SWROptimizer (v0.3) — Working Draft
+# Architecture Review: SWROptimizer (v0.3)
 
-Status: Architecture Review (working draft — uncommitted)
+Status: Approved & Frozen
 
 Purpose
 
