@@ -33,7 +33,7 @@
 
 | Milestone | Status | Specifications | Next Task |
 |-----------|--------|----------------|-----------|
-| **v0.3 Optimization Layer** | 📋 Ready | 3 approved | Implement SWROptimizer |
+| v0.3 Optimization Layer | ✅ Complete | 3 approved | StrategyComparator |
 
 ### Planned Milestones (Future)
 

@@ -140,6 +140,61 @@ Every implementation must:
 
 ## Frozen Documentation Policy
 
+### Autonomy of the Implementation Engineer
+
+The implementation engineer is autonomous for all non-architectural activities. 
+No approval is required to:
+- Inspect the repository.
+- Read documentation.
+- Execute tests.
+- Run static analysis.
+- Inspect Git history.
+- Analyse existing code.
+- Prepare implementation plans.
+
+Architectural approval is only required when modifying:
+- Frozen specifications.
+- Public APIs.
+- Architectural decisions.
+- Documentation governance.
+- Project-wide design.
+
+## Implementation Review
+
+Every implementation milestone must end with an **Implementation Review** before architectural approval is requested.
+
+The purpose of the review is to demonstrate, with objective evidence, that the implementation complies with the frozen specification.
+
+The review should include, at minimum:
+- Specification traceability.
+- Public API verification.
+- Architectural compliance.
+- Test coverage summary.
+- Self-review.
+- Diff summary.
+- Recommendation for architectural approval.
+
+Architectural approval must always be based on evidence rather than implementation summaries.
+
+The standard implementation workflow is therefore:
+
+Specification
+→ Implementation
+→ Tests
+→ Implementation Review
+→ Architectural Approval
+→ Commit
+→ Next Milestone
+
+## YAGNI & Speculative Generalization
+Before introducing a new abstraction, extensibility point, hook, strategy, callback, or generic interface, the implementation engineer must demonstrate that it is required by the current specification or by an already approved milestone. Potential future use cases alone are not sufficient justification. The project follows the YAGNI principle ("You Aren't Gonna Need It") unless the architecture or specification explicitly requires otherwise.
+
+## Contract Violations vs. Domain Results
+Distinguish between **contract violations** and **domain results**. Invalid API usage (invalid parameters, violated preconditions, inconsistent configuration) must fail fast through explicit validation errors. Valid executions that simply produce no solution or an unsuccessful result must be represented as normal domain outcomes. These two situations must never be conflated.
+
+## Specification/Implementation Divergence
+If, during implementation or review, a better API or behaviour is discovered that is not explicitly covered by the frozen specification, the implementation engineer must stop and identify the discrepancy. The architect must then decide whether to (1) follow the existing specification exactly, or (2) amend the specification before implementation. The implementation must never silently redefine unspecified behaviour.
+
 ### The Specification Is the Contract
 
 All implementations must comply with their frozen specification:
