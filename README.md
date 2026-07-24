@@ -1,102 +1,29 @@
 # FIRE Backtesting Framework
 
-**Version:** v0.2.3 (Research Infrastructure Complete)  
-**Status:** Active Development → v0.3 Ready to Start  
-**Last Updated:** 2026-07-23
+FIRE Backtesting Framework (FBF) is a deterministic financial simulation engine designed to reproduce and extend the Safe Withdrawal Rate (SWR) studies published by EarlyRetirementNow. The project is built on a rigorously defined Clean Architecture that prioritizes correctness, reproducibility, and maintainability.
+
+## Project Mission
+To provide a transparent, testable, and extensible platform for academic-grade financial research and retirement strategy validation.
+
+## Architectural Philosophy
+- **Deterministic:** Given identical inputs, the system always produces identical outputs.
+- **Specification-Driven:** Implementation is strictly governed by frozen specifications.
+- **Clean Architecture:** Separation of concerns between domain logic, research orchestration, and infrastructure.
+
+## Documentation Navigation
+- **Human Contributors:** Start with `docs/continuity/HUMAN_CONTRIBUTOR_GUIDE.md`.
+- **AI Architects:** Start with `docs/continuity/AI_ARCHITECT_GUIDE.md` and follow the context recovery workflow.
+- **Project Structure:** Consult `docs/DOCUMENTATION_TREE.md` for the full documentation map and `docs/continuity/SOURCE_OF_TRUTH.md` to locate specific information.
 
 ---
 
-## What is FIRE Backtesting Framework?
+## Technical Overview
+The project follows a clean architectural boundary with unidirectional dependencies:
+`CLI` → `Research` → `Engine` → `Infrastructure`
 
-FIRE Backtesting Framework (FBF) is a deterministic financial simulation engine designed to reproduce and extend the Safe Withdrawal Rate (SWR) studies published by EarlyRetirementNow. The project is built on a rigorously defined Clean Architecture with a frozen v0.1 execution engine layer and an evolving research infrastructure layer (v0.2). The codebase prioritizes correctness, reproducibility, and maintainability in that order, never sacrificing accuracy for performance.
-
-## Project Goals
-
-The project aims to:
-
-1. **Reproduce** the Safe Withdrawal Rate calculations published in the EarlyRetirementNow Part 19 study ("Equity Glidepaths") with exact numerical accuracy
-2. **Extend** the simulation engine to support new research questions and strategies
-3. **Automate** large-scale backtesting studies across thousands of historical cohorts
-4. **Enable** parameter optimization and strategy comparison through systematic research execution
-5. **Provide** a reusable, deterministic financial simulation platform for retirement studies
-
-## Key Features
-
-- ✅ **Deterministic execution engine** (v0.1) — 8-step monthly pipeline, fully tested, production-ready
-- ✅ **Research infrastructure** (v0.2.3) — Experiment definitions, cohort generation, parameter sweeps, execution orchestration
-- 📋 **Optimization layer** (v0.3) — SWROptimizer, StrategyComparator (specifications approved, implementation pending)
-- ✅ **Clean Architecture** — Four distinct layers with unidirectional dependencies
-- ✅ **Specification-driven development** — All architectural decisions documented in frozen design documents
-- ✅ **Comprehensive testing** — 276+ passing tests, 0 mypy errors
-- ✅ **Documentation system** — Scalable, well-organized documentation with clear governance
-
-## Quick Start
-
-### For New Contributors
-
-1. **Read documentation:** Start with `docs/continuity/AI_ARCHITECT_GUIDE.md` for AI onboarding
-2. **Run tests:** `pytest tests/ -v` to verify baseline
-3. **Find your task:** Read `docs/continuity/OPERATIONAL_DASHBOARD.md` for current milestone and next task
-4. **Implement:** Follow the specification in `docs/specifications/`
-5. **Test:** Ensure all tests pass and mypy errors are zero
-
-### For AI Developers
-
-1. **Read AI_SESSION_BOOTSTRAP.md** — Understanding how to work in this project
-2. **Read PROJECT_CONTEXT.md** — Project mission, vision, philosophy
-3. **Read OPERATIONAL_DASHBOARD.md** — Current status and next task
-4. **Read NEXT_SESSION.md** — Session initialization
-5. **Read docs/README.md** — Documentation navigation
-
-## Documentation
-
-The project has a comprehensive documentation system organized into categories:
-
-- **Continuity documents** (`docs/continuity/`) — AI handover, project context, operational status
-- **Architecture documentation** (`docs/architecture/`) — Design decisions and API contracts
-- **Specifications** (`docs/specifications/`) — Implementation contracts (frozen)
-- **Roadmaps** (`docs/roadmaps/milestones/`) — Project planning
-- **Reports** (`docs/reports/`) — Implementation summaries
-- **Development guidelines** (`docs/development/`) — Contribution procedures
-
-**Start here:** `docs/continuity/AI_SESSION_BOOTSTRAP.md`
-
-## Technical Details
-
-### Architecture
-
-The project follows Clean Architecture principles with four distinct layers:
-
-1. **Domain Layer** — Pure business logic (no external dependencies)
-   - Engine (v0.1) ✅ Frozen
-   - Research (v0.2.3) ✅ Frozen
-   - Optimization (v0.3) 📋 Ready
-
-2. **Application Layer** — Orchestration and coordination
-   - ResearchExecutor, SimulationExecutor
-
-3. **Infrastructure Layer** — External dependencies
-   - SQLite (planned v0.4)
-   - CSV I/O (planned v0.4)
-
-4. **Presentation Layer** — CLI and user interfaces
-   - CLI (planned v0.4)
-
-### Dependencies
-
-**Dependency Flow:**
-```
-CLI → Research → Engine → Infrastructure
-```
-
-**Technology Stack:**
-- Python 3.13+
-- Zero external dependencies (domain layer)
-- Decimal arithmetic for financial values
-- Type hints throughout
-- Comprehensive test coverage
-
-### Quality Standards
+- **Engine:** Pure simulation logic (Domain).
+- **Research:** Study definition and orchestration.
+- **Infrastructure:** External persistence and interfaces.
 
 - **Correctness First** — Mathematical precision > convenience
 - **Reproducibility** — Identical inputs → identical outputs (always)
