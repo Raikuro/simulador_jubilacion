@@ -42,6 +42,8 @@ Every permanent documentation file must explicitly define:
 ### Documentation Growth Rule
 The documentation system is considered architecturally mature. New permanent documents must not be created merely to simplify a conversation or implementation session. A new permanent document may only be introduced if it owns a genuinely new responsibility that cannot be assigned to an existing document without violating the "one responsibility per document" principle.
 
+**Documentation does not grow by its own initiative. It evolves only when a real architectural need demonstrates that something is missing.**
+
 Default decision process for new requirements:
 1. Reuse an existing document.
 2. Extend an existing document if it remains within its responsibility.
@@ -174,7 +176,7 @@ Architectural decisions are not considered complete until they are persisted in 
 **Answers:** What is this project? How should it be built? What are the quality goals?
 
 **Referenced by:**
-- AI_HANDOVER.md (for onboarding)
+- AI_ARCHITECT_GUIDE.md (for onboarding)
 - CURRENT_STATE.md (for context)
 - SOURCE_OF_TRUTH.md (as canonical source)
 - GOVERNANCE.md (for philosophy)
@@ -183,11 +185,11 @@ Architectural decisions are not considered complete until they are persisted in 
 **Answers:** What is the current status? What should I implement next?
 
 **Referenced by:**
-- AI_HANDOVER.md (for recovery)
+- AI_ARCHITECT_GUIDE.md (for recovery)
 - SOURCE_OF_TRUTH.md (as canonical source)
 - GOVERNANCE.md (for operational rules)
 
-### AI_ONBOARDING.md
+### AI_ARCHITECT_GUIDE.md
 **Answers:** How do I recover the project? What's the reading order? How do I work?
 
 **Referenced by:**
@@ -198,7 +200,7 @@ Architectural decisions are not considered complete until they are persisted in 
 **Answers:** How is the system organized? What are the major subsystems?
 
 **Referenced by:**
-- AI_HANDOVER.md (for orientation)
+- AI_ARCHITECT_GUIDE.md (for orientation)
 - SOURCE_OF_TRUTH.md (as canonical source)
 - GOVERNANCE.md (for overview rules)
 
@@ -262,7 +264,7 @@ Architectural decisions are not considered complete until they are persisted in 
 | **Overview** | | | | |
 | PROJECT_CONTEXT.md | ✅ | ❌ | Architect | Mission, vision, philosophy, quality goals |
 | OPERATIONAL_DASHBOARD.md | ✅ | ❌ | Implementer | Operational status, next tasks |
-| AI_ONBOARDING.md | ✅ | ❌ | Architect | AI handover methodology |
+| AI_ARCHITECT_GUIDE.md | ✅ | ❌ | Architect | AI handover methodology |
 | ARCHITECTURE_OVERVIEW.md | ✅ | ❌ | Architect | High-level system overview |
 | GOVERNANCE.md | ✅ | ❌ | Architect | Documentation governance rules |
 | SOURCE_OF_TRUTH.md | ✅ | ❌ | Architect | Canonical source references |
@@ -297,6 +299,16 @@ Architectural decisions are not considered complete until they are persisted in 
 - **Can be clarified:** Minor clarifications and formatting improvements
 - **Cannot be modified:** Behavioral changes, scope changes, requirement modifications
 
+### Documentation Growth Rule
+The documentation system is considered architecturally mature. New permanent documents must not be created merely to simplify a conversation or implementation session. A new permanent document may only be introduced if it owns a genuinely new responsibility that cannot be assigned to an existing document without violating the "one responsibility per document" principle.
+
+**Documentation does not grow by its own initiative. It evolves only when a real architectural need demonstrates that something is missing.**
+
+Default decision process for new requirements:
+1. Reuse an existing document.
+2. Extend an existing document if it remains within its responsibility.
+3. Create a new document only if neither of the previous options is architecturally correct.
+
 **For Active Documents (PROJECT_CONTEXT.md, OPERATIONAL_DASHBOARD.md, etc.):**
 
 - **Regularly updated:** As work progresses and status changes
@@ -324,7 +336,7 @@ Architectural decisions are not considered complete until they are persisted in 
 
 - **PROJECT_CONTEXT.md:** Mission, vision, philosophy updates
 - **OPERATIONAL_DASHBOARD.md:** Operational status updates
-- **AI_HANDOVER.md:** Onboarding methodology updates
+- **AI_ARCHITECT_GUIDET_GUIDE.md:** Onboarding methodology updates
 - **ARCHITECTURE_OVERVIEW.md:** High-level overview updates
 
 **Governance Documents:**
