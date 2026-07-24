@@ -12,7 +12,7 @@
 
 | Document | Purpose | Reading Order |
 |----------|---------|---------------|
-| **AI_ONBOARDING.md** | AI handover & continuity guide | 1 |
+| **AI_ARCHITECT_GUIDE.md** | AI handover & continuity guide | 1 |
 | **PROJECT_CONTEXT.md** | Project mission, vision, philosophy | 2 |
 | **OPERATIONAL_DASHBOARD.md** | Current status & next tasks | 3 |
 | **NEXT_SESSION.md** | Session initialization checklist | 4 |
@@ -181,7 +181,7 @@
 docs/
 ├── README.md                          [NEW - Documentation index]
 ├── continuity/                        [6 files - AI handover & governance]
-│   ├── AI_ONBOARDING.md                [Orientation guide]
+│   ├── AI_ARCHITECT_GUIDE.md                [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
 │   ├── OPERATIONAL_DASHBOARD.md       [Current status & next tasks]
 │   ├── NEXT_SESSION.md                [Session initialization]
@@ -277,7 +277,7 @@ docs/
 
 ### Reading Order for New Contributors
 
-1. **docs/continuity/AI_ONBOARDING.md** — Orientation & reading guide (5 min)
+1. **docs/continuity/AI_ARCHITECT_GUIDE.md** — Orientation & reading guide (5 min)
 2. **docs/continuity/PROJECT_CONTEXT.md** — Mission, vision, philosophy (10 min)
 3. **docs/continuity/OPERATIONAL_DASHBOARD.md** — Operational status & next task (10 min)
 4. **docs/continuity/NEXT_SESSION.md** — Session initialization (5 min)
@@ -288,7 +288,7 @@ docs/
 
 **Before starting work:**
 
-- [ ] Read `docs/continuity/AI_ONBOARDING.md`
+- [ ] Read `docs/continuity/AI_ARCHITECT_GUIDE.md`
 - [ ] Read `docs/continuity/PROJECT_CONTEXT.md`
 - [ ] Read `docs/continuity/OPERATIONAL_DASHBOARD.md`
 - [ ] Read `docs/continuity/NEXT_SESSION.md`

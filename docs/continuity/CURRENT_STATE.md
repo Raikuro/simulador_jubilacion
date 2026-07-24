@@ -147,7 +147,7 @@ Details:
 - CLI interface
 - Parallel execution (ProcessPoolExecutor)
 
-**Likely Timeline:** Q3–Q4 2024 (estimated)
+**Likely Timeline:** TBD
 
 ### v0.5+ Community & Extension
 
@@ -293,7 +293,7 @@ All dependencies are in place:
 
 ### Starting a New Session
 
-1. ✅ Read [AI_HANDOVER.md](AI_HANDOVER.md) (5 min)
+1. ✅ Read [AI_ARCHITECT_GUIDE.md](AI_ARCHITECT_GUIDE.md) (5 min)
 2. ✅ Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) (10 min)
 3. ✅ Read this document (10 min)
 4. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md) (5 min) ← Do this next

@@ -296,7 +296,7 @@ If it says "Approved & Frozen," treat it as law.
 - Never update milestone completion
 - Never update next tasks
 
-**AI_HANDOVER.md**
+**AI_ARCHITECT_GUIDE.md**
 - Only update onboarding methodology
 - Never update architectural content
 - Never update technical specifications
