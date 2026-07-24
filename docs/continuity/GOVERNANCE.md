@@ -16,6 +16,42 @@ This principle ensures documentation is authoritative, predictable, and maintain
 
 ---
 
+## 2. Documentation Governance Rules (Permanent)
+
+### AI Platform Independence
+Documentation must never depend on the capabilities of a particular AI platform. Every workflow must be expressed in terms of responsibilities rather than implementation details.
+
+GOOD:
+- Discover documentation.
+- Recover architectural context.
+- Verify canonical sources.
+
+BAD:
+- Upload this document.
+- Paste this prompt.
+- Start a specific AI conversation.
+
+### Explicit Document Metadata
+Every permanent documentation file must explicitly define:
+- Purpose
+- Owner
+- Canonical Responsibility
+- Update Policy
+- Status (Frozen / Mutable)
+
+### Documentation Growth Rule
+The documentation system is considered architecturally mature. New permanent documents must not be created merely to simplify a conversation or implementation session. A new permanent document may only be introduced if it owns a genuinely new responsibility that cannot be assigned to an existing document without violating the "one responsibility per document" principle.
+
+Default decision process for new requirements:
+1. Reuse an existing document.
+2. Extend an existing document if it remains within its responsibility.
+3. Create a new document only if neither of the previous options is architecturally correct.
+
+### Persistence of Decisions
+Architectural decisions are not considered complete until they are persisted in the project's canonical documentation. Assistant responses, conversations and temporary reasoning are never considered the source of truth. Whenever an architectural decision introduces future work, a roadmap item, a governance rule, a design constraint, or a project policy, the Architect must update the corresponding canonical document before considering the task complete.
+
+---
+
 ## 3. Documentation Convergence Rules
 
 - **One Responsibility per Document:** Each document must answer a unique, well-defined question.

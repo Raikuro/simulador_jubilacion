@@ -11,7 +11,7 @@
 
 This document is the **canonical guide for AI agents** operating in this project. It defines roles, authority levels, recovery workflows, and documentation responsibilities.
 
-This document must be attached at the beginning of every AI conversation to establish the operating contract.
+This guide is environment-agnostic. The Architect must establish project context before making architectural decisions. If repository access is available, context should be discovered directly by the Architect. Otherwise, the required documentation must be provided externally.
 
 ---
 
@@ -51,12 +51,17 @@ This document must be attached at the beginning of every AI conversation to esta
 
 ## 4. Working Workflow & Context Recovery
 
-**When starting a new session, follow this reading order for context recovery:**
+The Architect is responsible for discovering the current state.
 
-1. ✅ **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** (5 min): Mission, vision, and quality principles.
-2. ✅ **[OPERATIONAL_DASHBOARD.md](OPERATIONAL_DASHBOARD.md)** (10 min): High-level progress, test status, and quality gates.
-3. ✅ **[CURRENT_STATE.md](CURRENT_STATE.md)** (15 min): Detailed technical state of what has been implemented and frozen.
-4. ✅ **[NEXT_SESSION.md](NEXT_SESSION.md)** (5 min): The specific operational task for the current session.
+**If repository access exists:**
+1. Locate `DOCUMENTATION_TREE.md` at the project root.
+2. Use the tree to discover `PROJECT_CONTEXT.md`, `OPERATIONAL_DASHBOARD.md`, `CURRENT_STATE.md`, and `NEXT_SESSION.md`.
+3. Read the discovered documents to recover architectural context.
+
+**If repository access is limited:**
+1. Request the minimum necessary documentation from the human contributor.
+2. Prioritize `PROJECT_CONTEXT.md` and `NEXT_SESSION.md`.
+3. Once the context is established, resume normal operations.
 
 ---
 

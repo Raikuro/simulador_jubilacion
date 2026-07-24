@@ -272,3 +272,18 @@ Every sub-milestone in `v0.2` will strictly adhere to the mandatory 9-step devel
 ## 9. Next Immediate Step
 
 With `RESEARCH_LAYER_FINAL_ROADMAP.md` now frozen and authoritative, the next task is to produce the **Behavioural Specification** for `ResearchExecutor`.
+
+---
+
+## 2. Future Documentation Infrastructure (Post-v0.4)
+
+Objective: Implement automated documentation validation to ensure architectural consistency.
+
+*Note: These items are cross-cutting infrastructure work, temporarily tracked in this roadmap until a dedicated Project/Documentation Infrastructure roadmap is justified.*
+
+Tasks:
+- [ ] **Documentation Link Validation:** Automated check for broken internal references.
+- [ ] **Orphan Document Detection:** Validate all files in `docs/` are reachable from `DOCUMENTATION_TREE.md`.
+- [ ] **Canonical Source Validation:** Automated detection of duplicate canonical source references.
+- [ ] **Metadata Compliance:** Validate all permanent documents contain the mandatory metadata headers (Purpose, Owner, Responsibility, Update Policy, Status).
+- [ ] **Governance Consistency:** Automated checks for conflicting documentation rules.
