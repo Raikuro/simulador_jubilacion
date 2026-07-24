@@ -52,6 +52,9 @@ Default decision process for new requirements:
 ### Persistence of Decisions
 Architectural decisions are not considered complete until they are persisted in the project's canonical documentation. Assistant responses, conversations and temporary reasoning are never considered the source of truth. Whenever an architectural decision introduces future work, a roadmap item, a governance rule, a design constraint, or a project policy, the Architect must update the corresponding canonical document before considering the task complete.
 
+### Repository README Responsibility
+The repository README describes the project itself, not the current state of the project. Operational information (milestones, versions, implementation progress, quality metrics, next tasks, dates, etc.) belongs exclusively to operational documents.
+
 ---
 
 ## 3. Documentation Convergence Rules
