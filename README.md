@@ -11,9 +11,10 @@ To provide a transparent, testable, and extensible platform for academic-grade f
 - **Clean Architecture:** Separation of concerns between domain logic, research orchestration, and infrastructure.
 
 ## Documentation Navigation
-- **Human Contributors:** Start with `docs/continuity/HUMAN_CONTRIBUTOR_GUIDE.md`.
-- **AI Architects:** Start with `docs/continuity/AI_ARCHITECT_GUIDE.md` and follow the context recovery workflow.
-- **Project Index:** Consult `docs/DOCUMENTATION_TREE.md` for the full documentation map and `docs/continuity/SOURCE_OF_TRUTH.md` to locate specific information.
+- **Human Contributors** → `docs/continuity/HUMAN_CONTRIBUTOR_GUIDE.md`
+- **AI Contributors** → `docs/continuity/AI_ARCHITECT_GUIDE.md`
+- **Documentation** → `docs/DOCUMENTATION_TREE.md`
+- **Canonical Sources** → `docs/continuity/SOURCE_OF_TRUTH.md`
 
 ---
 
