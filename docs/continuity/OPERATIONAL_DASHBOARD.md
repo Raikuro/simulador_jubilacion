@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-23  
-**Milestone:** v0.2.3 Complete | v0.3 Ready to Start
+**Last Updated:** 2026-07-25  
+**Milestone:** v0.3 Complete | v0.4 Ready to Start
 
 ---
 
@@ -13,10 +13,10 @@
 
 - ✅ **v0.1 (Execution Engine)** — Complete, frozen, 200+ tests passing
 - ✅ **v0.2.3 (Research Infrastructure)** — Complete, frozen, 76+ tests passing
-- 📋 **v0.3 (Optimization Layer)** — Specifications approved, ready for implementation
-- 📅 **v0.4+ (Infrastructure & Deployment)** — Planned (SQLite, CLI, parallelization)
+- ✅ **v0.3 (Optimization Layer)** — Complete, frozen, implementations delivered
+- 📋 **v0.4 (Infrastructure & Deployment)** — Specifications approved, ready to implement
 
-**Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
+**Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical implementation target.
 
 ---
 
@@ -27,19 +27,19 @@
 | Milestone | Status | Tests | Key Components |
 |-----------|--------|-------|----------------|
 | **v0.1 Execution Engine** | ✅ Frozen | 200+ | SimulationRunner, 8-step pipeline |
-| **v0.2.3 Research Infrastructure** | ✅ Frozen | 76+ | ExperimentDefinition, CohortGenerator, ResearchExecutor, SWROptimizer |
+| **v0.2.3 Research Infrastructure** | ✅ Frozen | 76+ | ExperimentDefinition, CohortGenerator, ResearchExecutor |
+| **v0.3 Optimization Layer** | ✅ Frozen | — | SWROptimizer, StrategyComparator, aggregators |
 
 ### Active Milestone (Ready to Start)
 
 | Milestone | Status | Specifications |
 |-----------|--------|----------------|
-| v0.3 Optimization Layer | ✅ Complete | 3 approved |
+| v0.4 Infrastructure & Deployment | ✅ Ready | 3 frozen (Persistence, CLI, Parallel) |
 
 ### Planned Milestones (Future)
 
 | Milestone | Status | Includes |
 |-----------|--------|----------|
-| **v0.4 Infrastructure** | 📅 Planned | SQLite, CSV, CLI, parallel execution |
 | **v0.5+ Extensions** | 🎯 Future | Tax modeling, behavioral adaptation, multi-currency |
 
 ---
@@ -47,6 +47,14 @@
 ## Immediate Implementation Task
 
 *See `NEXT_SESSION.md` for the current canonical implementation target.*
+
+**v0.4 Implementation Phases:**
+
+1. **Phase 1:** Parallel execution engine
+2. **Phase 2:** SQLite persistence layer
+3. **Phase 3:** CLI interface
+4. **Phase 4:** Integration & acceptance tests
+
 
 ---
 
@@ -67,20 +75,21 @@ Type Checking:   0 mypy errors ✅
 
 - **v0.1 Engine:** 100% specification compliance ✅
 - **v0.2.3 Research:** 100% specification compliance ✅
-- **v0.3 Optimization:** Specifications approved, ready to implement ✅
+- **v0.3 Optimization:** 100% specification compliance ✅
+- **v0.4 Infrastructure:** Specifications approved, ready to implement ✅
 
 ### Quality Gates
 
-**Before starting v0.3 implementation:**
+**Before starting v0.4 implementation:**
 
 ✅ **Pre-implementation checklist:**
 
-- [x] All v0.3 specifications approved & marked "Approved & Frozen"
-- [x] Architecture review completed (see reviews section)
+- [x] All v0.4 specifications approved & marked "Approved & Frozen"
+- [x] Architecture review completed
 - [x] Public API contracts defined
-- [x] Dependencies verified (all depend on frozen v0.1 & v0.2.3)
+- [x] Dependencies verified (depends on frozen v0.1, v0.2.3, v0.3)
 - [x] Test infrastructure ready
-- [x] Integration points identified
+- [x] Atomic commit policy established for phase completions
 
 **Code Quality Standards (No Exceptions):**
 
@@ -93,7 +102,7 @@ Every implementation must:
 - ✅ Maintain immutability for domain objects
 - ✅ Have comprehensive docstrings
 - ✅ Follow Clean Architecture layer boundaries
-- ✅ Include architecture review comment linking to spec
+- ✅ Create atomic commit ONLY after phase exit gate validation passes
 
 ---
 
@@ -101,7 +110,7 @@ Every implementation must:
 
 ### Current Blockers
 
-**NONE** — v0.3 is ready to start immediately.
+**NONE** — v0.4 is ready to start immediately.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
@@ -217,8 +226,9 @@ Before starting work each session:
 1. ✅ You've read this (OPERATIONAL_DASHBOARD.md)
 2. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md)
 3. ⬜ Run full test suite: `pytest tests/ -v`
-4. ⬜ Read SWROptimizer specification: `docs/specifications/optimization/RESEARCH_SWROPTIMIZER_SPECIFICATION.md`
-5. ⬜ Start implementation: `src/research/optimization/swr_optimizer.py`
+4. ⬜ Read Parallel Execution specification: `docs/specifications/infrastructure/PARALLEL_EXECUTION_SPECIFICATION.md`
+5. ⬜ Read Handoff package: `docs/roadmaps/milestones/V0.4_IMPLEMENTATION_HANDOFF.md`
+6. ⬜ Start Phase 1 implementation (`ParallelExecutor`) and follow atomic commit policy upon phase exit gate validation
 
 ---
 

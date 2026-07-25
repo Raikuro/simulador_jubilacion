@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-23  
-**Milestone:** v0.2.3 Complete | v0.3 Ready to Start
+**Last Updated:** 2026-07-25  
+**Milestone:** v0.3 Complete | v0.4 Ready to Start
 
 ---
 
@@ -13,8 +13,8 @@
 
 - ✅ **v0.1 (Execution Engine)** — Complete, frozen, 200+ tests passing
 - ✅ **v0.2.3 (Research Infrastructure)** — Complete, frozen, 76+ tests passing
-- 📋 **v0.3 (Optimization Layer)** — Specifications approved, ready for implementation
-- 📅 **v0.4+ (Infrastructure & Deployment)** — Planned (SQLite, CLI, parallelization)
+- ✅ **v0.3 (Optimization Layer)** — Complete, frozen, all implementations delivered
+- 📋 **v0.4 (Infrastructure & Deployment)** — Architecture approved, ready for implementation (SQLite, CLI, parallelization)
 
 **Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
@@ -91,63 +91,96 @@
 
 ---
 
-## 2. Active Milestone (Ready to Start)
+## 2. Completed Milestone (v0.3 — Frozen)
 
-### v0.3 Optimization & Analytics Layer 📋 READY
+### v0.3 Optimization & Analytics Layer ✅ FROZEN
 
-**Status:** Specifications approved, architecture frozen, implementation pending
+**Status:** Complete, frozen APIs, production-ready
 
-**What it will do:**
-- SWROptimizer — Binary search for safe withdrawal rates
-- StrategyComparator — Comparative strategy analysis (Architecture Frozen; Implementation Pending)
-- ResultAggregator — Statistical result synthesis
+**What it does:**
+- SWROptimizer — Binary search algorithm for safe withdrawal rates
+- StrategyComparator — Comparative strategy analysis and metrics
+- ResultAggregator — Statistical result synthesis (quantiles, success rates)
 - ResearchReproducibilityManager — Audit trails & verification
 
-**Key Specifications:**
-- [RESEARCH_SWROPTIMIZER_SPECIFICATION.md](../specifications/optimization/RESEARCH_SWROPTIMIZER_SPECIFICATION.md)
-- [RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md](../specifications/optimization/RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md)
-- [RESEARCH_V0.3_SPECIFICATION.md](../specifications/optimization/RESEARCH_V0.3_SPECIFICATION.md)
+**Quality Metrics:**
+- 100% specification compliance
+- All acceptance tests passing
+- Implementation review approved
+- All public APIs frozen
+- 0 mypy errors
+
+**Key Components:**
+- `SWROptimizer` — Iterative numerical solver
+- `StrategyComparator` — Multi-strategy comparative analysis
+- `ResultAggregator` — Statistical aggregation
+- `ResearchReproducibilityManager` — Provenance tracking
+
+**Frozen Public APIs:**
+- `SWROptimizer` — [docs/architecture/api/RESEARCH_SWROPTIMIZER_PUBLIC_API_REVIEW.md](../architecture/api/RESEARCH_SWROPTIMIZER_PUBLIC_API_REVIEW.md)
+- `StrategyComparator` — [docs/specifications/optimization/RESEARCH_STRATEGYCOMPARATOR_API_CONTRACT.md](../specifications/optimization/RESEARCH_STRATEGYCOMPARATOR_API_CONTRACT.md)
 
 **Architectural Reviews:**
 - [RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md](../architecture/reviews/RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md)
 - [RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md](../architecture/reviews/RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md)
 
-**Current Implementation Task (IMMEDIATE NEXT STEP):**
-
-**→ Implement `SWROptimizer` component**
-
-Location: `src/research/optimization/swr_optimizer.py`
-
-Details:
-- Binary search for safe withdrawal rate given:
-  - Initial capital
-  - Annual withdrawal rate to test
-  - Cohort of market years
-  - Withdrawal policy
-- Returns: Withdrawal rate that sustains portfolio for full period
-- Specification: See [RESEARCH_SWROPTIMIZER_SPECIFICATION.md](../specifications/optimization/RESEARCH_SWROPTIMIZER_SPECIFICATION.md)
-- Tests: Must validate binary search correctness & edge cases
-
-**Why this component first?**
-- Foundation for all other v0.3 work
-- Independent of other v0.3 components
-- Binary search algorithm well-defined
-- Immediate business value
+**Important:** DO NOT modify v0.3 without explicit architect approval.
 
 ---
 
-## 3. Planned Milestones (Future)
+## 3. Active Milestone (Ready to Start)
 
-### v0.4 Infrastructure & Deployment 📅 PLANNED
+### v0.4 Infrastructure & Deployment 📋 READY
 
-**Status:** Not yet started
+**Status:** Architecture approved and frozen, specifications defined, implementation pending
 
-**Includes:**
-- SQLite persistence layer
-- CSV import/export
-- CLI interface
-- Parallel execution (ProcessPoolExecutor)
+**What it will do:**
+- **SQLite Persistence** — Store experiment definitions, research plans, and results
+- **CSV/JSON Export** — Export results for downstream analysis
+- **CLI Interface** — Command-line tool for study execution
+- **Parallel Execution** — Multi-core support via ProcessPoolExecutor
 
+**Key Specifications (Approved & Frozen):**
+- [INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md](../specifications/infrastructure/INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md)
+- [CLI_INTERFACE_SPECIFICATION.md](../specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md)
+- [PARALLEL_EXECUTION_SPECIFICATION.md](../specifications/infrastructure/PARALLEL_EXECUTION_SPECIFICATION.md)
+
+**Architectural Document:**
+- [INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md](./milestones/INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md)
+
+**Current Status (Ready for Implementation):**
+
+All architectural decisions frozen. Three behavioral specifications provide complete implementation contracts:
+
+1. **Parallel Execution**: Work distribution, determinism guarantees, error handling
+2. **Persistence**: SQLite schema, serialization contracts, transaction semantics
+3. **CLI**: Command syntax, argument contracts, error codes, help text
+
+**Key Implementation Phases:**
+
+Phase 1 (Parallel Execution):
+- ProcessPoolExecutor integration
+- Determinism verification tests
+- Error isolation and progress tracking implementation
+
+Phase 2 (Persistence):
+- SQLite adapter implementation
+- Schema creation and indexing (informed by Phase 1 output structures)
+- Round-trip serialization tests
+
+Phase 3 (CLI):
+- Command implementations
+- Output formatting
+- Help text and error messages
+
+Phase 4 (Integration):
+- End-to-end workflow tests
+- Performance validation
+- Documentation completion
+
+---
+
+## 4. Planned Milestones (Future)
 **Likely Timeline:** TBD
 
 ### v0.5+ Community & Extension
