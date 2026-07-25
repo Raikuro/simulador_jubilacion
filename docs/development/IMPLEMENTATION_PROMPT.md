@@ -318,6 +318,8 @@ Commits should be:
 
 A commit should represent exactly one logical change.
 
+For implementation milestone work, follow the atomic milestone commit policy in `docs/continuity/AI_ARCHITECT_GUIDE.md`. Do not create intermediate commits for milestone implementation tasks; the final commit may only be made after the milestone is fully complete and validated.
+
 Never mix unrelated changes.
 
 ---

@@ -45,6 +45,30 @@ The architectural workstream is complete ONLY after:
 ### Implementation Workstream
 Implementation work MUST always start from a frozen architectural package. Implementation tasks are tracked in `NEXT_SESSION.md`. Architectural and implementation commits must remain separate.
 
+### Atomic Commit Policy
+During the implementation of a milestone, NO intermediate commits may be created. The mandatory workflow is:
+1. Implement the entire milestone.
+2. Execute every required validation, self-review, traceability audit, and test suite.
+3. If any architectural blocker is discovered during implementation:
+   - stop implementation immediately,
+   - DO NOT create any commit,
+   - produce an Architecture Blocking Report,
+   - wait for the Architect to publish an updated Approved & Frozen architectural package.
+4. Only after the implementation is fully complete and every acceptance criterion has been satisfied:
+   - perform the final implementation audit,
+   - confirm no unresolved deviations remain,
+   - create ONE atomic commit containing the complete implementation of the milestone.
+
+The following are explicitly prohibited as standalone commits:
+- partial implementation progress,
+- intermediate fixes,
+- additional acceptance tests,
+- small corrections,
+- review-driven adjustments,
+- implementation refinements discovered before final acceptance.
+
+All such changes must be incorporated into the single final implementation commit.
+
 ---
 
 ## 3. Decision Authority
@@ -375,6 +399,7 @@ If it says "Approved & Frozen," treat it as law.
 - Debug output
 - Build artifacts
 - Environment-specific files
+- Partial implementation progress or intermediate fixes created before the milestone is complete
 
 ### Commit Message Format
 

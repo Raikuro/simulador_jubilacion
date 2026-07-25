@@ -40,4 +40,5 @@ When starting a session with a new AI, you must define its operational mode:
 ## 4. Operational Governance
 - **Session Recovery:** If context is lost, repeat the Section 1 initialization.
 - **Commit/Milestone Boundaries:** All work must be completed in atomic, verified commits. Architectural decisions and milestone completions must be persisted in canonical documentation before the task is considered finished.
+- **Atomic milestone commit policy:** Implementation Engineers must not create intermediate commits during milestone execution. The final commit may only be created after the milestone is fully implemented, validated, self-reviewed, audited, and accepted.
 - **Truth Source:** This documentation is the source of truth—not your conversation history. If you agree on a change during a session, ensure the AI updates the canonical documentation immediately.

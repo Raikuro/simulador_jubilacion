@@ -50,6 +50,8 @@ refactor/pipeline
 
 Commits should be small and atomic.
 
+For implementation milestone work, the atomic milestone commit policy in `docs/continuity/AI_ARCHITECT_GUIDE.md` takes precedence: do not create intermediate commits during the execution of a single milestone.
+
 Examples:
 
 Implement Money value object
