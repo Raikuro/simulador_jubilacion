@@ -239,7 +239,7 @@ docs/
 │       ├── RESEARCH_LAYER_ROADMAP.md
 │       └── EXECUTION_ENGINE_COMPLETION.md
 │
-├── reports/                           [9 files - Implementation summaries]
+├── reports/                           [10 files - Implementation summaries]
 │   ├── CLEANUP_SUMMARY.md
 │   ├── SIMULATION_RUNNER_IMPLEMENTATION_REPORT.md
 │   ├── COHORT_GENERATOR_IMPLEMENTATION_SUMMARY.md
@@ -248,7 +248,8 @@ docs/
 │   ├── STATISTICS_BUILDER_INPUT_ANALYSIS.md
 │   ├── MARKET_EVOLUTION_IMPLEMENTATION_GUIDANCE.md
 │   ├── IMPLEMENTATION_PHASE_GUIDANCE.md
-│   └── RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md
+│   ├── RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md
+│   └── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
 │
 ├── development/                       [3 files - Dev guidelines]
 │   ├── ARCHITECTURE_OVERVIEW.md

@@ -7,6 +7,7 @@ The component accepts either live strategy evaluators or precomputed evaluation 
 
 ## 2. Core Interface
 ```python
+from decimal import Decimal
 from typing import Literal, Mapping, Protocol, Sequence, Union
 from dataclasses import dataclass
 
@@ -21,7 +22,7 @@ class EvaluationResult:
     """Evaluation result for a strategy label."""
 
     label: str
-    metrics: Mapping[str, float]
+    metrics: Mapping[str, Decimal]
     provenance: Mapping[str, Sequence[str]]
 
 class Evaluator(Protocol):
@@ -49,11 +50,26 @@ Must be either a non-empty ordered collection of EvaluationResult values
 or an Evaluator capable of producing them on demand.
 """
 
+## Provenance and grouping semantics
+- Every `EvaluationResult.provenance` value is a mapping from canonical
+  provenance fields to one or more upstream provenance identifiers.
+- When `group_by="cohort"`, the comparator groups results by the canonical
+  cohort identifier found in `provenance["cohort"]`.
+- When `group_by="parameter_config"`, the comparator groups results by the
+  canonical parameter configuration identifier found in
+  `provenance["parameter_config"]`.
+- When `group_by="global"`, the comparator emits a single group keyed by
+  the canonical identifier `"global"`.
+- If the selected provenance field is missing or contains zero identifiers,
+  the comparator raises `InvalidInputError`.
+- Upstream evaluators should expose exactly one canonical identifier for each
+  required provenance field when grouping by `cohort` or `parameter_config`.
+
 @dataclass(frozen=True)
 class StrategyComparisonReport:
     """Immutable report containing aggregated metrics, ranking, provenance, and diagnostics."""
 
-    aggregated_metrics: Mapping[str, Mapping[str, Mapping[str, float]]]
+    aggregated_metrics: Mapping[str, Mapping[str, Mapping[str, Decimal]]]
     ranking: Mapping[str, Sequence[str]]
     provenance: Mapping[str, Mapping[str, Sequence[str]]]
     diagnostics: Mapping[str, Mapping[str, str]]
@@ -97,4 +113,5 @@ class StrategyComparator:
 - **Fail-Fast:** Invalid `strategy_map`, metrics, or grouping selection trigger immediate `InvalidInputError`.
 - **Evaluation Errors:** Any evaluator failure is wrapped and propagated as `EvaluationError`.
 - **Grouped Outputs:** `aggregated_metrics`, `ranking`, `provenance`, and `diagnostics` are keyed by canonical grouping keys.
+- **Numeric Semantics:** Metric aggregation and reported metric values use `Decimal` arithmetic. Floating-point aggregation semantics are not authorized by this frozen contract.
 EOF

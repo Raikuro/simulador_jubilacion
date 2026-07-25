@@ -24,3 +24,13 @@ The `StrategyComparator` is designed as a pure analytical consumer component in 
 
 ## 5. Decision
 The architecture is APPROVED and FROZEN for implementation.
+
+### Canonical grouping and numeric semantics
+- `StrategyComparator` groups results by explicit provenance fields.
+  - `group_by="cohort"` uses the canonical `cohort` provenance identifier.
+  - `group_by="parameter_config"` uses the canonical `parameter_config` provenance identifier.
+  - `group_by="global"` collapses all results under the single canonical key
+    `"global"`.
+- Metric aggregation and report values use `Decimal` arithmetic for research-grade
+  precision. Floating-point aggregation semantics are not authorized by this
+  frozen design.

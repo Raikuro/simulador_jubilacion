@@ -36,6 +36,18 @@ Inputs
   overridable by the caller);
 - an explicit deterministic ranking rule (primary metric and tie-breakers).
 
+Provenance and grouping semantics
+- `EvaluationResult.provenance` must expose canonical identifiers for upstream
+  provenance in the separate fields `cohort` and `parameter_config`.
+- `group_by="cohort"` groups results by the canonical cohort identifier from
+  `provenance["cohort"]`.
+- `group_by="parameter_config"` groups results by the canonical parameter
+  configuration identifier from `provenance["parameter_config"]`.
+- `group_by="global"` produces a single canonical group keyed by
+  `"global"`.
+- Missing or empty provenance for the selected grouping dimension is invalid and
+  must raise `InvalidInputError`.
+
 Outputs
 - an immutable `StrategyComparisonReport` containing:
   - per-label aggregated metrics for each group;
