@@ -15,22 +15,35 @@ This guide is environment-agnostic. The Architect must establish project context
 
 ---
 
-## 2. AI Roles
+## 2. AI Roles & Lifecycle
 
 ### Architect (ChatGPT / LLM)
 **Responsibilities:**
 - Propose architectural designs and design trade-offs.
-- Write behavioral specifications and acceptance criteria.
-- Perform architecture reviews.
-- Approve/Freeze specifications.
-- Make final calls on ambiguities.
+- Write behavioral specifications, architecture reviews, and public API contracts.
+- Approve/Freeze specifications and manage the architectural workstream.
 
 ### Implementer (The Active Agent)
 **Responsibilities:**
-- Implement specifications exactly as defined.
-- Write tests to ensure specification compliance.
-- Refactor for clarity and performance (never behavior).
-- Raise questions immediately if specifications are unclear.
+- Implement frozen specifications exactly as defined.
+- Write tests to ensure compliance.
+- Perform an *Implementation Review* after coding.
+- Separate architectural and implementation workstreams.
+
+---
+
+## 3. The Workstream Lifecycle
+
+### Architectural Workstream
+The architectural workstream is complete ONLY after:
+- Behavioural specification is Approved & Frozen.
+- Architecture review is Approved & Frozen.
+- Public API contract is Approved & Frozen.
+- Canonical documentation is updated.
+- An atomic architectural commit is created.
+
+### Implementation Workstream
+Implementation work MUST always start from a frozen architectural package. Implementation tasks are tracked in `NEXT_SESSION.md`. Architectural and implementation commits must remain separate.
 
 ---
 
@@ -413,7 +426,7 @@ Co-authored-by: Chief Architect <architect@project.com>
 3. ⬜ Read [OPERATIONAL_DASHBOARD.md](OPERATIONAL_DASHBOARD.md)
 4. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md)
 5. ⬜ Run tests: `pytest tests/ -v`
-6. ⬜ Find your task in [OPERATIONAL_DASHBOARD.md](OPERATIONAL_DASHBOARD.md)
+6. ⬜ Find your task in [NEXT_SESSION.md](NEXT_SESSION.md)
 7. ⬜ Read corresponding specification
 8. ⬜ Start implementation
 

@@ -14,7 +14,7 @@
 |----------|---------|---------------|
 | **AI_ARCHITECT_GUIDE.md** | AI handover & continuity guide | 1 |
 | **PROJECT_CONTEXT.md** | Project mission, vision, philosophy | 2 |
-| **OPERATIONAL_DASHBOARD.md** | Current status & next tasks | 3 |
+| **OPERATIONAL_DASHBOARD.md** | Operational health & metrics | 3 |
 | **NEXT_SESSION.md** | Session initialization checklist | 4 |
 | **SESSION_COMPLETION_REPORT.md** | Session completion reports | 5 |
 | **GOVERNANCE.md** | Documentation governance rules | Reference |
@@ -183,7 +183,7 @@ docs/
 ├── continuity/                        [6 files - AI handover & governance]
 │   ├── AI_ARCHITECT_GUIDE.md                [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
-│   ├── OPERATIONAL_DASHBOARD.md       [Current status & next tasks]
+│   ├── OPERATIONAL_DASHBOARD.md       [Operational health & metrics]
 │   ├── NEXT_SESSION.md                [Session initialization]
 │   ├── SESSION_COMPLETION_REPORT.md   [Session completion]
 │   ├── GOVERNANCE.md                  [Documentation governance]
@@ -279,7 +279,7 @@ docs/
 
 1. **docs/continuity/AI_ARCHITECT_GUIDE.md** — Orientation & reading guide (5 min)
 2. **docs/continuity/PROJECT_CONTEXT.md** — Mission, vision, philosophy (10 min)
-3. **docs/continuity/OPERATIONAL_DASHBOARD.md** — Operational status & next task (10 min)
+3. **docs/continuity/OPERATIONAL_DASHBOARD.md** — Operational health & metrics (10 min)
 4. **docs/continuity/NEXT_SESSION.md** — Session initialization (5 min)
 5. **docs/README.md** — Development setup (10 min)
 6. **docs/development/ARCHITECTURE_OVERVIEW.md** — System design walkthrough
@@ -293,7 +293,7 @@ docs/
 - [ ] Read `docs/continuity/OPERATIONAL_DASHBOARD.md`
 - [ ] Read `docs/continuity/NEXT_SESSION.md`
 - [ ] Run tests: `pytest tests/ -v`
-- [ ] Find your task in `docs/continuity/OPERATIONAL_DASHBOARD.md`
+- [ ] Find your task in `docs/continuity/NEXT_SESSION.md`
 - [ ] Read corresponding specification
 - [ ] Start implementation
 

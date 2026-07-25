@@ -18,12 +18,16 @@ When starting a session with a new AI, you must define its operational mode:
 ---
 
 ## 2. Collaboration Workflow & Roles
+
 - **Roles:**
-  - **AI Architect:** Responsible for architectural integrity, specification definition, and design rationales.
+  - **AI Architect:** Responsible for the *Architectural Workstream* (specification, review, API contracts).
+  - **Implementation Engineer:** Responsible for the *Implementation Workstream* (coding, testing, review).
   - **Human Stakeholder:** Provides strategic direction, approves plans, and supervises milestone completion.
-  - **Implementation Engineer:** Executes specifications exactly.
+
 - **The Responsibility Cycle:**
-  1. Initialization (Set context) → 2. Specification (Architect defines) → 3. Implementation (Engineer executes) → 4. Validation (Tests) → 5. Approval (Architect confirms).
+  1. **Architectural Workstream:** Architect defines specifications, review, and API contracts. Approved & Frozen. Atomic architectural commit.
+  2. **Implementation Workstream:** Implementation Engineer executes against the frozen package. Atomic implementation commit.
+  3. **Validation:** Implementation Review & testing.
 
 ---
 

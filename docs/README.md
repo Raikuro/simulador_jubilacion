@@ -13,8 +13,8 @@ Consult **[docs/DOCUMENTATION_TREE.md](DOCUMENTATION_TREE.md)** for the complete
 Choose your role to get started:
 
 - **Human Contributor:** Read **[docs/continuity/HUMAN_CONTRIBUTOR_GUIDE.md](continuity/HUMAN_CONTRIBUTOR_GUIDE.md)** for workflow and collaboration procedures.
-- **AI Architect:** Read **[docs/continuity/AI_ARCHITECT_GUIDE.md](continuity/AI_ARCHITECT_GUIDE.md)** and follow the context recovery workflow.
-- **Implementation Engineer:** Consult **[docs/continuity/CURRENT_STATE.md](continuity/CURRENT_STATE.md)** and **[docs/continuity/NEXT_SESSION.md](continuity/NEXT_SESSION.md)** for operational tasks.
+- **AI Architect:** Read **[docs/continuity/AI_ARCHITECT_GUIDE.md](continuity/AI_ARCHITECT_GUIDE.md)** to manage the *Architectural Workstream*.
+- **Implementation Engineer:** Consult **[docs/continuity/CURRENT_STATE.md](continuity/CURRENT_STATE.md)** and **[docs/continuity/NEXT_SESSION.md](continuity/NEXT_SESSION.md)** to execute the *Implementation Workstream*.
 
 ---
 

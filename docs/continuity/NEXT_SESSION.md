@@ -57,10 +57,7 @@ mypy: **0 errors**.
 
 ## Exact Next Task
 
-Per `RESEARCH_LAYER_FINAL_ROADMAP.md` (authoritative), continue the mandatory workflow for Sub-Milestone `v0.3` (Optimization & Strategy Analysis). The next required activity is:
+Per `RESEARCH_LAYER_FINAL_ROADMAP.md` (authoritative), continue the mandatory workflow for Sub-Milestone `v0.3` (Optimization & Strategy Analysis). The architectural package for `StrategyComparator` (Behavioural Specification, Architecture Review, Public API Contract) is complete, approved, and frozen.
 
-1. Produce the Behavioural Specification for `v0.3` covering `StrategyComparator`.
-2. Begin implementation of `StrategyComparator`.
-
-Do not begin architecture, API, or implementation work for `StrategyComparator` until the Behavioural Specification is reviewed and approved.
+The next required activity is to begin the implementation of `StrategyComparator`.
 

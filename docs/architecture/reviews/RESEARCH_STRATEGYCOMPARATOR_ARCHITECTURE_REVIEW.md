@@ -9,12 +9,12 @@ The `StrategyComparator` is designed as a pure analytical consumer component in 
 - **Extensibility:** The component consumes abstract evaluation artifacts, adhering to the Open/Closed principle by allowing future evaluation strategies to be added without modifying the comparator core.
 
 ## 3. Dependency Analysis
-- **Upstream:** `ResultAggregator`, `ExperimentRun`.
+- **Upstream:** canonical `ExperimentRun` from the SimulationExecutor public API and generic evaluation artifact sources.
 - **Downstream:** Visualization components (external to the research library).
 - **Invariants:** The comparator operates on immutable `StrategyComparisonReport`.
 
 ## 4. Architectural Self-Review
-- **API Quality:** The API is structured around explicit grouping and ranking rules, ensuring high usability for research scripts.
+- **API Quality:** The API is structured around explicit grouping and ranking rules, and accepts both precomputed evaluation result collections and abstract evaluators, ensuring high usability for research scripts.
 - **Naming:** Follows the established domain language.
 - **Separation of Concerns:** Rigidly adheres to pure analytical logic.
 - **Determinism:** Guaranteed by the immutable, artifact-driven design.

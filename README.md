@@ -12,9 +12,17 @@ To provide a transparent, testable, and extensible platform for academic-grade f
 
 ## Documentation Navigation
 - **Human Contributors** → `docs/continuity/HUMAN_CONTRIBUTOR_GUIDE.md`
-- **AI Contributors** → `docs/continuity/AI_ARCHITECT_GUIDE.md`
-- **Documentation** → `docs/DOCUMENTATION_TREE.md`
+- **AI Architects** → `docs/continuity/AI_ARCHITECT_GUIDE.md`
+- **Implementation Engineers** → `docs/continuity/NEXT_SESSION.md` & `docs/continuity/CURRENT_STATE.md`
+- **Documentation Tree** → `docs/DOCUMENTATION_TREE.md`
 - **Canonical Sources** → `docs/continuity/SOURCE_OF_TRUTH.md`
+
+---
+
+## Development Lifecycle
+The framework strictly separates the **Architectural Workstream** and **Implementation Workstream**.
+- **Architectural:** Ends only when specifications, reviews, and API contracts are Approved, Frozen, and committed atomically.
+- **Implementation:** Starts only from a frozen architectural package, tracked via `docs/continuity/NEXT_SESSION.md`.
 
 ---
 

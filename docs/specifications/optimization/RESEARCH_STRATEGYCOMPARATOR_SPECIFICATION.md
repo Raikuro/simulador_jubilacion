@@ -17,17 +17,21 @@ execution beyond calling an abstract evaluator boundary.
 
 - Ownership: `StrategyComparator` belongs to the `v0.3` consumer/analysis layer.
 - It consumes evaluation artefacts via an abstract `Evaluator` contract or via
-  precomputed `ExperimentRun`/`EvaluationResult` inputs. It must not assume any
-  concrete evaluator implementation.
+  precomputed `EvaluationResult` collections derived from an upstream
+  `ExperimentRun` contract. It must not assume any concrete evaluator
+  implementation.
 - Responsibilities such as storage, presentation, or distributed orchestration
   are out-of-scope and belong to infrastructure or higher-level orchestration.
 
 ## Observable Behavioural Contract
 
 Inputs
-- a mapping from `label` -> non-empty ordered collection of evaluation
-  artefacts or to an `Evaluator` capable of producing them on demand;
-- a grouping dimension selection (e.g., `parameter_config`, `cohort`, or `global`);
+- a mapping from `label` to either:
+  - a non-empty ordered collection of `EvaluationResult` values; or
+  - an abstract `Evaluator` capable of producing a non-empty ordered collection
+    of `EvaluationResult` values on demand;
+- a grouping dimension selection with allowed values `'parameter_config'`,
+  `'cohort'`, or `'global'`;
 - an explicit list of metrics to compute (defaults may be provided but must be
   overridable by the caller);
 - an explicit deterministic ranking rule (primary metric and tie-breakers).

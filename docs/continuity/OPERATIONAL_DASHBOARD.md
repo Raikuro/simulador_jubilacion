@@ -16,7 +16,7 @@
 - 📋 **v0.3 (Optimization Layer)** — Specifications approved, ready for implementation
 - 📅 **v0.4+ (Infrastructure & Deployment)** — Planned (SQLite, CLI, parallelization)
 
-**Immediate Next Task:** Begin implementing the SWROptimizer component using binary search algorithm.
+**Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
 ---
 
@@ -27,13 +27,13 @@
 | Milestone | Status | Tests | Key Components |
 |-----------|--------|-------|----------------|
 | **v0.1 Execution Engine** | ✅ Frozen | 200+ | SimulationRunner, 8-step pipeline |
-| **v0.2.3 Research Infrastructure** | ✅ Frozen | 76+ | ExperimentDefinition, CohortGenerator, ResearchExecutor |
+| **v0.2.3 Research Infrastructure** | ✅ Frozen | 76+ | ExperimentDefinition, CohortGenerator, ResearchExecutor, SWROptimizer |
 
 ### Active Milestone (Ready to Start)
 
-| Milestone | Status | Specifications | Next Task |
-|-----------|--------|----------------|-----------|
-| v0.3 Optimization Layer | ✅ Complete | 3 approved | StrategyComparator |
+| Milestone | Status | Specifications |
+|-----------|--------|----------------|
+| v0.3 Optimization Layer | ✅ Complete | 3 approved |
 
 ### Planned Milestones (Future)
 
@@ -46,27 +46,7 @@
 
 ## Immediate Implementation Task
 
-### SWROptimizer Component
-
-**Location:** `src/research/optimization/swr_optimizer.py`
-
-**Specification:** `docs/specifications/optimization/RESEARCH_SWROPTIMIZER_SPECIFICATION.md`
-
-**Algorithm:** Binary search for safe withdrawal rates
-
-**Given:**
-- Initial capital
-- Annual withdrawal rate to test
-- Cohort of market years
-- Withdrawal policy
-
-**Returns:** Withdrawal rate that sustains portfolio for full period
-
-**Why this component first?**
-- Foundation for all other v0.3 work
-- Independent of other v0.3 components
-- Binary search algorithm well-defined
-- Immediate business value
+*See `NEXT_SESSION.md` for the current canonical implementation target.*
 
 ---
 
