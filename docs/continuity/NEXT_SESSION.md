@@ -1,8 +1,8 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
 **Previous Session:** 2026-07-27 (P3.1 Concrete Persistence Codecs Complete)
-**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Package P3.1 (Concrete Persistence Codecs) complete. Package P3.2 (Minimal Application Layer) is next.
-**Milestone Status:** v0.4 Phase 1 committed as `dda449a`. Phase 2 committed as `128bb54`. P3.1 committed as `<P3.1_COMMIT_HASH>`.
+**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Package P3.1 (Concrete Persistence Codecs) complete. Package P3.2 (Persistence Context Factory & Dataset Loading) is next.
+**Milestone Status:** v0.4 Phase 1 committed as `dda449a`. Phase 2 committed as `128bb54`. P3.1 committed as `efbeb61`.
 **Next Phase (authoritative):** Per `V0.4_IMPLEMENTATION_HANDOFF.md`, Phase 3 is the CLI Interface implementation. Phase 3 is subdivided into sequential packages; the next package is defined in `V0.4_P3.2_APPLICATION_HANDOFF.md` (to be created).
 
 ---
@@ -63,7 +63,7 @@ Phase 3 is implemented as a sequence of small, independently reviewable packages
 | Package | Objective | Status |
 |---------|-----------|--------|
 | **P3.1** | Concrete Persistence Codecs | ✅ Done |
-| P3.2 | Minimal Application Layer | ⬜ Next |
+| P3.2 | Persistence Context Factory & Dataset Loading | ⬜ Next |
 | P3.3 | CLI Entry Point & Framework | ⬜ |
 | P3.4 | `validate` command | ⬜ |
 | P3.5 | `run` command | ⬜ |
@@ -116,17 +116,21 @@ Full codebase mypy (`src/ --strict`): 21 pre-existing errors in engine/research 
 
 ## Exact Next Task
 
-Implement **Package P3.2: Minimal Application Layer**.
+Implement **Package P3.2: Persistence Context Factory & Dataset Loading**.
 
-P3.2 provides a minimal application-layer factory that constructs a fully-wired `PersistenceReconstructionContext` with concrete codecs, including file-based dataset loading for `DefaultDatasetResolver`. It also addresses TD-2 from the P3.1 technical debt list.
+P3.2 completes the persistence infrastructure by providing:
+1. **File-based dataset loading** — `DefaultDatasetResolver.from_data_dir()` loads `Dataset` objects from JSON files, addressing P3.1 TD-2.
+2. **`create_persistence_context()`** — a single-responsibility factory that produces a fully wired `PersistenceReconstructionContext`.
 
-**Scope (from P3.1 architectural review):**
-1. Application-layer factory — function or class that creates a wired `PersistenceReconstructionContext`
-2. Data-file loading for `DefaultDatasetResolver` (JSON-based dataset loader)
-3. No CLI code, no configuration, no P3.1 codec changes
-4. Keep the package small and independently reviewable; split into sub-packages if it grows beyond comfort
+This is **not** an application layer package. True application orchestration (`study_runner`, `optimization_runner`, etc.) begins in later packages after P3.2.
 
-**P3.2 handoff document:** To be created as `docs/roadmaps/milestones/V0.4_P3.2_APPLICATION_HANDOFF.md`.
+**Scope:**
+1. Dataset JSON file format & loader (infrastructure detail, not a public API)
+2. `DefaultDatasetResolver.from_data_dir()` classmethod (backward-compatible)
+3. `create_persistence_context()` factory (single responsibility: wire `PersistenceReconstructionContext`)
+4. No CLI code, no configuration, no P3.1 codec changes, no application orchestration
+
+**P3.2 handoff document:** `docs/roadmaps/milestones/V0.4_P3.2_CONTEXT_FACTORY_HANDOFF.md` (created).
 
 **Project-level quality gates (Phase 3 exit — not applicable until P3.10):**
 ```bash
