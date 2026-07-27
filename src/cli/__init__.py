@@ -1,4 +1,10 @@
-"""CLI package.
+"""CLI package."""
 
-Contains entry point logic for the retirement simulator.
-"""
+from cli.commands.base import BaseCommand, ExecutionContext
+from cli.main import main
+
+__all__ = [
+    "BaseCommand",
+    "ExecutionContext",
+    "main",
+]

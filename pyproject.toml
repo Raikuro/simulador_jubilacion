@@ -166,6 +166,9 @@ pretty = true
 # setuptools
 ################################################################################
 
+[project.scripts]
+sim-retire = "cli.main:main"
+
 [tool.setuptools]
 
 package-dir = {"" = "src"}
