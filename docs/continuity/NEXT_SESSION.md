@@ -1,9 +1,9 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-27 (v0.4 Phase 2 SQLite Persistence Complete)
-**Current Status:** `v0.4` Infrastructure & Deployment — Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) is next.
-**Milestone Status:** v0.4 Phase 1 committed as `dda449a`. Phase 2 committed as `128bb54`. Phase 2 architecturally accepted.
-**Next Phase (authoritative):** Per `V0.4_IMPLEMENTATION_HANDOFF.md`, Phase 3 is the CLI Interface implementation.
+**Previous Session:** 2026-07-27 (P3.1 Concrete Persistence Codecs Complete)
+**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Package P3.1 (Concrete Persistence Codecs) complete. Package P3.2 (Minimal Application Layer) is next.
+**Milestone Status:** v0.4 Phase 1 committed as `dda449a`. Phase 2 committed as `128bb54`. P3.1 committed as `<P3.1_COMMIT_HASH>`.
+**Next Phase (authoritative):** Per `V0.4_IMPLEMENTATION_HANDOFF.md`, Phase 3 is the CLI Interface implementation. Phase 3 is subdivided into sequential packages; the next package is defined in `V0.4_P3.2_APPLICATION_HANDOFF.md` (to be created).
 
 ---
 
@@ -56,19 +56,24 @@
 - Commit: `128bb54`
 - Status: ✅ 10 tables, lossless round-trip, reconstruction context pattern, 39 tests passing
 
-**Phase 3 (NEXT) — CLI Interface:**
+**Phase 3 (ACTIVE) — CLI Interface (Package P3.2 next):**
 
-→ **Implement CLI Interface per `CLI_INTERFACE_SPECIFICATION.md`**
+Phase 3 is implemented as a sequence of small, independently reviewable packages. See individual package handoff documents for each step.
 
-Specification: [CLI_INTERFACE_SPECIFICATION.md](../specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md)
+| Package | Objective | Status |
+|---------|-----------|--------|
+| **P3.1** | Concrete Persistence Codecs | ✅ Done |
+| P3.2 | Minimal Application Layer | ⬜ Next |
+| P3.3 | CLI Entry Point & Framework | ⬜ |
+| P3.4 | `validate` command | ⬜ |
+| P3.5 | `run` command | ⬜ |
+| P3.6 | `list` command | ⬜ |
+| P3.7 | `export` command | ⬜ |
+| P3.8 | `optimize` command | ⬜ |
+| P3.9 | `compare` command | ⬜ |
+| P3.10 | Configuration, Documentation & Handoff | ⬜ |
 
-**Scope:**
-- `sim-retire` entry point with 6 subcommands (run, list, validate, export, optimize, compare)
-- Argument parsing and validation
-- Output formatters (CSV, JSON, table)
-- Exit codes consistent
-- Help text discoverable
-
+**Current Package Handoff:** [V0.4_P3.1_CODECS_HANDOFF.md](./milestones/V0.4_P3.1_CODECS_HANDOFF.md) (completed, see architectural review for P3.2 scope)
 
 **Phase 4 (FUTURE) — Integration & Acceptance:**
 - End-to-end workflow tests
@@ -90,9 +95,20 @@ Specification: [CLI_INTERFACE_SPECIFICATION.md](../specifications/infrastructure
 
 ---
 
+## P3.1 Technical Debt
+
+The following items were identified during the P3.1 architectural review. They are documented here for scheduling in appropriate future packages.
+
+| # | Item | Severity | Planned Package | Description |
+|---|------|----------|----------------|-------------|
+| TD-1 | Dummy-marker coupling | Low | P3.x cleanup | `SQLiteRepository._save_simulation_result` inserts `{"dummy": True}` markers for empty timelines. `SimulationResultCodec.load()` skips payloads lacking a `"date"` key, coupling the codec to this internal convention. A dedicated marker field (e.g., `"__marker__"`) would decouple them. |
+| TD-2 | Registry-only dataset loading | Medium | P3.2 | `DefaultDatasetResolver` currently only supports an in-memory registry. No file-based data loading exists. Must be addressed before production. |
+
+---
+
 ## Validation Status
 
-Full test suite: **407 / 407 tests passing** (276 domain/research + 84 optimization + 47 infrastructure).
+Full test suite: **417 / 417 tests passing** (276 domain/research + 84 optimization + 57 infrastructure).
 Infrastructure layer mypy (`src/infrastructure/persistence/ --strict`): **0 errors** ✅
 Full codebase mypy (`src/ --strict`): 21 pre-existing errors in engine/research domain (not introduced by v0.4).
 
@@ -100,14 +116,19 @@ Full codebase mypy (`src/ --strict`): 21 pre-existing errors in engine/research 
 
 ## Exact Next Task
 
-Per `V0.4_IMPLEMENTATION_HANDOFF.md` (authoritative), begin **Phase 3: CLI Interface** of the v0.4 Infrastructure & Deployment milestone. Follow `CLI_INTERFACE_SPECIFICATION.md` to implement the `sim-retire` entry point, all 6 subcommands (run, list, validate, export, optimize, compare), argument parsing and validation, output formatters (CSV, JSON), exit codes, and help text. Adhere strictly to the atomic commit policy upon passing all Phase 3 exit gate validation criteria.
+Implement **Package P3.2: Minimal Application Layer**.
 
-**Integration points to use:**
-- `SQLiteRepository` (Phase 2) for persistence operations
-- `ParallelExecutor` (Phase 1) for parallel study execution
-- Frozen public APIs from v0.1, v0.2.3, v0.3 for domain operations
+P3.2 provides a minimal application-layer factory that constructs a fully-wired `PersistenceReconstructionContext` with concrete codecs, including file-based dataset loading for `DefaultDatasetResolver`. It also addresses TD-2 from the P3.1 technical debt list.
 
-**Quality gates (Phase 3 exit):**
+**Scope (from P3.1 architectural review):**
+1. Application-layer factory — function or class that creates a wired `PersistenceReconstructionContext`
+2. Data-file loading for `DefaultDatasetResolver` (JSON-based dataset loader)
+3. No CLI code, no configuration, no P3.1 codec changes
+4. Keep the package small and independently reviewable; split into sub-packages if it grows beyond comfort
+
+**P3.2 handoff document:** To be created as `docs/roadmaps/milestones/V0.4_P3.2_APPLICATION_HANDOFF.md`.
+
+**Project-level quality gates (Phase 3 exit — not applicable until P3.10):**
 ```bash
 pytest tests/cli/ -v            # Expected: 100% passing
 sim-retire --help               # Expected: Help text displayed
