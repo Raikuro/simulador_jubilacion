@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-25  
-**Milestone:** v0.3 Complete | v0.4 Ready to Start
+**Last Updated:** 2026-07-27  
+**Milestone:** v0.3 Complete | v0.4 Phase 2 Complete → Phase 3 Next
 
 ---
 
@@ -14,7 +14,9 @@
 - ✅ **v0.1 (Execution Engine)** — Complete, frozen, 200+ tests passing
 - ✅ **v0.2.3 (Research Infrastructure)** — Complete, frozen, 76+ tests passing
 - ✅ **v0.3 (Optimization Layer)** — Complete, frozen, all implementations delivered
-- 📋 **v0.4 (Infrastructure & Deployment)** — Architecture approved, ready for implementation (SQLite, CLI, parallelization)
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 1 (Parallel Execution) Complete** — ProcessPoolExecutor, deterministic batching, error isolation
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 2 (SQLite Persistence) Complete** — 10 tables, reconstruction context pattern, lossless round-trip, lock retry
+- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) Next**
 
 **Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
@@ -130,9 +132,9 @@
 
 ## 3. Active Milestone (Ready to Start)
 
-### v0.4 Infrastructure & Deployment 📋 READY
+### v0.4 Infrastructure & Deployment ✅ ACTIVE — Phase 2 Complete
 
-**Status:** Architecture approved and frozen, specifications defined, implementation pending
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) next.
 
 **What it will do:**
 - **SQLite Persistence** — Store experiment definitions, research plans, and results
@@ -156,24 +158,25 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 2. **Persistence**: SQLite schema, serialization contracts, transaction semantics
 3. **CLI**: Command syntax, argument contracts, error codes, help text
 
-**Key Implementation Phases:**
+**Implementation Phases (Completed → Next):**
 
-Phase 1 (Parallel Execution):
+✅ **Phase 1 (Parallel Execution)** — Complete (commit `dda449a`):
 - ProcessPoolExecutor integration
 - Determinism verification tests
 - Error isolation and progress tracking implementation
 
-Phase 2 (Persistence):
-- SQLite adapter implementation
-- Schema creation and indexing (informed by Phase 1 output structures)
-- Round-trip serialization tests
+✅ **Phase 2 (Persistence)** — Complete (commit `128bb54`):
+- SQLite adapter with 10 tables
+- Reconstruction context pattern (DatasetResolver, PolicyCodec, SimulationResultCodec)
+- Lossless round-trip serialization for all domain objects
+- Lock-contention retry and WAL journal mode
 
-Phase 3 (CLI):
-- Command implementations
-- Output formatting
+📋 **Phase 3 (CLI) — NEXT**:
+- Command implementations (run, list, validate, export, optimize, compare)
+- Output formatting (CSV, JSON, table)
 - Help text and error messages
 
-Phase 4 (Integration):
+📋 **Phase 4 (Integration)**:
 - End-to-end workflow tests
 - Performance validation
 - Documentation completion
@@ -226,27 +229,32 @@ Every implementation must:
 ### Current Test Coverage
 
 ```
-Total Passing Tests:  276
+Total Passing Tests:  407
 ├─ Engine Tests:       200+
 ├─ Research Tests:      76+
-└─ Infrastructure Tests: 0 (pending v0.4)
+├─ Optimization Tests:  84+
+└─ Infrastructure Tests: 47 (Phase 1: 8 parallel + Phase 2: 39 persistence)
 
-Type Checking:   0 mypy errors ✅
+Type Checking:
+  src/infrastructure/persistence/ --strict:  0 errors ✅
+  src/ --strict:                             21 pre-existing errors in engine/research domain (not v0.4)
 ```
 
 ### Test Locations
 
 - Engine tests: `tests/test_*.py` (core domain)
 - Research tests: `tests/test_*_research.py` (orchestration layer)
+- Optimization tests: `tests/test_swr_optimizer.py`, `tests/test_strategy_comparator*.py`
+- Infrastructure tests: `tests/infrastructure/` (parallel execution, persistence)
 - Integration tests: `tests/test_integration_*.py` (cross-layer)
 
-### Adding New Tests (v0.3 Requirements)
+### Adding New Tests (v0.4 Requirements)
 
-Every new component must have:
+Every new v0.4 component must have:
 - Unit tests (algorithm correctness)
+- Round-trip tests (serialization/deserialization)
+- Error handling tests (edge cases, failure modes)
 - Integration tests (with frozen layers)
-- Property-based tests (binary search bounds)
-- Edge case tests (empty inputs, single element, extremes)
 
 ---
 
@@ -254,22 +262,24 @@ Every new component must have:
 
 ### Current Blockers
 
-**NONE** — v0.3 is ready to start immediately.
+**NONE** — v0.4 Phase 3 (CLI Interface) implementation is ready to start.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
 - v0.2.3 Research Infrastructure ✅ Available
-- Specifications ✅ Approved & Frozen
-- Architecture Reviews ✅ Complete
+- v0.3 Optimization Layer ✅ Available
+- v0.4 Phase 1 (Parallel Execution) ✅ Complete
+- v0.4 Phase 2 (SQLite Persistence) ✅ Complete
+- CLI Interface Spec ✅ Approved & Frozen
 
 ### Potential Risks
 
 | Risk | Mitigation |
 |------|-----------|
-| Binary search boundary conditions | Comprehensive test cases |
-| Numerical precision (Decimal) | All tests use Decimal arithmetic |
-| Integration with SimulationExecutor | Use frozen public API contracts |
-| Large parameter sweeps (performance) | Optimize after correctness verified |
+| CLI-Application boundary coupling | Use clean separation: CLI only parses/renders; app layer orchestrates |
+| Output format validation | Comprehensive CSV/JSON schema tests |
+| Integration with phase 1 & 2 APIs | Use frozen public API contracts |
+| Large result sets (memory) | Streaming output formatters |
 
 ---
 
@@ -315,10 +325,14 @@ All dependencies are in place:
 |------|---------|--------|
 | `src/engine/` | Execution engine | ✅ Frozen v0.1 |
 | `src/research/` | Research layer | ✅ Frozen v0.2.3 |
-| `src/research/optimization/` | Optimization (v0.3) | 📋 Ready |
-| `tests/` | Test suite | ✅ 276 passing |
+| `src/research/optimization/` | Optimization (v0.3) | ✅ Frozen, implemented |
+| `src/infrastructure/persistence/` | SQLite persistence (v0.4 Phase 2) | ✅ Complete |
+| `src/infrastructure/execution/` | Parallel execution (v0.4 Phase 1) | ✅ Complete |
+| `tests/` | Test suite | ✅ 407 passing |
+| `tests/infrastructure/` | Infrastructure tests | ✅ 47 passing |
 | `docs/continuity/` | Handover documents | 📝 This folder |
 | `docs/specifications/` | Implementation contracts | ✅ Frozen |
+| `docs/specifications/infrastructure/` | v0.4 infrastructure specs | ✅ Frozen |
 | `docs/architecture/reviews/` | Design decisions | ✅ Frozen |
 
 ---
@@ -331,16 +345,16 @@ All dependencies are in place:
 2. ✅ Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) (10 min)
 3. ✅ Read this document (10 min)
 4. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md) (5 min) ← Do this next
-5. ⬜ Run tests to verify baseline: `pytest tests/ -v`
-6. ⬜ Review specific frozen specification for task
-7. ⬜ Begin implementation
+5. ⬜ Run tests to verify baseline: `pytest tests/ -v` (expect 407 passing)
+6. ⬜ Review CLI specification: `docs/specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md`
+7. ⬜ Begin Phase 3: CLI Interface implementation
 
 ### Validation Checklist
 
 Before starting work each session:
 
-- [ ] All 276 tests still passing
-- [ ] 0 mypy errors
+- [ ] All 407 tests still passing
+- [ ] 0 mypy errors in v0.4 infrastructure modules
 - [ ] I've read the relevant frozen specification
 - [ ] I understand the exact scope from the spec
 - [ ] I've identified the test file for my component
@@ -401,12 +415,13 @@ Before starting work each session:
 1. ✅ You've read this (CURRENT_STATE.md)
 2. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md)
 3. ⬜ Run full test suite: `pytest tests/ -v`
-4. ⬜ Read SWROptimizer specification: `docs/specifications/optimization/RESEARCH_SWROPTIMIZER_SPECIFICATION.md`
-5. ⬜ Start implementation: `src/research/optimization/swr_optimizer.py`
+4. ⬜ Read CLI Interface specification: `docs/specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md`
+5. ⬜ Read Phase 3 entry in `docs/roadmaps/milestones/V0.4_IMPLEMENTATION_HANDOFF.md`
+6. ⬜ Start Phase 3 implementation
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** All 276 tests passing ✅  
+**Test Status:** All 407 tests passing ✅  
 **Blockers:** None  
-**Next Action:** Read [NEXT_SESSION.md](NEXT_SESSION.md)
+**Next Action:** Read [NEXT_SESSION.md](NEXT_SESSION.md) → Begin Phase 3 CLI Interface

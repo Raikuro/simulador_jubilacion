@@ -268,21 +268,23 @@ Each layer has clear responsibilities; no mixing.
 - [x] 76+ research layer tests passing
 - [x] All public APIs frozen and published
 
-### For v0.3 (Optimization & Analytics) — 📋 READY TO START
+### For v0.3 (Optimization & Analytics) — ✅ ACHIEVED
 
-- [ ] SWROptimizer (binary search for safe rates)
-- [ ] StrategyComparator (relative analysis)
-- [ ] ResultAggregator (statistical synthesis)
-- [ ] ResearchReproducibilityManager (audit & verification)
+- [x] SWROptimizer (binary search for safe rates)
+- [x] StrategyComparator (relative analysis)
+- [x] ResultAggregator (statistical synthesis)
+- [x] ResearchReproducibilityManager (audit & verification)
 
-### For v0.4+ (Production & Deployment)
+### For v0.4 (Infrastructure & Deployment) — ACTIVE
 
-- [ ] SQLite persistence
-- [ ] CSV import/export
-- [ ] CLI interface
-- [ ] Parallel execution (ProcessPoolExecutor)
-- [ ] Result visualization
-- [ ] Deployment documentation
+| Phase | Status |
+|-------|--------|
+| Phase 1: Parallel execution (ProcessPoolExecutor) | ✅ Complete |
+| Phase 2: SQLite persistence | ✅ Complete |
+| Phase 3: CLI interface | 📋 Next |
+| Phase 4: Integration & acceptance | 📋 Future |
+| CSV import/export, Result visualization | 🔮 Planned |
+| Deployment documentation | 🔮 Planned |
 
 ---
 
@@ -369,8 +371,8 @@ TODO: Define specific areas where stakeholder input is needed:
 
 ### Technical Metrics
 
-- **Test Pass Rate:** 100% (currently 276/276)
-- **Type Checking:** 0 mypy errors (currently 0)
+- **Test Pass Rate:** 100% (currently 407/407)
+- **Type Checking:** 0 mypy errors in v0.4 infrastructure modules; 21 pre-existing in engine/research domain
 - **Specification Compliance:** 100% (by design)
 - **Determinism:** 100% (given same inputs)
 
@@ -378,14 +380,17 @@ TODO: Define specific areas where stakeholder input is needed:
 
 - **v0.1 Completion:** ✅ On time
 - **v0.2 Completion:** ✅ On time
-- **v0.3 Completion:** TBD (specs ready; implementation pending)
-- **v0.4 Production Readiness:** TBD
+- **v0.3 Completion:** ✅ On time
+- **v0.4 Phase 1 (Parallel Execution):** ✅ Complete
+- **v0.4 Phase 2 (SQLite Persistence):** ✅ Complete
+- **v0.4 Phase 3 (CLI Interface):** 📋 In progress
+- **v0.4 Production Readiness:** TBD (after Phase 4)
 
 ### Quality Metrics
 
 - **Code Churn:** Low (changes preserve behavior)
 - **Defect Rate:** Near-zero (proper testing)
-- **Documentation Debt:** None (docs current)
+- **Documentation Debt:** None (docs updated with Phase 2 completion)
 
 ---
 

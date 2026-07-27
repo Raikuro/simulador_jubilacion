@@ -1,9 +1,9 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-23 (v0.3 StrategyComparator Implementation Complete)
-**Current Status:** `v0.3` milestone complete, all specifications frozen, implementation accepted
-**Milestone Status:** Milestone `v0.3` is complete, committed and tagged (`v0.3-optimization-analytics`).
-**Next Phase (authoritative):** Per `INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md`, the next workstream is the Infrastructure & Deployment milestone (`v0.4`), which includes SQLite persistence, CLI interface, and parallel execution capabilities.
+**Previous Session:** 2026-07-27 (v0.4 Phase 2 SQLite Persistence Complete)
+**Current Status:** `v0.4` Infrastructure & Deployment — Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) is next.
+**Milestone Status:** v0.4 Phase 1 committed as `dda449a`. Phase 2 committed as `128bb54`. Phase 2 architecturally accepted.
+**Next Phase (authoritative):** Per `V0.4_IMPLEMENTATION_HANDOFF.md`, Phase 3 is the CLI Interface implementation.
 
 ---
 
@@ -41,34 +41,39 @@
 - All acceptance tests passing
 - All public APIs frozen
 
-### Ready for Implementation (v0.4 Infrastructure & Deployment)
+### In Progress (v0.4 Infrastructure & Deployment — Phase 3 Next)
 
 **Architectural Specification (FROZEN):**
 - [INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md](./milestones/INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md)
 
-**Behavioral Specifications (FROZEN):**
-- [INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md](../specifications/infrastructure/INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md)
-- [CLI_INTERFACE_SPECIFICATION.md](../specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md)
-- [PARALLEL_EXECUTION_SPECIFICATION.md](../specifications/infrastructure/PARALLEL_EXECUTION_SPECIFICATION.md)
+**Phase 1 (COMPLETE) — Parallel Execution:**
+- Specification: [PARALLEL_EXECUTION_SPECIFICATION.md](../specifications/infrastructure/PARALLEL_EXECUTION_SPECIFICATION.md)
+- Commit: `dda449a`
+- Status: ✅ Determinism verified, error isolation working, 8 tests passing
 
-**Next Implementation Task (IMMEDIATE):**
+**Phase 2 (COMPLETE) — SQLite Persistence:**
+- Specification: [INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md](../specifications/infrastructure/INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md)
+- Commit: `128bb54`
+- Status: ✅ 10 tables, lossless round-trip, reconstruction context pattern, 39 tests passing
 
-→ **Implement v0.4 Infrastructure & Deployment**
+**Phase 3 (NEXT) — CLI Interface:**
 
-Three frozen specifications define complete implementation contracts. Follow architectural document for phase sequence:
+→ **Implement CLI Interface per `CLI_INTERFACE_SPECIFICATION.md`**
 
-1. **Phase 1:** Parallel execution engine (`PARALLEL_EXECUTION_SPECIFICATION.md`, `ProcessPoolExecutor`, determinism verification)
-2. **Phase 2:** SQLite persistence layer (`INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md`, repository pattern, schema informed by Phase 1 output models)
-3. **Phase 3:** CLI interface (`CLI_INTERFACE_SPECIFICATION.md`, commands, argument parsing, output formatting)
-4. **Phase 4:** Integration and acceptance testing
+Specification: [CLI_INTERFACE_SPECIFICATION.md](../specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md)
 
-**Why v0.4 Now?**
-- All domain logic (v0.1, v0.2.3, v0.3) frozen and production-ready
-- Research infrastructure proven with successful ERN study reproduction
-- Next phase transforms library into production application
-- Parallel execution necessary for large-scale sweeps (implemented first as pure algorithmic component)
-- Persistence enables long-term study storage and reproducibility
-- CLI enables non-programmer researchers to run studies
+**Scope:**
+- `sim-retire` entry point with 6 subcommands (run, list, validate, export, optimize, compare)
+- Argument parsing and validation
+- Output formatters (CSV, JSON, table)
+- Exit codes consistent
+- Help text discoverable
+
+
+**Phase 4 (FUTURE) — Integration & Acceptance:**
+- End-to-end workflow tests
+- Performance validation
+- Documentation completion
 
 ---
 
@@ -87,12 +92,25 @@ Three frozen specifications define complete implementation contracts. Follow arc
 
 ## Validation Status
 
-Full test suite: **276 / 276 tests passing**.
-mypy: **0 errors**.
+Full test suite: **407 / 407 tests passing** (276 domain/research + 84 optimization + 47 infrastructure).
+Infrastructure layer mypy (`src/infrastructure/persistence/ --strict`): **0 errors** ✅
+Full codebase mypy (`src/ --strict`): 21 pre-existing errors in engine/research domain (not introduced by v0.4).
 
 ---
 
 ## Exact Next Task
 
-Per `V0.4_IMPLEMENTATION_HANDOFF.md` (authoritative), begin **Phase 1: Parallel Execution Engine** of the v0.4 Infrastructure & Deployment milestone. Follow `PARALLEL_EXECUTION_SPECIFICATION.md` to implement `ParallelExecutor`, deterministic work batching, ordered result collection, and error isolation. Adhere strictly to the atomic commit policy upon passing all Phase 1 exit gate validation criteria.
+Per `V0.4_IMPLEMENTATION_HANDOFF.md` (authoritative), begin **Phase 3: CLI Interface** of the v0.4 Infrastructure & Deployment milestone. Follow `CLI_INTERFACE_SPECIFICATION.md` to implement the `sim-retire` entry point, all 6 subcommands (run, list, validate, export, optimize, compare), argument parsing and validation, output formatters (CSV, JSON), exit codes, and help text. Adhere strictly to the atomic commit policy upon passing all Phase 3 exit gate validation criteria.
+
+**Integration points to use:**
+- `SQLiteRepository` (Phase 2) for persistence operations
+- `ParallelExecutor` (Phase 1) for parallel study execution
+- Frozen public APIs from v0.1, v0.2.3, v0.3 for domain operations
+
+**Quality gates (Phase 3 exit):**
+```bash
+pytest tests/cli/ -v            # Expected: 100% passing
+sim-retire --help               # Expected: Help text displayed
+mypy src/cli/ --strict          # Expected: 0 errors
+```
 

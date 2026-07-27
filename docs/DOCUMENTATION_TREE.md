@@ -15,10 +15,13 @@
 | **AI_ARCHITECT_GUIDE.md** | AI handover & continuity guide | 1 |
 | **PROJECT_CONTEXT.md** | Project mission, vision, philosophy | 2 |
 | **OPERATIONAL_DASHBOARD.md** | Operational health & metrics | 3 |
-| **NEXT_SESSION.md** | Session initialization checklist | 4 |
-| **SESSION_COMPLETION_REPORT.md** | Session completion reports | 5 |
+| **CURRENT_STATE.md** | Detailed technical state & next tasks | 4 |
+| **NEXT_SESSION.md** | Session initialization checklist | 5 |
+| **IMPLEMENTATION_PROGRESS.md** | Active phase completion tracking | 6 |
+| **HUMAN_CONTRIBUTOR_GUIDE.md** | Human-AI collaboration workflow | Reference |
 | **GOVERNANCE.md** | Documentation governance rules | Reference |
 | **SOURCE_OF_TRUTH.md** | Canonical source references | Reference |
+| **IMPLEMENTATION_PROGRESS_TEMPLATE.md** | Template for phase progress tracking | Reference |
 
 ---
 
@@ -81,13 +84,21 @@
 | **PARAMETER_SWEEP_ENGINE_SPECIFICATION.md** | Parameter sweep contract | Frozen |
 | **RESEARCH_EXECUTOR_SPECIFICATION.md** | Research executor contract | Frozen |
 
-#### Optimization Specifications (v0.3 — Ready)
+#### Optimization Specifications (v0.3 — Frozen)
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| **RESEARCH_SWROPTIMIZER_SPECIFICATION.md** | SWROptimizer contract | Ready |
-| **RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md** | Strategy comparator contract | Ready |
-| **RESEARCH_V0.3_SPECIFICATION.md** | v0.3 overview | Ready |
+| **RESEARCH_SWROPTIMIZER_SPECIFICATION.md** | SWROptimizer contract | Frozen |
+| **RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md** | Strategy comparator contract | Frozen |
+| **RESEARCH_V0.3_SPECIFICATION.md** | v0.3 overview | Frozen |
+
+#### Infrastructure Specifications (v0.4 — Frozen)
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| **PARALLEL_EXECUTION_SPECIFICATION.md** | Parallel execution contract | Frozen ✅ Phase 1 done |
+| **INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md** | SQLite persistence contract | Frozen ✅ Phase 2 done |
+| **CLI_INTERFACE_SPECIFICATION.md** | CLI command specification | Frozen 📋 Phase 3 next |
 
 ---
 
@@ -180,12 +191,15 @@
 ```
 docs/
 ├── README.md                          [NEW - Documentation index]
-├── continuity/                        [6 files - AI handover & governance]
-│   ├── AI_ARCHITECT_GUIDE.md                [Orientation guide]
+├── continuity/                        [10 files - AI handover & governance]
+│   ├── AI_ARCHITECT_GUIDE.md          [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
 │   ├── OPERATIONAL_DASHBOARD.md       [Operational health & metrics]
+│   ├── CURRENT_STATE.md               [Detailed technical state]
 │   ├── NEXT_SESSION.md                [Session initialization]
-│   ├── SESSION_COMPLETION_REPORT.md   [Session completion]
+│   ├── IMPLEMENTATION_PROGRESS.md     [Phase completion tracking]
+│   ├── IMPLEMENTATION_PROGRESS_TEMPLATE.md [Phase tracking template]
+│   ├── HUMAN_CONTRIBUTOR_GUIDE.md     [Human-AI collaboration]
 │   ├── GOVERNANCE.md                  [Documentation governance]
 │   └── SOURCE_OF_TRUTH.md             [Canonical sources]
 │
@@ -211,7 +225,7 @@ docs/
 │       ├── SIMULATION_EXECUTOR_PUBLIC_API_REVIEW.md
 │       └── RESEARCH_SWROPTIMIZER_PUBLIC_API_REVIEW.md
 │
-├── specifications/                    [13 files - Implementation contracts]
+├── specifications/                    [16 files - Implementation contracts]
 │   ├── engine/                        [8 files - v0.1 specs]
 │   │   ├── MARKET_EVOLUTION_STEP_SPECIFICATION.md
 │   │   ├── MONTHLY_RESULT_BUILDER_STEP_SPECIFICATION.md
@@ -228,16 +242,23 @@ docs/
 │   │   ├── PARAMETER_SWEEP_ENGINE_SPECIFICATION.md
 │   │   └── RESEARCH_EXECUTOR_SPECIFICATION.md
 │   │
-│   └── optimization/                  [3 files - v0.3 specs]
-│       ├── RESEARCH_SWROPTIMIZER_SPECIFICATION.md
-│       ├── RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md
-│       └── RESEARCH_V0.3_SPECIFICATION.md
+│   ├── optimization/                  [3 files - v0.3 specs]
+│   │   ├── RESEARCH_SWROPTIMIZER_SPECIFICATION.md
+│   │   ├── RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md
+│   │   └── RESEARCH_V0.3_SPECIFICATION.md
+│   │
+│   └── infrastructure/                [3 files - v0.4 specs]
+│       ├── PARALLEL_EXECUTION_SPECIFICATION.md
+│       ├── INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md
+│       └── CLI_INTERFACE_SPECIFICATION.md
 │
 ├── roadmaps/                           [1 file - Planning docs]
-│   └── milestones/                    [3 files - Milestone planning]
+│   └── milestones/                    [5 files - Milestone planning + handoff]
 │       ├── RESEARCH_LAYER_FINAL_ROADMAP.md
 │       ├── RESEARCH_LAYER_ROADMAP.md
-│       └── EXECUTION_ENGINE_COMPLETION.md
+│       ├── EXECUTION_ENGINE_COMPLETION.md
+│       ├── INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
+│       └── V0.4_IMPLEMENTATION_HANDOFF.md
 │
 ├── reports/                           [10 files - Implementation summaries]
 │   ├── CLEANUP_SUMMARY.md
@@ -309,8 +330,8 @@ docs/
 - ✅ Each document has a single, clear responsibility
 - ✅ The governance rule is understood and followed
 - ✅ New documentation follows the established patterns
-- ✅ All 276 tests still passing
-- ✅ 0 mypy errors
+- ✅ All 407 tests still passing
+- ✅ 0 mypy errors in v0.4 infrastructure modules
 - ✅ All specifications frozen and approved
 - ✅ Clear separation of frozen vs. active documentation
 - ✅ Excellent onboarding capability for new AI developers
@@ -324,5 +345,5 @@ For questions about documentation governance, consult the Chief Architect.
 ---
 
 **Document Status:** Complete & Accurate  
-**Last Updated:** 2026-07-23  
+**Last Updated:** 2026-07-27
 **Maintainer:** Chief Architect
