@@ -11,6 +11,7 @@ class ExecutionContext:
     verbose: bool = False
     debug: bool = False
     data_dir: str | None = None
+    config_file: str | None = None
 
 
 class BaseCommand:

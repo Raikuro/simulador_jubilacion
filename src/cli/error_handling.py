@@ -10,6 +10,7 @@ class ExitCode(IntEnum):
     SUCCESS = 0
     ERROR = 1
     VALIDATION_ERROR = 2
+    CONFIGURATION_ERROR = 3
     DATABASE_ERROR = 4
     INTERRUPTED = 130
 

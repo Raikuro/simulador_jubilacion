@@ -44,6 +44,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to dataset directory",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="~/.sim-retire/config.yaml",
+        help="Path to configuration file (default: ~/.sim-retire/config.yaml)",
+    )
     subparsers = parser.add_subparsers(dest="command", title="Commands")
     for name, cmd_cls in sorted(COMMANDS.items()):
         sub = subparsers.add_parser(name, help=cmd_cls.help_text)
@@ -56,6 +62,7 @@ def _create_context(args: argparse.Namespace) -> ExecutionContext:
         verbose=args.verbose,
         debug=args.debug,
         data_dir=args.data_dir,
+        config_file=args.config,
     )
 
 

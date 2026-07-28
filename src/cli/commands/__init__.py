@@ -2,6 +2,7 @@
 
 from cli.commands.base import BaseCommand
 from cli.commands.compare_command import CompareCommand
+from cli.commands.config_command import ConfigCommand
 from cli.commands.export_command import ExportCommand
 from cli.commands.list_command import ListCommand
 from cli.commands.optimize_command import OptimizeCommand
@@ -15,4 +16,5 @@ COMMANDS: dict[str, type[BaseCommand]] = {
     "export": ExportCommand,
     "optimize": OptimizeCommand,
     "compare": CompareCommand,
+    "config": ConfigCommand,
 }
