@@ -3,7 +3,7 @@
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
 **Last Updated:** 2026-07-28  
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.8 Frozen (8bbd7f6) → P3.9 Next
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.9 Frozen (8866ada) → P3.10 Next
 
 ---
 
@@ -21,8 +21,10 @@
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.5 (Run Command) Complete** — YAML experiment execution, dry-run orchestration, execution pipeline wired up, result persistence, 14 new tests, 56 total CLI tests
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.6 (List Command) Complete** — SQLite study listing, table/JSON/CSV output, status filtering, sort ordering, 15 new tests, 71 total CLI tests
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.7 (Export Command) Complete** — CSV/JSON file export, repository-driven data access, output directory creation, 17 new tests, 88 total CLI tests, commit b9705d8
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.8 (Optimize Command) Complete** — SWROptimizer integration, shared policies, evaluator bridge, 27 new tests, 115 total CLI tests, commit 8bbd7f6
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.9 (Compare Command) Complete** — StrategyComparator integration, multi-strategy comparison report, per-strategy persistence, 34 new tests, 149 total CLI tests, commit 8866ada
 
-**Immediate Next Task:** Package P3.9 — Compare Command. Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
+**Immediate Next Task:** Package P3.10 — Configuration, Documentation & Handoff. Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
 ---
 
@@ -136,9 +138,9 @@
 
 ## 3. Active Milestone (Ready to Start)
 
-### v0.4 Infrastructure & Deployment ✅ ACTIVE — Phase 3 P3.8 Frozen, P3.9 Next
+### v0.4 Infrastructure & Deployment ✅ ACTIVE — Phase 3 P3.9 Frozen, P3.10 Next
 
-**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) active — P3.1 through P3.7 complete, P3.8 frozen (8bbd7f6), P3.9 next.
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) active — P3.1 through P3.8 complete, P3.9 frozen (8866ada), P3.10 next.
 
 **What it will do:**
 - **SQLite Persistence** — Store experiment definitions, research plans, and results
@@ -175,7 +177,7 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 - Lossless round-trip serialization for all domain objects
 - Lock-contention retry and WAL journal mode
 
-✅ **Phase 3 (CLI) — P3.1–P3.8 Complete**:
+✅ **Phase 3 (CLI) — P3.1–P3.9 Complete**:
 
 **P3.1 (Concrete Persistence Codecs)** — Complete (commit `efbeb61`):
 - AllocationPolicyCodec, WithdrawalPolicyCodec, SimulationResultCodec
@@ -253,6 +255,19 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 - 27 new tests (8 policies + 19 optimize), 115 total CLI tests, 0 mypy errors
 - **FROZEN** — Architectural review approved
 
+**P3.9 (Compare Command)** — Complete (commit `8866ada`):
+- CompareCommand class (BaseCommand subclass) with StrategyComparator integration
+- Multi-strategy execution via sequential/parallel executor
+- `_extract_evaluation_results` — converts simulation results to EvaluationResult sequences
+- `_canonical_param_key` — deterministic parameter config keys for provenance grouping
+- `_select_allocation_policy` / `_select_withdrawal_policy` — YAML policy selection
+- Printed comparison report with ranking table and diagnostics
+- Per-strategy persistence to SQLite (experiment, plan, execution result)
+- Group-by dimensions: global, cohort, parameter_config
+- Error handling: exit 2 (validation), exit 1 (execution/partial failure), exit 4 (database), exit 130 (interrupt)
+- 34 new tests, 149 total CLI tests, 0 mypy errors
+- **FROZEN** — Architectural review approved
+
 📋 **Phase 4 (Integration)**:
 - End-to-end workflow tests
 - Performance validation
@@ -260,8 +275,20 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 
 ---
 
-## 4. Planned Milestones (Future)
-**Likely Timeline:** TBD
+## 4. Next Package (P3.10)
+
+### P3.10 — Configuration, Documentation & Handoff
+
+**Status:** ⬜ NEXT — Implementation authorized to begin after P3.9 freeze.
+
+**Scope (informative — see handoff for canonical scope):**
+- Configuration file loading integration
+- `sim-retire config` command
+- Documentation completion
+- Final v0.4 Phase 3 integration testing
+- Phase 4 readiness review
+
+## Future Milestones
 
 ### v0.5+ Community & Extension
 
@@ -318,14 +345,15 @@ This standard applies to all future package handoffs (P3.6–P3.10) and is enfor
 ### Current Test Coverage
 
 ```
-Total CLI Tests (files on disk):     115
+Total CLI Tests (committed):        149
 ├─ Framework (P3.3):                 26
 ├─ Validate Command (P3.4):          16
 ├─ Run Command (P3.5):               14
 ├─ List Command (P3.6):              15
 ├─ Export Command (P3.7):            17
 ├─ Policies (P3.8):                   8
-└─ Optimize Command (P3.8):          19
+├─ Optimize Command (P3.8):          19
+└─ Compare Command (P3.9):           34
 
 Infrastructure Tests (committed):    96
 ├─ Parallel Execution:                8
@@ -334,25 +362,23 @@ Infrastructure Tests (committed):    96
 └─ Context Factory:                  19
 
 Engine/Research/Optimization:       360
-
-**Note:** pytest not available in current environment. Test counts from previous session (527 total for committed code). CLI test files exist on disk for P3.7 (17 new tests) but their pass/fail status is unverified in this session.
 ```
 
 **Type Checking (verified this session):**
-- `src/cli/ --strict`: not re-verified in this session
-- `src/infrastructure/persistence/ --strict`: not re-verified in this session
+- `src/cli/ --strict`: 0 errors ✅
+- `src/infrastructure/persistence/ --strict`: 0 errors (previous session)
 - `src/ --strict`: 21 pre-existing errors in engine/research domain (not v0.4)
 
 **`git status` (verified this session):**
-- 6 modified tracked files (continuity docs + 3 source files)
-- 3 untracked files (export_command.py, test_export_command.py, P3.7 handoff doc)
-- No commit exists for P3.7
+- 3 modified tracked files (continuity docs)
+- 1 untracked file (P3.9 handoff doc)
+- P3.9 implementation committed at 8866ada
 
 ### Test Locations
 
 - Engine/Research/Optimization tests: `tests/test_*.py` (core domain)
 - Infrastructure tests: `tests/infrastructure/` (parallel execution: 8, persistence: 39, codecs: 30, context: 19)
-- CLI tests: `tests/cli/` (framework: 26, validate: 16, run: 14, list: 15, export: 17, policies: 8, optimize: 19)
+- CLI tests: `tests/cli/` (framework: 26, validate: 16, run: 14, list: 15, export: 17, policies: 8, optimize: 19, compare: 34)
 - Integration tests: `tests/test_integration_*.py` (cross-layer)
 
 ### Adding New Tests (v0.4 Requirements)
@@ -369,7 +395,7 @@ Every new v0.4 component must have:
 
 ### Current Blockers
 
-**NONE** — P3.8 is frozen (8bbd7f6). P3.9 (compare command) is next.
+**NONE** — P3.9 is frozen (8866ada). P3.10 (Configuration, Documentation & Handoff) is next.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
@@ -377,8 +403,7 @@ All dependencies are in place:
 - v0.3 Optimization Layer ✅ Available
 - v0.4 Phase 1 (Parallel Execution) ✅ Complete
 - v0.4 Phase 2 (SQLite Persistence) ✅ Complete
-- v0.4 Phase 3 P3.1–P3.7 (CLI packages) ✅ Complete & Frozen
-- v0.4 Phase 3 P3.8 (Optimize Command) ✅ Frozen (8bbd7f6)
+- v0.4 Phase 3 P3.1–P3.9 (CLI packages) ✅ Complete & Frozen
 - CLI Interface Spec ✅ Approved & Frozen
 
 ### Potential Risks
@@ -386,7 +411,6 @@ All dependencies are in place:
 | Risk | Mitigation |
 |------|-----------|
 | CLI-Application boundary coupling | Use clean separation: CLI only parses/renders; app layer orchestrates |
-| Output format validation | Comprehensive CSV/JSON schema tests |
 | Integration with phase 1 & 2 APIs | Use frozen public API contracts |
 | Large result sets (memory) | Streaming output formatters |
 
@@ -437,11 +461,11 @@ All dependencies are in place:
 | `src/research/optimization/` | Optimization (v0.3) | ✅ Frozen, implemented |
 | `src/infrastructure/persistence/` | SQLite persistence (v0.4 Phase 2) | ✅ Complete |
 | `src/infrastructure/execution/` | Parallel execution (v0.4 Phase 1) | ✅ Complete |
-| `src/cli/` | CLI framework, builders, validate + run + list + export commands (v0.4 Phase 3 P3.3–P3.7) | ✅ Implemented |
+| `src/cli/` | CLI framework, builders, validate + run + list + export + optimize + compare commands (v0.4 Phase 3 P3.3–P3.9) | ✅ Implemented |
 | `src/cli/builders.py` | Shared CLI builder functions (YAML→domain) | ✅ Complete |
-| `tests/` | Test suite | 527 passing (committed) + 17 unverified P3.7 tests |
+| `tests/` | Test suite | 605 passing |
 | `tests/infrastructure/` | Infrastructure tests | ✅ 96 passing |
-| `tests/cli/` | CLI tests (framework: 26, validate: 16, run: 14, list: 15, export: 17) | ✅ 71 committed + 17 unverified |
+| `tests/cli/` | CLI tests (framework: 26, validate: 16, run: 14, list: 15, export: 17, policies: 8, optimize: 19, compare: 34) | ✅ 149 passing |
 | `docs/continuity/` | Handover documents | 📝 This folder |
 | `docs/specifications/` | Implementation contracts | ✅ Frozen |
 | `docs/specifications/infrastructure/` | v0.4 infrastructure specs | ✅ Frozen |
@@ -457,16 +481,15 @@ All dependencies are in place:
 2. ✅ Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) (10 min)
 3. ✅ Read this document (10 min)
 4. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md) (5 min)
-5. ⬜ Run tests to verify baseline: `pytest tests/ -v` (expect 527 passing for committed code)
-6. ⬜ Review CLI specification: `docs/specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md`
-7. ⬜ Read P3.7 handoff: `docs/roadmaps/milestones/V0.4_P3.7_EXPORT_HANDOFF.md`
-8. ⬜ Begin P3.7: export command implementation
+5. ⬜ Run tests to verify baseline: `pytest tests/ -v` (expect 605 passing)
+6. ⬜ Review P3.10 handoff: `docs/roadmaps/milestones/V0.4_P3.10_CONFIG_HANDOFF.md`
+7. ⬜ Begin P3.10: configuration, documentation & handoff
 
 ### Validation Checklist
 
 Before starting work each session:
 
-- [ ] All 527 committed tests still passing
+- [ ] All 605 committed tests still passing
 - [ ] 0 mypy errors in all v0.4 modules (infrastructure + cli)
 - [ ] I've read the relevant frozen specification
 - [ ] I understand the exact scope from the spec
@@ -488,6 +511,7 @@ Before starting work each session:
 ✅ P3.6 List Command (`src/cli/commands/list_command.py`, `tests/cli/test_list_command.py`)
 ✅ P3.7 Export Command (`src/cli/commands/export_command.py`, `tests/cli/test_export_command.py`, commit `b9705d8`)
 ✅ P3.8 Optimize Command (`src/cli/commands/optimize_command.py`, `tests/cli/test_optimize_command.py`, `src/cli/policies.py`, commit `8bbd7f6`)
+✅ P3.9 Compare Command (`src/cli/commands/compare_command.py`, `tests/cli/test_compare_command.py`, commit `8866ada`)
 ✅ `src/cli/commands/__init__.py` (command registry — extends only via registration)
 ✅ `src/cli/builders.py` (shared builder module — add only, do not modify existing signatures)
 
@@ -501,9 +525,8 @@ Before starting work each session:
 📝 This document (CURRENT_STATE.md)
 📝 [NEXT_SESSION.md](NEXT_SESSION.md)
 📝 Implementation reports in `docs/reports/`
-✅ P3.7 Export Command — Frozen (b9705d8)
-✅ P3.8 Optimize Command — Frozen (8bbd7f6)
-📝 P3.9 Compare Command — Next implementation package
+✅ P3.9 Compare Command — Frozen (8866ada)
+📝 P3.10 Configuration, Documentation & Handoff — Next implementation package
 
 ---
 
@@ -542,14 +565,13 @@ Before starting work each session:
 
 1. ✅ You've read this (CURRENT_STATE.md)
 2. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md)
-3. ✅ P3.7 freeze commit created (b9705d8)
+3. ✅ P3.9 freeze commit created (8866ada)
 4. ✅ Continuity docs updated to reflect frozen state
-5. ✅ P3.8 optimize command frozen (8bbd7f6)
-6. ⬜ Begin P3.9: compare command implementation
+5. ⬜ Begin P3.10: configuration, documentation & handoff
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 571 tests passing (115 CLI + 96 infrastructure + 360 engine/research/optimization)  
+**Test Status:** 605 tests passing (149 CLI + 96 infrastructure + 360 engine/research/optimization)  
 **Blockers:** None  
-**Next Action:** Begin P3.9 compare command implementation
+**Next Action:** Begin P3.10 configuration, documentation & handoff

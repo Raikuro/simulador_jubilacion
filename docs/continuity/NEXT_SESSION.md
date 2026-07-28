@@ -1,8 +1,8 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-28 (P3.8 Optimize Command Frozen — 8bbd7f6)
-**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Packages P3.1 through P3.8 all complete and frozen. Package P3.9 (compare command) is next.
-**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f. P3.7: b9705d8. P3.8: 8bbd7f6.
+**Previous Session:** 2026-07-28 (P3.9 Compare Command Frozen — 8866ada)
+**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Packages P3.1 through P3.9 all complete and frozen. Package P3.10 (Configuration, Documentation & Handoff) is next.
+**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f. P3.7: b9705d8. P3.8: 8bbd7f6. P3.9: 8866ada.
 
 ---
 
@@ -30,7 +30,7 @@
 
 - SWROptimizer, StrategyComparator. All acceptance tests passing. All public APIs frozen.
 
-### In Progress (v0.4 Infrastructure & Deployment Phase 3 — P3.8 Frozen, P3.9 Next)
+### In Progress (v0.4 Infrastructure & Deployment Phase 3 — P3.9 Frozen, P3.10 Next)
 
 **Architectural Specification (FROZEN):**
 - INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
@@ -53,8 +53,8 @@
 | P3.6 | `list` command | ✅ Done (492299f) — FROZEN |
 | P3.7 | `export` command | ✅ Done (b9705d8) — FROZEN |
 | P3.8 | `optimize` command | ✅ Done (8bbd7f6) — FROZEN |
-| P3.9 | `compare` command | ⬜ NEXT |
-| P3.10 | Configuration, Documentation & Handoff | ⬜ |
+| P3.9 | `compare` command | ✅ Done (8866ada) — FROZEN |
+| P3.10 | Configuration, Documentation & Handoff | ⬜ NEXT |
 
 **Phase 4 (FUTURE) Integration & Acceptance:**
 - End-to-end workflow tests, performance validation, documentation completion.
@@ -76,46 +76,44 @@
 11. P3.6 Frozen: Do not modify `src/cli/commands/list_command.py` or related test files without architect approval.
 12. P3.7 Frozen (b9705d8): Do not modify `src/cli/commands/export_command.py` or related test files without architect approval.
 13. P3.8 Frozen (8bbd7f6): Do not modify `src/cli/commands/optimize_command.py`, `src/cli/policies.py`, or related test files without architect approval.
-14. `src/cli/builders.py` is shared and evolvable: new commands add builder functions, but do not modify existing function signatures.
-14. Handoff Consistency: Every implementation handoff must pass an internal consistency review before approval. Package scope, architectural constraints, acceptance criteria, quality gates, and stopping point must not contradict each other. (Added 2026-07-28 per P3.5 architectural review governance improvement.)
+14. P3.9 Frozen (8866ada): Do not modify `src/cli/commands/compare_command.py` or related test files without architect approval.
+15. `src/cli/builders.py` is shared and evolvable: new commands add builder functions, but do not modify existing function signatures.
+16. Handoff Consistency: Every implementation handoff must pass an internal consistency review before approval. Package scope, architectural constraints, acceptance criteria, quality gates, and stopping point must not contradict each other. (Added 2026-07-28 per P3.5 architectural review governance improvement.)
 
 ---
 
 ## Validation Status
 
-Committed test suite: **571 / 571 tests passing** (360 domain/research/optimization + 96 infrastructure + 115 CLI).
+Committed test suite: **605 / 605 tests passing** (360 domain/research/optimization + 96 infrastructure + 149 CLI).
 Infrastructure mypy (src/infrastructure/persistence/ --strict): 0 errors (previous session)
 CLI mypy (src/cli/ --strict): 0 errors
 Full codebase mypy (src/ --strict): 21 pre-existing errors in engine/research domain (not v0.4).
-P3.8 freeze commit: 8bbd7f6.
+P3.9 freeze commit: 8866ada.
 
 ---
 
 ## Exact Next Task
 
-Implement **Package P3.9: compare command**.
+Implement **Package P3.10: Configuration, Documentation & Handoff**.
 
-**Scope:**
-1. `CompareCommand` class (BaseCommand subclass)
-2. Integration with `StrategyComparator` from the frozen v0.3 optimization layer
-3. Multi-strategy comparison output
-4. Error handling
-5. Tests for all compare behaviors
+**Scope (informative — see handoff for canonical specification):**
+1. Configuration file loading integration
+2. `sim-retire config` command
+3. Documentation completion
+4. Final v0.4 Phase 3 integration testing
+5. Phase 4 readiness review
 
 **Dependencies:**
 - `cli.commands.base.BaseCommand` — P3.3 framework
 - `cli.error_handling.ExitCode` — P3.3 framework
-- `cli.policies` — P3.8 shared concrete policy implementations
-- `infrastructure.persistence.sqlite_repository.SQLiteRepository` — Phase 2
-- `research.optimization.strategy_comparator.StrategyComparator` — v0.3
-- `research.optimization.swr_optimizer.SWROptimizer` — v0.3
+- Complete Phase 3 CLI command set (P3.3–P3.9)
 
 ---
 
 ## Stopping Point
 
-Package P3.8 is complete and frozen (8bbd7f6).
+Package P3.9 is complete and frozen (8866ada).
 
-Package P3.9 is complete when all acceptance criteria are met.
+Package P3.10 is the final Phase 3 package. It covers configuration, documentation, and the final handoff to Phase 4.
 
-**Do not proceed beyond P3.9.** Hand back for architectural review before moving to P3.10.
+**Do not proceed beyond P3.10 without explicit architect approval.**
