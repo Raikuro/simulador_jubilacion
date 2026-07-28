@@ -47,11 +47,11 @@ class _InterruptibleCommand(BaseCommand):
 
 @pytest.fixture(autouse=True)
 def _register_and_cleanup_commands() -> None:
-    COMMANDS["echo"] = _EchoCommand
-    COMMANDS["fail"] = _FailingCommand
-    COMMANDS["interrupt"] = _InterruptibleCommand
+    test_commands = {"echo": _EchoCommand, "fail": _FailingCommand, "interrupt": _InterruptibleCommand}
+    COMMANDS.update(test_commands)
     yield
-    COMMANDS.clear()
+    for key in test_commands:
+        COMMANDS.pop(key, None)
 
 
 # ---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-28 (P3.5 Run Command Complete — Architectural Review Approved)
-**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Packages P3.1 through P3.5 all complete. Package P3.6 (list command) is next.
-**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: in working tree. P3.4: eb0518f. P3.5: in working tree.
+**Previous Session:** 2026-07-28 (P3.6 List Command Complete — Architectural Review Approved)
+**Current Status:** `v0.4` Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Packages P3.1 through P3.6 all complete. Package P3.7 (export command) is next.
+**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f.
 
 ---
 
@@ -47,16 +47,16 @@
 |---------|-----------|--------|
 | P3.1 | Concrete Persistence Codecs | ✅ Done (efbeb61) |
 | P3.2 | Persistence Context Factory & Dataset Loading | ✅ Done (39977c6) |
-| P3.3 | CLI Entry Point & Framework | ✅ Done (working tree) |
+| P3.3 | CLI Entry Point & Framework | ✅ Done (90eafbb) — FROZEN |
 | P3.4 | `validate` command | ✅ Done (eb0518f) — FROZEN |
-| P3.5 | `run` command | ✅ Done (working tree) — FROZEN |
-| P3.6 | `list` command | ⬜ NEXT |
-| P3.7 | `export` command | ⬜ |
+| P3.5 | `run` command | ✅ Done (6a7c5b6) — FROZEN |
+| P3.6 | `list` command | ✅ Done (492299f) — FROZEN |
+| P3.7 | `export` command | ⬜ NEXT |
 | P3.8 | `optimize` command | ⬜ |
 | P3.9 | `compare` command | ⬜ |
 | P3.10 | Configuration, Documentation & Handoff | ⬜ |
 
-**Current Package Handoff:** V0.4_P3.6_LIST_HANDOFF.md
+**Current Package Handoff:** V0.4_P3.7_EXPORT_HANDOFF.md (pending preparation)
 
 **Phase 4 (FUTURE) Integration & Acceptance:**
 - End-to-end workflow tests, performance validation, documentation completion.
@@ -75,52 +75,52 @@
 8. Atomic Commit Policy: Create atomic commits ONLY after all validation gates pass.
 9. P3.4 Frozen: Do not modify `src/cli/commands/validate_command.py` or related test files without architect approval.
 10. P3.5 Frozen: Do not modify `src/cli/commands/run_command.py` or related test files without architect approval.
-11. Handoff Consistency: Every implementation handoff must pass an internal consistency review before approval. Package scope, architectural constraints, acceptance criteria, quality gates, and stopping point must not contradict each other. (Added 2026-07-28 per P3.5 architectural review governance improvement.)
+11. P3.6 Frozen: Do not modify `src/cli/commands/list_command.py` or related test files without architect approval.
+12. `src/cli/builders.py` is shared and evolvable: new commands add builder functions, but do not modify existing function signatures.
+13. Handoff Consistency: Every implementation handoff must pass an internal consistency review before approval. Package scope, architectural constraints, acceptance criteria, quality gates, and stopping point must not contradict each other. (Added 2026-07-28 per P3.5 architectural review governance improvement.)
 
 ---
 
 ## Validation Status
 
-Full test suite: **512 / 512 tests passing** (360 domain/research/optimization + 96 infrastructure + 56 CLI).
+Full test suite: **527 / 527 tests passing** (360 domain/research/optimization + 96 infrastructure + 71 CLI).
 Infrastructure mypy (src/infrastructure/persistence/ --strict): **0 errors**
 CLI mypy (src/cli/ --strict): **0 errors**
-Full codebase mypy (src/ --strict): 21 pre-existing errors in engine/research domain.
+Full codebase mypy (src/ --strict): 21 pre-existing errors in engine/research domain (not v0.4).
 
 ---
 
 ## Exact Next Task
 
-Implement **Package P3.6: list command**.
+Implement **Package P3.7: export command**.
 
-The list command queries the SQLite database for all stored studies and displays them in a formatted table (or JSON/CSV). It is a read-only operation — no YAML parsing, no execution, no persistence writes.
+The export command retrieves a completed study's full simulation results from the SQLite database and exports them to CSV or JSON format. It is a read-only operation that produces flat row-oriented data suitable for downstream analysis.
 
 **Scope:**
-1. `ListCommand` class (BaseCommand subclass)
-2. Database query via persistence context (read-only)
-3. Output formatting (table, JSON, CSV)
-4. Filtering by status (`--status`)
-5. Sorting by field (`--sort`)
-6. Error handling (database errors, empty results)
-7. Tests for all list behaviors
+1. `ExportCommand` class (BaseCommand subclass)
+2. Database query via `SQLiteRepository` (read-only)
+3. Output formatting (CSV, JSON)
+4. Error handling (missing study, database errors, empty results)
+5. Tests for all export behaviors
 
 **Dependencies:**
 - `cli.commands.base.BaseCommand` — P3.3 framework
 - `cli.error_handling.ExitCode` — P3.3 framework
+- `infrastructure.persistence.sqlite_repository.SQLiteRepository` — Phase 2
 - `infrastructure.persistence.context.create_persistence_context` — P3.2
-- `infrastructure.persistence.repository.StudyRepository` — P3.2 (for querying stored studies)
 
 **Quality gates:**
 ```bash
 pytest tests/cli/ -v              # Expected: all tests passing
 mypy src/cli/ --strict            # Expected: 0 errors
-sim-retire list --help            # Expected: Help text displayed
-pytest tests/ -v                  # Expected: all 512+ tests passing
+sim-retire export --help          # Expected: Help text displayed
+pytest tests/ -v                  # Expected: all 527+ tests passing
 ```
 
 ---
 
 ## Stopping Point
 
-Package P3.6 is complete when all acceptance criteria are met.
+Package P3.7 is complete when all acceptance criteria are met.
 
-**Do not proceed beyond P3.6.** No `export`, `optimize`, or `compare` commands. No configuration file loading. Hand back for architectural review before moving to P3.7.
+**Do not proceed beyond P3.7.** No `optimize` or `compare` commands. Hand back for architectural review before moving to P3.8.

@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-27  
-**Milestone:** v0.3 Complete | v0.4 Phase 1 + Phase 2 Complete → Phase 3 Next
+**Last Updated:** 2026-07-28  
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.6 Complete → P3.7 Next
 
 ---
 
@@ -16,7 +16,8 @@
 - ✅ **v0.3 (Optimization Layer)** — Complete, frozen, 84+ tests passing
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 1 (Parallel Execution) Complete**
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 2 (SQLite Persistence) Complete**
-- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) Next**
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.1–P3.6 Complete**
+- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.7 (Export Command) Next**
 
 **Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical implementation target.
 
@@ -38,7 +39,7 @@
 |-------|--------|--------------|--------|
 | **Phase 1: Parallel Execution** | ✅ Complete | 8 tests, `PARALLEL_EXECUTION_SPECIFICATION.md` | `dda449a` |
 | **Phase 2: SQLite Persistence** | ✅ Complete | 39 tests, `INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md` | `128bb54` |
-| **Phase 3: CLI Interface** | 📋 Next | `CLI_INTERFACE_SPECIFICATION.md` | — |
+| **Phase 3: CLI Interface** | ✅ P3.1–P3.6 Complete (71 tests) | `CLI_INTERFACE_SPECIFICATION.md` | `492299f` (P3.6) |
 | **Phase 4: Integration** | 📋 Future | Full acceptance suite | — |
 
 ### Planned Milestones (Future)
@@ -57,7 +58,7 @@
 
 1. ✅ **Phase 1:** Parallel execution engine — Complete
 2. ✅ **Phase 2:** SQLite persistence layer — Complete
-3. 📋 **Phase 3:** CLI interface — NEXT
+3. ✅ **Phase 3:** CLI interface — P3.1–P3.6 Complete (71 tests)
 4. 📋 **Phase 4:** Integration & acceptance tests — Future
 
 
@@ -68,11 +69,12 @@
 ### Test Suite Status
 
 ```
-Total Passing Tests:  407
+Total Passing Tests:  527
 ├─ Engine Tests:       200+
 ├─ Research Tests:      76+
 ├─ Optimization Tests:  84+
-└─ Infrastructure Tests: 47 (Phase 1: 8 parallel + Phase 2: 39 persistence)
+├─ CLI Tests:           71 (P3.3: 26, P3.4: 16, P3.5: 14, P3.6: 15)
+└─ Infrastructure Tests: 96 (Phase 1: 8 parallel + Phase 2: 39 persistence + P3.1: 30 codecs + P3.2: 19 context)
 
 Type Checking:
   src/infrastructure/persistence/ --strict: 0 errors ✅
