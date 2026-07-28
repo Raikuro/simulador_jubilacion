@@ -1,6 +1,7 @@
 """Command registry."""
 
 from cli.commands.base import BaseCommand
+from cli.commands.compare_command import CompareCommand
 from cli.commands.export_command import ExportCommand
 from cli.commands.list_command import ListCommand
 from cli.commands.optimize_command import OptimizeCommand
@@ -13,4 +14,5 @@ COMMANDS: dict[str, type[BaseCommand]] = {
     "list": ListCommand,
     "export": ExportCommand,
     "optimize": OptimizeCommand,
+    "compare": CompareCommand,
 }
