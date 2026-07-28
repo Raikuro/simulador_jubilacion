@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-27  
-**Milestone:** v0.3 Complete | v0.4 Phase 2 Complete → Phase 3 Next
+**Last Updated:** 2026-07-28  
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.5 Complete → P3.6 Next
 
 ---
 
@@ -16,9 +16,11 @@
 - ✅ **v0.3 (Optimization Layer)** — Complete, frozen, all implementations delivered
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 1 (Parallel Execution) Complete** — ProcessPoolExecutor, deterministic batching, error isolation
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 2 (SQLite Persistence) Complete** — 10 tables, reconstruction context pattern, lossless round-trip, lock retry
-- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) Next**
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.3 (CLI Framework) Complete** — argparse entry point, BaseCommand framework, command registry, exit code conventions, 26 tests passing
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.4 (Validate Command) Complete** — YAML parsing, ExperimentDefinition construction, ResearchPlan validation, structured output, 16 new tests
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.5 (Run Command) Complete** — YAML experiment execution, dry-run orchestration, execution pipeline wired up, result persistence, 14 new tests, 56 total CLI tests
 
-**Immediate Next Task:** Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
+**Immediate Next Task:** Package P3.6 — List Command. Please refer to `NEXT_SESSION.md` for the current canonical task assignment.
 
 ---
 
@@ -132,9 +134,9 @@
 
 ## 3. Active Milestone (Ready to Start)
 
-### v0.4 Infrastructure & Deployment ✅ ACTIVE — Phase 2 Complete
+### v0.4 Infrastructure & Deployment ✅ ACTIVE — Phase 3 P3.5 Complete
 
-**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) next.
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution) and Phase 2 (SQLite Persistence) complete. Phase 3 (CLI Interface) active — P3.1 through P3.5 complete, P3.6 next.
 
 **What it will do:**
 - **SQLite Persistence** — Store experiment definitions, research plans, and results
@@ -171,10 +173,50 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 - Lossless round-trip serialization for all domain objects
 - Lock-contention retry and WAL journal mode
 
-📋 **Phase 3 (CLI) — NEXT**:
-- Command implementations (run, list, validate, export, optimize, compare)
-- Output formatting (CSV, JSON, table)
-- Help text and error messages
+✅ **Phase 3 (CLI) — P3.1–P3.5 Complete, P3.6 Next**:
+
+**P3.1 (Concrete Persistence Codecs)** — Complete (commit `efbeb61`):
+- AllocationPolicyCodec, WithdrawalPolicyCodec, SimulationResultCodec
+- DefaultDatasetResolver (in-memory registry)
+- 30 tests
+
+**P3.2 (Persistence Context Factory & Dataset Loading)** — Complete (commit `39977c6`):
+- JSON dataset file format & loader
+- `DefaultDatasetResolver.from_data_dir()` classmethod
+- `create_persistence_context()` factory function
+- 19 tests
+
+**P3.3 (CLI Entry Point & Framework)** — Complete:
+- `sim-retire` console script in pyproject.toml
+- argparse root parser with global options
+- BaseCommand abstract class, COMMANDS registry, ExecutionContext
+- ExitCode enum (0, 1, 2, 130), format_error, handle_exception
+- 26 tests, 0 mypy errors
+
+**P3.4 (Validate Command)** — Complete (commit `eb0518f`):
+- ValidateCommand class (BaseCommand subclass)
+- YAML parsing with pyyaml, error handling with line numbers
+- ExperimentDefinition construction and validation
+- ResearchPlan creation with cohort/parameter/policy validation
+- Structured validation output (sections, emoji indicators, verdict)
+- Exit codes: 0 success, 2 validation failure
+- `cli.builders` module extracted: `load_yaml`, `resolve_dataset`, `build_cohort_specs`, `build_parameter_configs`, `build_initial_portfolio`, `build_research_plan`
+- 16 new tests, 0 mypy errors
+- **FROZEN** — Architectural review approved
+
+**P3.5 (Run Command)** — Complete:
+- RunCommand class (BaseCommand subclass)
+- YAML loading via `cli.builders` (shared module)
+- ResearchPlan construction with command-specific policy subclasses
+- Dry-run orchestration (prints plan summary, exits 0)
+- Execution pipeline wired up (`sequential_execute`/`parallel_execute`, persistence context)
+- Completion summary output (status, units, execution time)
+- `--workers N` for parallel execution
+- Error handling (file, YAML, definition, execution, interrupt)
+- 14 new tests, 56 total CLI tests, 0 mypy errors
+- **FROZEN** — Architectural review approved
+
+**⬜ P3.6 (list command) — NEXT**
 
 📋 **Phase 4 (Integration)**:
 - End-to-end workflow tests
@@ -196,7 +238,7 @@ All architectural decisions frozen. Three behavioral specifications provide comp
 
 ---
 
-## 4. Quality Checkpoints
+## 5. Quality Checkpoints
 
 ### Before Starting v0.3 Implementation
 
@@ -222,30 +264,47 @@ Every implementation must:
 - ✅ Follow Clean Architecture layer boundaries
 - ✅ Include architecture review comment linking to spec
 
+### Handoff Consistency Standard (Added 2026-07-28)
+
+Every implementation handoff must pass an **internal consistency review** before approval:
+
+- ✅ Package scope and architectural constraints agree
+- ✅ Acceptance criteria can be traced to requirements
+- ✅ Quality gates are achievable given the scope
+- ✅ Stopping point matches acceptance criteria
+- ✅ No contradictory requirements exist between sections
+
+This standard applies to all future package handoffs (P3.6–P3.10) and is enforced during the pre-implementation architectural review.
+
 ---
 
-## 5. Test Suite Status
+## 6. Test Suite Status
 
 ### Current Test Coverage
 
 ```
-Total Passing Tests:  407
-├─ Engine Tests:       200+
-├─ Research Tests:      76+
-├─ Optimization Tests:  84+
-└─ Infrastructure Tests: 47 (Phase 1: 8 parallel + Phase 2: 39 persistence)
+Total Passing Tests:  512
+├─ Engine/Research/Optimization:  360
+├─ CLI Tests:                     56
+│  ├─ Framework (P3.3):           26
+│  ├─ Validate Command (P3.4):    16
+│  └─ Run Command (P3.5):         14
+└─ Infrastructure Tests:          96
+    ├─ Parallel Execution:          8
+    ├─ SQLite Persistence:         39
+    ├─ Concrete Codecs:            30
+    └─ Context Factory:            19
 
 Type Checking:
+  src/cli/ --strict:                         0 errors ✅
   src/infrastructure/persistence/ --strict:  0 errors ✅
   src/ --strict:                             21 pre-existing errors in engine/research domain (not v0.4)
-```
 
 ### Test Locations
 
-- Engine tests: `tests/test_*.py` (core domain)
-- Research tests: `tests/test_*_research.py` (orchestration layer)
-- Optimization tests: `tests/test_swr_optimizer.py`, `tests/test_strategy_comparator*.py`
-- Infrastructure tests: `tests/infrastructure/` (parallel execution, persistence)
+- Engine/Research/Optimization tests: `tests/test_*.py` (core domain)
+- Infrastructure tests: `tests/infrastructure/` (parallel execution: 8, persistence: 39, codecs: 30, context: 19)
+- CLI tests: `tests/cli/` (framework: 26, validate: 16, run: 14)
 - Integration tests: `tests/test_integration_*.py` (cross-layer)
 
 ### Adding New Tests (v0.4 Requirements)
@@ -258,11 +317,11 @@ Every new v0.4 component must have:
 
 ---
 
-## 6. Known Blockers
+## 7. Known Blockers
 
 ### Current Blockers
 
-**NONE** — v0.4 Phase 3 (CLI Interface) implementation is ready to start.
+**NONE** — v0.4 Phase 3 P3.5 (CLI run command) implementation is ready to start.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
@@ -270,6 +329,10 @@ All dependencies are in place:
 - v0.3 Optimization Layer ✅ Available
 - v0.4 Phase 1 (Parallel Execution) ✅ Complete
 - v0.4 Phase 2 (SQLite Persistence) ✅ Complete
+- v0.4 Phase 3 P3.1 (Persistence Codecs) ✅ Complete
+- v0.4 Phase 3 P3.2 (Context Factory) ✅ Complete
+- v0.4 Phase 3 P3.3 (CLI Framework) ✅ Complete
+- v0.4 Phase 3 P3.4 (validate command) ✅ Complete
 - CLI Interface Spec ✅ Approved & Frozen
 
 ### Potential Risks
@@ -283,7 +346,7 @@ All dependencies are in place:
 
 ---
 
-## 7. Architecture at a Glance
+## 8. Architecture at a Glance
 
 ### Clean Architecture Layers
 
@@ -319,7 +382,7 @@ All dependencies are in place:
 
 ---
 
-## 8. Key Files & Locations
+## 9. Key Files & Locations
 
 | Path | Purpose | Status |
 |------|---------|--------|
@@ -328,8 +391,11 @@ All dependencies are in place:
 | `src/research/optimization/` | Optimization (v0.3) | ✅ Frozen, implemented |
 | `src/infrastructure/persistence/` | SQLite persistence (v0.4 Phase 2) | ✅ Complete |
 | `src/infrastructure/execution/` | Parallel execution (v0.4 Phase 1) | ✅ Complete |
-| `tests/` | Test suite | ✅ 407 passing |
-| `tests/infrastructure/` | Infrastructure tests | ✅ 47 passing |
+| `src/cli/` | CLI framework, builders, validate + run commands (v0.4 Phase 3 P3.3–P3.5) | ✅ Complete |
+| `src/cli/builders.py` | Shared CLI builder functions (YAML→domain) | ✅ Complete |
+| `tests/` | Test suite | ✅ 512 passing |
+| `tests/infrastructure/` | Infrastructure tests | ✅ 96 passing |
+| `tests/cli/` | CLI tests (framework: 26, validate: 16, run: 14) | ✅ 56 passing |
 | `docs/continuity/` | Handover documents | 📝 This folder |
 | `docs/specifications/` | Implementation contracts | ✅ Frozen |
 | `docs/specifications/infrastructure/` | v0.4 infrastructure specs | ✅ Frozen |
@@ -337,31 +403,32 @@ All dependencies are in place:
 
 ---
 
-## 9. Session Initialization
+## 10. Session Initialization
 
 ### Starting a New Session
 
 1. ✅ Read [AI_ARCHITECT_GUIDE.md](AI_ARCHITECT_GUIDE.md) (5 min)
 2. ✅ Read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) (10 min)
 3. ✅ Read this document (10 min)
-4. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md) (5 min) ← Do this next
-5. ⬜ Run tests to verify baseline: `pytest tests/ -v` (expect 407 passing)
+4. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md) (5 min)
+5. ⬜ Run tests to verify baseline: `pytest tests/ -v` (expect 512 passing)
 6. ⬜ Review CLI specification: `docs/specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md`
-7. ⬜ Begin Phase 3: CLI Interface implementation
+7. ⬜ Read P3.6 handoff: `docs/roadmaps/milestones/V0.4_P3.6_LIST_HANDOFF.md`
+8. ⬜ Begin P3.6: list command implementation
 
 ### Validation Checklist
 
 Before starting work each session:
 
-- [ ] All 407 tests still passing
-- [ ] 0 mypy errors in v0.4 infrastructure modules
+- [ ] All 512 tests still passing
+- [ ] 0 mypy errors in all v0.4 modules (infrastructure + cli)
 - [ ] I've read the relevant frozen specification
 - [ ] I understand the exact scope from the spec
 - [ ] I've identified the test file for my component
 
 ---
 
-## 10. Quick Reference: What's Frozen vs. What's Active
+## 11. Quick Reference: What's Frozen vs. What's Active
 
 ### FROZEN (Do Not Change Without Approval)
 
@@ -370,16 +437,25 @@ Before starting work each session:
 ✅ All specifications in `docs/specifications/`
 ✅ All architecture reviews in `docs/architecture/reviews/`
 ✅ All public API contracts in `docs/architecture/api/`
+✅ P3.4 Validate Command (`src/cli/commands/validate_command.py`, `tests/cli/test_validate_command.py`)
+✅ P3.5 Run Command (`src/cli/commands/run_command.py`, `tests/cli/test_run_command.py`)
+✅ `src/cli/commands/__init__.py` (command registry — extends only via registration)
+
+### EVOLVABLE (Shared, Not Frozen to Any Package)
+
+📝 `src/cli/builders.py` — Shared CLI builder functions. New commands add, not modify.
+📝 `src/cli/main.py` — Dispatch framework. Expands automatically via COMMANDS registry.
 
 ### ACTIVE (Update as Work Progresses)
 
 📝 This document (CURRENT_STATE.md)
 📝 [NEXT_SESSION.md](NEXT_SESSION.md)
 📝 Implementation reports in `docs/reports/`
+📝 P3.6 List Command — Next implementation package
 
 ---
 
-## 11. Communication Channels
+## 12. Communication Channels
 
 ### For Questions About:
 
@@ -394,7 +470,7 @@ Before starting work each session:
 
 ---
 
-## 12. Updates to This Document
+## 13. Updates to This Document
 
 **When to update CURRENT_STATE.md:**
 
@@ -413,15 +489,14 @@ Before starting work each session:
 ## Next Steps (In Order)
 
 1. ✅ You've read this (CURRENT_STATE.md)
-2. ⬜ Read [NEXT_SESSION.md](NEXT_SESSION.md)
-3. ⬜ Run full test suite: `pytest tests/ -v`
-4. ⬜ Read CLI Interface specification: `docs/specifications/infrastructure/CLI_INTERFACE_SPECIFICATION.md`
-5. ⬜ Read Phase 3 entry in `docs/roadmaps/milestones/V0.4_IMPLEMENTATION_HANDOFF.md`
-6. ⬜ Start Phase 3 implementation
+2. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md)
+3. ⬜ Run full test suite: `pytest tests/ -v` (expect 512)
+4. ⬜ Read P3.6 handoff: `docs/roadmaps/milestones/V0.4_P3.6_LIST_HANDOFF.md`
+5. ⬜ Start P3.6: list command implementation
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** All 407 tests passing ✅  
+**Test Status:** All 512 tests passing ✅  
 **Blockers:** None  
-**Next Action:** Read [NEXT_SESSION.md](NEXT_SESSION.md) → Begin Phase 3 CLI Interface
+**Next Action:** Read P3.6 handoff → Begin P3.6 list command implementation

@@ -29,6 +29,12 @@
 
 ### docs/architecture/
 
+#### Architecture Decision Records
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| **ADR-001-cli-framework-selection.md** | CLI framework: argparse vs click | Accepted |
+
 #### Reviews (Design Decisions)
 
 | Document | Purpose | Status |
@@ -37,6 +43,7 @@
 | **EXPERIMENT_DEFINITION_ARCHITECTURE_REVIEW.md** | Experiment definition design | Frozen |
 | **PARAMETER_SWEEP_ENGINE_ARCHITECTURE_REVIEW.md** | Parameter sweep design | Frozen |
 | **RESEARCH_EXECUTOR_ARCHITECTURE_REVIEW.md** | Research orchestration design | Frozen |
+| **RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md** | Strategy comparator architecture | Frozen |
 | **RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md** | Optimization design | Frozen |
 | **SIMULATION_EXECUTOR_ARCHITECTURAL_REVIEW.md** | Simulation execution design | Frozen |
 | **SIMULATION_EXECUTOR_CODE_REVIEW.md** | Code review documentation | Frozen |
@@ -89,6 +96,7 @@
 | Document | Purpose | Status |
 |----------|---------|--------|
 | **RESEARCH_SWROPTIMIZER_SPECIFICATION.md** | SWROptimizer contract | Frozen |
+| **RESEARCH_STRATEGYCOMPARATOR_API_CONTRACT.md** | Strategy comparator API contract | Frozen |
 | **RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md** | Strategy comparator contract | Frozen |
 | **RESEARCH_V0.3_SPECIFICATION.md** | v0.3 overview | Frozen |
 
@@ -108,9 +116,14 @@
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| **RESEARCH_LAYER_FINAL_ROADMAP.md** | Authoritative milestone blueprint | Frozen |
-| **RESEARCH_LAYER_ROADMAP.md** | Earlier roadmap version | Frozen |
 | **EXECUTION_ENGINE_COMPLETION.md** | v0.1 completion summary | Frozen |
+| **INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md** | v0.4 infrastructure milestone architecture | Frozen |
+| **RESEARCH_LAYER_FINAL_ROADMAP.md** | Authoritative milestone blueprint | Frozen |
+| **RESEARCH_LAYER_ROADMAP.md** | Earlier roadmap version (historical) | Frozen |
+| **V0.4_IMPLEMENTATION_HANDOFF.md** | v0.4 implementation handoff package | Frozen |
+| **V0.4_P3.1_CODECS_HANDOFF.md** | P3.1 concrete persistence codecs | Frozen |
+| **V0.4_P3.2_CONTEXT_FACTORY_HANDOFF.md** | P3.2 context factory & dataset loading | Frozen |
+| **V0.4_P3.3_CLI_FRAMEWORK_HANDOFF.md** | P3.3 CLI entry point & framework | Frozen |
 
 ---
 
@@ -120,15 +133,24 @@
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| **CLEANUP_SUMMARY.md** | Cleanup summary | Active |
-| **SIMULATION_RUNNER_IMPLEMENTATION_REPORT.md** | Runner implementation | Active |
-| **COHORT_GENERATOR_IMPLEMENTATION_SUMMARY.md** | Cohort generator summary | Active |
-| **PARAMETER_SWEEP_ENGINE_IMPLEMENTATION_SUMMARY.md** | Parameter sweep summary | Active |
-| **SIMULATION_STATISTICS_BUILDER_IMPLEMENTATION.md** | Statistics builder implementation | Active |
-| **STATISTICS_BUILDER_INPUT_ANALYSIS.md** | Input analysis | Active |
-| **MARKET_EVOLUTION_IMPLEMENTATION_GUIDANCE.md** | Implementation guidance | Active |
-| **IMPLEMENTATION_PHASE_GUIDANCE.md** | Phase guidance | Active |
-| **RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md** | Optimization design review | Active |
+| **ARCHITECTURE_RESOLUTION_REPORT_V0.4.md** | v0.4 architecture resolution | Active |
+| **RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md** | StrategyComparator implementation handoff | Active |
+
+### docs/history/
+
+*Historical implementation records migrated from root and reports directories during the 2026-07-24 documentation reorganization.*
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| **CLEANUP_SUMMARY.md** | Cleanup summary | Historical |
+| **SIMULATION_RUNNER_IMPLEMENTATION_REPORT.md** | Runner implementation | Historical |
+| **COHORT_GENERATOR_IMPLEMENTATION_SUMMARY.md** | Cohort generator summary | Historical |
+| **PARAMETER_SWEEP_ENGINE_IMPLEMENTATION_SUMMARY.md** | Parameter sweep summary | Historical |
+| **SIMULATION_STATISTICS_BUILDER_IMPLEMENTATION.md** | Statistics builder implementation | Historical |
+| **STATISTICS_BUILDER_INPUT_ANALYSIS.md** | Input analysis | Historical |
+| **MARKET_EVOLUTION_IMPLEMENTATION_GUIDANCE.md** | Implementation guidance | Historical |
+| **IMPLEMENTATION_PHASE_GUIDANCE.md** | Phase guidance | Historical |
+| **RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md** | Optimization design review | Historical |
 
 ---
 
@@ -167,22 +189,14 @@
 
 **Purpose:** Historical migration records and documentation evolution
 
-**Note:** Currently empty - ready for future historical documents
+**Note:** Historical implementation records from prior milestones are listed in **section 5** *(Reports & Analysis / docs/history/)*. This directory is reserved for new historical records created by future reorganizations.
 
 ---
 
 ## 9. Project Root
 
-### MIGRATION_REPORT.md
-
-**Purpose:** Documentation migration report
-
-**Content:**
-- List of all files moved
-- Files renamed
-- Broken links fixed
-- Documents requiring stakeholder review
-- Assumptions made during migration
+*No project-root documentation files exist. All documentation resides under `docs/`.*
+*The previously referenced `MIGRATION_REPORT.md` was planned but never created in any commit; its scope is covered by this document and the git rename history.*
 
 ---
 
@@ -203,12 +217,15 @@ docs/
 │   ├── GOVERNANCE.md                  [Documentation governance]
 │   └── SOURCE_OF_TRUTH.md             [Canonical sources]
 │
-├── architecture/                      [17 files - Design decisions & APIs]
-│   ├── reviews/                       [10 files - Design decisions]
+├── architecture/                      [19 files - Design decisions & APIs]
+│   ├── decisions/                     [1 file - Architecture Decision Records]
+│   │   └── ADR-001-cli-framework-selection.md
+│   ├── reviews/                       [11 files - Design decisions]
 │   │   ├── COHORT_GENERATOR_ARCHITECTURE_REVIEW.md
 │   │   ├── EXPERIMENT_DEFINITION_ARCHITECTURE_REVIEW.md
 │   │   ├── PARAMETER_SWEEP_ENGINE_ARCHITECTURE_REVIEW.md
 │   │   ├── RESEARCH_EXECUTOR_ARCHITECTURE_REVIEW.md
+│   │   ├── RESEARCH_STRATEGYCOMPARATOR_ARCHITECTURE_REVIEW.md
 │   │   ├── RESEARCH_SWROPTIMIZER_ARCHITECTURE_REVIEW.md
 │   │   ├── SIMULATION_EXECUTOR_ARCHITECTURAL_REVIEW.md
 │   │   ├── SIMULATION_EXECUTOR_CODE_REVIEW.md
@@ -225,7 +242,7 @@ docs/
 │       ├── SIMULATION_EXECUTOR_PUBLIC_API_REVIEW.md
 │       └── RESEARCH_SWROPTIMIZER_PUBLIC_API_REVIEW.md
 │
-├── specifications/                    [16 files - Implementation contracts]
+├── specifications/                    [19 files - Implementation contracts]
 │   ├── engine/                        [8 files - v0.1 specs]
 │   │   ├── MARKET_EVOLUTION_STEP_SPECIFICATION.md
 │   │   ├── MONTHLY_RESULT_BUILDER_STEP_SPECIFICATION.md
@@ -242,8 +259,9 @@ docs/
 │   │   ├── PARAMETER_SWEEP_ENGINE_SPECIFICATION.md
 │   │   └── RESEARCH_EXECUTOR_SPECIFICATION.md
 │   │
-│   ├── optimization/                  [3 files - v0.3 specs]
+│   ├── optimization/                  [4 files - v0.3 specs]
 │   │   ├── RESEARCH_SWROPTIMIZER_SPECIFICATION.md
+│   │   ├── RESEARCH_STRATEGYCOMPARATOR_API_CONTRACT.md
 │   │   ├── RESEARCH_STRATEGYCOMPARATOR_SPECIFICATION.md
 │   │   └── RESEARCH_V0.3_SPECIFICATION.md
 │   │
@@ -253,23 +271,18 @@ docs/
 │       └── CLI_INTERFACE_SPECIFICATION.md
 │
 ├── roadmaps/                           [1 file - Planning docs]
-│   └── milestones/                    [5 files - Milestone planning + handoff]
+│   └── milestones/                    [8 files - Milestone planning + handoff]
 │       ├── RESEARCH_LAYER_FINAL_ROADMAP.md
 │       ├── RESEARCH_LAYER_ROADMAP.md
 │       ├── EXECUTION_ENGINE_COMPLETION.md
 │       ├── INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
-│       └── V0.4_IMPLEMENTATION_HANDOFF.md
+│       ├── V0.4_IMPLEMENTATION_HANDOFF.md
+│       ├── V0.4_P3.1_CODECS_HANDOFF.md
+│       ├── V0.4_P3.2_CONTEXT_FACTORY_HANDOFF.md
+│       └── V0.4_P3.3_CLI_FRAMEWORK_HANDOFF.md
 │
-├── reports/                           [10 files - Implementation summaries]
-│   ├── CLEANUP_SUMMARY.md
-│   ├── SIMULATION_RUNNER_IMPLEMENTATION_REPORT.md
-│   ├── COHORT_GENERATOR_IMPLEMENTATION_SUMMARY.md
-│   ├── PARAMETER_SWEEP_ENGINE_IMPLEMENTATION_SUMMARY.md
-│   ├── SIMULATION_STATISTICS_BUILDER_IMPLEMENTATION.md
-│   ├── STATISTICS_BUILDER_INPUT_ANALYSIS.md
-│   ├── MARKET_EVOLUTION_IMPLEMENTATION_GUIDANCE.md
-│   ├── IMPLEMENTATION_PHASE_GUIDANCE.md
-│   ├── RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md
+├── reports/                           [2 files - Active implementation reports]
+│   ├── ARCHITECTURE_RESOLUTION_REPORT_V0.4.md
 │   └── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
 │
 ├── development/                       [3 files - Dev guidelines]
@@ -277,7 +290,16 @@ docs/
 │   ├── CONTRIBUTION.md
 │   └── IMPLEMENTATION_PROMPT.md
 │
-└── history/                           [empty - Ready for historical docs]
+└── history/                           [9 files - Historical migration records]
+    ├── CLEANUP_SUMMARY.md
+    ├── COHORT_GENERATOR_IMPLEMENTATION_SUMMARY.md
+    ├── IMPLEMENTATION_PHASE_GUIDANCE.md
+    ├── MARKET_EVOLUTION_IMPLEMENTATION_GUIDANCE.md
+    ├── PARAMETER_SWEEP_ENGINE_IMPLEMENTATION_SUMMARY.md
+    ├── RESEARCH_SWROPTIMIZER_IMPLEMENTATION_DESIGN_REVIEW.md
+    ├── SIMULATION_RUNNER_IMPLEMENTATION_REPORT.md
+    ├── SIMULATION_STATISTICS_BUILDER_IMPLEMENTATION.md
+    └── STATISTICS_BUILDER_INPUT_ANALYSIS.md
 ```
 
 ---

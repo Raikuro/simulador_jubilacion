@@ -1,3 +1,5 @@
+> **Document History:** This document was originally `PROJECT_PLAN.md` at the project root. It was renamed to `docs/development/ARCHITECTURE_OVERVIEW.md` during the 2026-07-24 documentation reorganization. Content is preserved unchanged.
+
 # 1. Introducción
 
 ## 1.1 Propósito

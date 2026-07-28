@@ -62,7 +62,7 @@
 
 ## 10. Design Decisions
 **Question:** Why was a particular design decision made?  
-**Canonical Source:** Architecture Reviews (`docs/architecture/reviews/`)
+**Canonical Source:** Architecture Reviews (`docs/architecture/reviews/`) and Architecture Decision Records (`docs/architecture/decisions/`)
 
 ---
 

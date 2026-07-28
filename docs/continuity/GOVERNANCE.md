@@ -17,6 +17,27 @@
 
 This principle ensures documentation is authoritative, predictable, and maintainable for many years.
 
+### Documentation Authority Hierarchy
+
+When two documents disagree, the following hierarchy determines precedence. A document at a higher level takes precedence unless a formal supersession (ADR, amendment, or supersession note) has been recorded.
+
+| Level | Document Type | Category |
+|-------|---------------|----------|
+| 1 | Specifications (`docs/specifications/`) | **Highest Authority** |
+| 2 | Architecture Decision Records (`docs/architecture/decisions/`) | Formal Decisions |
+| 3 | Approved Milestone Handoffs (`docs/roadmaps/milestones/`) | Implementation Plans |
+| 4 | Living Architecture Documents (`docs/development/`, `docs/architecture/reviews/`) | Guides |
+| 5 | Continuity Documents (`docs/continuity/`) excluding CURRENT_STATE.md | Operational |
+| 6 | CURRENT_STATE.md | Status |
+| 7 | Implementation Progress & Reports (`docs/reports/`, `docs/history/`) | Records |
+| 8 | Historical Documents (self-declared Historical) | Archive |
+
+**Rules:**
+- A Level N document takes precedence over Level N+1 when they conflict.
+- A formal supersession (new ADR, handoff specification) moves the refined decision above the original document, regardless of the original document's level.
+- Specifications may only be superseded by a newer specification or an ADR that explicitly replaces them.
+- Continuity documents must never contradict higher-level documents. If a conflict is found, the continuity document must be corrected to match.
+
 ---
 
 ## 2. Documentation Governance Rules (Permanent)
@@ -472,6 +493,19 @@ Maintainer: Chief Architect
 
 ### Governance Rule: Conflict Resolution
 When inconsistencies are found between canonical documents, implementation stops until the inconsistency is resolved. The resolution must be persisted in the canonical documentation before development continues.
+
+### Documentation Exit Gate
+
+Before a new implementation package may begin (transition from architecture review to coding), all of the following must be verified:
+
+1. **No Frozen document has been modified** during the preceding package. Verify via `git diff -- <frozen-doc-path>`.
+2. **ADR consistency** — any architecture decision documents referenced by the handoff exist or are created as part of the preceding package's closure.
+3. **Documentation authority hierarchy** is obeyed — Living documents never override Frozen.
+4. **All Living documents are internally consistent** — no stale references, no truncated content, no duplicate blocks.
+5. **NEXT_SESSION.md and CURRENT_STATE.md** are synchronized with the just-completed package's outcome.
+6. **The package handoff document** for the next package has status `READY FOR IMPLEMENTATION` and its Architecture Review is marked `✅ Approved`.
+
+The architect performing the closure must publish a written Implementation Authorization containing the next package's name, scope, constraints, key dependencies, quality gates, deliverables, and an explicit `MAY BEGIN` statement.
 
 ---
 

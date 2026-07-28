@@ -1,10 +1,14 @@
 # Implementation Progress
 
-**Document Type:** Implementation Continuity Record  
-**Status:** Phase 2 complete — awaiting Phase 3 implementation handoff  
-**Owner:** Implementation Engineer  
-**Update Policy:** Update after every significant implementation block and before an interrupted session ends.  
-**Architectural Status:** Non-architectural; this document must not record architectural decisions.  
+> **SUPERSEDED — Historical Per-Phase Record Only**  
+> This document tracked implementation progress for **v0.4 Phase 2 (SQLite persistence)** and is preserved as a historical implementation chronology.  
+> **Do not update with new phase information.** For current project status, consult [`CURRENT_STATE.md`](CURRENT_STATE.md) — the authoritative project status document.  
+> *Superseded: 2026-07-27*
+
+**Document Type:** Implementation Continuity Record (Historical)  
+**Status:** Historical — Phase 2 implementation archived  
+**Owner:** Chief Architect (historical record)  
+**Update Policy:** No further updates. Historical record only.  
 **Source Template:** `docs/continuity/IMPLEMENTATION_PROGRESS_TEMPLATE.md`
 
 ---

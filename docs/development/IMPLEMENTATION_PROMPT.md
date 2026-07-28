@@ -1,12 +1,14 @@
 # IMPLEMENTATION_PROMPT.md
 
+> **Note:** `ARCHITECTURE_OVERVIEW.md` was renamed to `docs/development/ARCHITECTURE_OVERVIEW.md` during the 2026-07-24 documentation reorganization. Throughout this document, all references to `ARCHITECTURE_OVERVIEW.md` should be understood as referring to the successor document `ARCHITECTURE_OVERVIEW.md`.
+
 Version: 1.0
 
 ---
 
 # 1. Mission
 
-Your mission is to implement the retirement simulator exactly as specified in `PROJECT_PLAN.md`.
+Your mission is to implement the retirement simulator exactly as specified in `ARCHITECTURE_OVERVIEW.md`.
 
 This project is intended to become a reusable financial simulation engine capable of reproducing and extending the Safe Withdrawal Rate studies published by EarlyRetirementNow.
 
@@ -74,11 +76,11 @@ The Product Owner communicates with the Architect whenever clarification is requ
 
 # 3. The Specification is the Source of Truth
 
-PROJECT_PLAN.md is the contract.
+ARCHITECTURE_OVERVIEW.md is the contract.
 
-Whenever the implementation disagrees with PROJECT_PLAN.md:
+Whenever the implementation disagrees with ARCHITECTURE_OVERVIEW.md:
 
-PROJECT_PLAN.md wins.
+ARCHITECTURE_OVERVIEW.md wins.
 
 Never modify the implementation to "match reality".
 
@@ -108,7 +110,7 @@ Only then continue.
 
 # 5. Reading Order
 
-Before writing any code read the complete PROJECT_PLAN.md.
+Before writing any code read the complete ARCHITECTURE_OVERVIEW.md.
 
 Do not start implementing after reading only part of the document.
 
@@ -139,7 +141,7 @@ The code will live much longer than its first implementation.
 
 # 7. Scope
 
-Implement exactly what exists in PROJECT_PLAN.md.
+Implement exactly what exists in ARCHITECTURE_OVERVIEW.md.
 
 Do not implement future ideas.
 
@@ -168,7 +170,7 @@ Do not implement:
 - UI
 - REST API
 
-unless PROJECT_PLAN.md explicitly requires them.
+unless ARCHITECTURE_OVERVIEW.md explicitly requires them.
 
 ---
 
@@ -206,7 +208,7 @@ The Domain must be completely independent from infrastructure.
 
 All Value Objects shall be immutable.
 
-Mutation is only allowed where explicitly defined by PROJECT_PLAN.md.
+Mutation is only allowed where explicitly defined by ARCHITECTURE_OVERVIEW.md.
 
 Never mutate objects "for convenience".
 
@@ -292,7 +294,7 @@ Never skip steps.
 
 The workflow is:
 
-1. Read the relevant sections of PROJECT_PLAN.md.
+1. Read the relevant sections of ARCHITECTURE_OVERVIEW.md.
 2. Identify the affected modules.
 3. Design the minimal implementation.
 4. Implement the feature.
@@ -1114,7 +1116,7 @@ Do not introduce concurrency inside SimulationRunner.
 
 ## Scope
 
-Do not implement features not present in PROJECT_PLAN.md.
+Do not implement features not present in ARCHITECTURE_OVERVIEW.md.
 
 Do not implement future roadmap items.
 
@@ -1216,7 +1218,7 @@ A Pull Request is not considered complete until every item has been verified.
 
 ## Correctness
 
-- Does the implementation match PROJECT_PLAN.md?
+- Does the implementation match ARCHITECTURE_OVERVIEW.md?
 - Is every mathematical formula implemented exactly?
 - Is every edge case handled?
 - Does the behaviour remain deterministic?
@@ -1270,7 +1272,7 @@ A Pull Request is not considered complete until every item has been verified.
 ## Documentation
 
 - Are docstrings updated?
-- Is PROJECT_PLAN.md still respected?
+- Is ARCHITECTURE_OVERVIEW.md still respected?
 - Are architectural decisions documented if needed?
 
 ---
@@ -1343,7 +1345,7 @@ A task is complete only if ALL conditions are satisfied.
 
 ## Implementation
 
-The implementation matches PROJECT_PLAN.md.
+The implementation matches ARCHITECTURE_OVERVIEW.md.
 
 No behaviour has been invented.
 
@@ -1434,7 +1436,7 @@ Before considering a version ready:
 
 ## Documentation
 
-- PROJECT_PLAN.md updated.
+- ARCHITECTURE_OVERVIEW.md updated.
 - IMPLEMENTATION_PROMPT.md updated.
 - CHANGELOG updated.
 - Version numbers updated.
@@ -1467,7 +1469,7 @@ Whenever two objectives conflict, follow this priority order.
 
 1. Mathematical correctness
 
-2. PROJECT_PLAN.md
+2. ARCHITECTURE_OVERVIEW.md
 
 3. Determinism
 
@@ -1603,7 +1605,7 @@ Only continue once the specification has been clarified.
 
 The goal is not to write code.
 
-The goal is to faithfully implement the architecture and behaviour described in PROJECT_PLAN.md.
+The goal is to faithfully implement the architecture and behaviour described in ARCHITECTURE_OVERVIEW.md.
 
 Correctness takes precedence over speed.
 
@@ -1803,7 +1805,7 @@ The final decision always belongs to the Architect.
 
 # 56. Specification Changes
 
-PROJECT_PLAN.md is expected to evolve.
+ARCHITECTURE_OVERVIEW.md is expected to evolve.
 
 When the specification changes:
 
@@ -1840,7 +1842,7 @@ Failure of any gate blocks progress.
 
 The project will be considered successful when:
 
-- It reproduces the behaviour described in PROJECT_PLAN.md.
+- It reproduces the behaviour described in ARCHITECTURE_OVERVIEW.md.
 - It can execute complete SWR studies deterministically.
 - It can be extended without architectural changes.
 - Results are reproducible across machines.

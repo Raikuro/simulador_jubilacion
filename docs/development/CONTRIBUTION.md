@@ -1,13 +1,15 @@
 # Contributing Guide
 
+> **Note:** `ARCHITECTURE_OVERVIEW.md` was renamed to `ARCHITECTURE_OVERVIEW.md` during the 2026-07-24 documentation reorganization. All references below to `ARCHITECTURE_OVERVIEW.md` refer to that successor document.
+
 ## Overview
 
 This project follows a Specification-Driven Development process.
 
 Implementation is guided by two documents:
 
-- PROJECT_PLAN.md
-- IMPLEMENTATION_PROMPT.md
+- [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
+- [IMPLEMENTATION_PROMPT.md](IMPLEMENTATION_PROMPT.md)
 
 The implementation must follow these documents exactly.
 
@@ -166,7 +168,7 @@ Whenever public behaviour changes:
 
 Update:
 
-- PROJECT_PLAN.md (if specification changes)
+- ARCHITECTURE_OVERVIEW.md (if specification changes)
 - IMPLEMENTATION_PROMPT.md (if implementation rules change)
 - README.md (if user-visible behaviour changes)
 
@@ -174,7 +176,7 @@ Update:
 
 # Specification
 
-PROJECT_PLAN.md is the source of truth.
+ARCHITECTURE_OVERVIEW.md is the source of truth.
 
 If code and specification disagree:
 
