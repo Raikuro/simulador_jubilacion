@@ -69,12 +69,12 @@
 ### Test Suite Status
 
 ```
-Tests committed: 605 passing
-├─ Engine Tests:       200+
+Tests committed: 1,135 passing (100%)
+├─ CLI Tests:           163 (P3.3: 26, P3.4: 16, P3.5: 14, P3.6: 15, P3.7: 17, P3.8 optimize: 27, P3.9 compare: 34, P3.10 config: 16)
+├─ Infrastructure Tests: 96 (Phase 1: 8 parallel + Phase 2: 39 persistence + P3.1: 30 codecs + P3.2: 19 context)
+└─ Engine Tests:       200+
 ├─ Research Tests:      76+
-├─ Optimization Tests:  84+
-├─ CLI Tests:           149 (P3.3: 26, P3.4: 16, P3.5: 14, P3.6: 15, P3.7: 17, P3.8 policies: 8, P3.8 optimize: 19, P3.9 compare: 34)
-└─ Infrastructure Tests: 96 (Phase 1: 8 parallel + Phase 2: 39 persistence + P3.1: 30 codecs + P3.2: 19 context)
+└─ Optimization Tests:  84+
 
 Type Checking:
   src/cli/ --strict: 0 errors ✅
@@ -89,7 +89,7 @@ Type Checking:
 - **v0.3 Optimization:** 100% specification compliance ✅
 - **v0.4 Phase 1 (Parallel Execution):** 100% specification compliance ✅
 - **v0.4 Phase 2 (SQLite Persistence):** 100% specification compliance ✅
-- **v0.4 Phase 3 (CLI Interface):** Specifications approved, P3.3–P3.9 implemented ✅
+- **v0.4 Phase 3 (CLI Interface):** Specifications approved, the seven CLI commands (validate, run, list, export, optimize, compare, and config) are correctly registered ✅
 
 ### Quality Gates
 

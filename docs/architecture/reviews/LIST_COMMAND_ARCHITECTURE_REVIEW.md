@@ -122,7 +122,7 @@ The P3.6 list command implementation:
 - Satisfies all 10 acceptance criteria
 - Respects all frozen layer invariants
 - Passes all quality gates (527/527 tests, 0 mypy errors)
-- Contains no architectural violations
+- No architectural boundary violations were identified during the repository review
 - Minor concerns are documented for future resolution
 
 The package is approved and frozen. Continue to P3.7 (export command) per the roadmap.
