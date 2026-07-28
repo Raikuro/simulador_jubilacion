@@ -3,7 +3,7 @@
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
 **Last Updated:** 2026-07-28  
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.7 Frozen (b9705d8) → P3.8 Next
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.8 Frozen (8bbd7f6) → P3.9 Next
 
 ---
 
@@ -16,10 +16,10 @@
 - ✅ **v0.3 (Optimization Layer)** — Complete, frozen, 84+ tests passing
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 1 (Parallel Execution) Complete**
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 2 (SQLite Persistence) Complete**
-- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.1–P3.7 Complete (frozen)**
-- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.8 (Optimize Command) Next**
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.1–P3.8 Complete (frozen)**
+- 📋 **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.9 (Compare Command) Next**
 
-**Immediate Next Task:** Begin P3.8 Optimize Command. See `NEXT_SESSION.md` for details.
+**Immediate Next Task:** Begin P3.9 Compare Command. See `NEXT_SESSION.md` for details.
 
 ---
 
@@ -39,7 +39,7 @@
 |-------|--------|--------------|--------|
 | **Phase 1: Parallel Execution** | ✅ Complete | 8 tests, `PARALLEL_EXECUTION_SPECIFICATION.md` | `dda449a` |
 | **Phase 2: SQLite Persistence** | ✅ Complete | 39 tests, `INFRASTRUCTURE_SQLITE_PERSISTENCE_SPECIFICATION.md` | `128bb54` |
-| **Phase 3: CLI Interface** | ✅ P3.1–P3.7 Complete (71 committed + 17 P3.7 tests) | `CLI_INTERFACE_SPECIFICATION.md` | `492299f` (P3.6); `b9705d8` (P3.7) |
+| **Phase 3: CLI Interface** | ✅ P3.1–P3.8 Complete (115 CLI tests) | `CLI_INTERFACE_SPECIFICATION.md` | `492299f` (P3.6); `b9705d8` (P3.7); `8bbd7f6` (P3.8) |
 | **Phase 4: Integration** | 📋 Future | Full acceptance suite | — |
 
 ### Planned Milestones (Future)
@@ -58,7 +58,7 @@
 
 1. ✅ **Phase 1:** Parallel execution engine — Complete
 2. ✅ **Phase 2:** SQLite persistence layer — Complete
-3. ✅ **Phase 3:** CLI interface — P3.1–P3.7 Complete (71 committed + 17 P3.7 tests)
+3. ✅ **Phase 3:** CLI interface — P3.1–P3.8 Complete (115 CLI tests)
 4. 📋 **Phase 4:** Integration & acceptance tests — Future
 
 
@@ -69,16 +69,16 @@
 ### Test Suite Status
 
 ```
-Tests committed: 527 passing (previous session)
-P3.7 uncommitted: +17 CLI tests (pass/fail unverified this session)
+Tests committed: 571 passing
 ├─ Engine Tests:       200+
 ├─ Research Tests:      76+
 ├─ Optimization Tests:  84+
-├─ CLI Tests:           71 committed (P3.3: 26, P3.4: 16, P3.5: 14, P3.6: 15) + 17 P3.7 uncommitted
+├─ CLI Tests:           115 (P3.3: 26, P3.4: 16, P3.5: 14, P3.6: 15, P3.7: 17, P3.8 policies: 8, P3.8 optimize: 19)
 └─ Infrastructure Tests: 96 (Phase 1: 8 parallel + Phase 2: 39 persistence + P3.1: 30 codecs + P3.2: 19 context)
 
 Type Checking:
-  src/infrastructure/persistence/ --strict: 0 errors (previous session) ✅
+  src/cli/ --strict: 0 errors ✅
+  src/infrastructure/persistence/ --strict: 0 errors ✅
   src/ --strict: 21 pre-existing errors in engine/research domain (not v0.4)
 ```
 
@@ -129,7 +129,7 @@ Every implementation must:
 
 ### Current Blockers
 
-**NONE** — P3.7 is frozen (b9705d8). P3.8 is next.
+**NONE** — P3.8 is frozen (8bbd7f6). P3.9 is next.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
@@ -137,6 +137,7 @@ All dependencies are in place:
 - v0.3 Optimization Layer ✅ Available
 - v0.4 Phase 1 (Parallel Execution) ✅ Complete
 - v0.4 Phase 2 (SQLite Persistence) ✅ Complete
+- v0.4 Phase 3 P3.1–P3.8 (CLI packages) ✅ Complete & Frozen
 - CLI Interface Specification ✅ Approved & Frozen
 
 ### Potential Risks
@@ -248,11 +249,12 @@ Before starting work each session:
 2. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md)
 3. ✅ P3.7 freeze commit created (b9705d8)
 4. ✅ Continuity docs updated to reflect frozen state
-5. ⬜ Begin P3.8: optimize command implementation
+5. ✅ P3.8 optimize command frozen (8bbd7f6)
+6. ⬜ Begin P3.9: compare command implementation
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 527 committed tests passing (previous session); P3.7 tests unverified  
+**Test Status:** 571 tests passing (115 CLI + 96 infrastructure + 360 engine/research/optimization)  
 **Blockers:** None  
-**Next Action:** Begin P3.8 optimize command implementation
+**Next Action:** Begin P3.9 compare command implementation
