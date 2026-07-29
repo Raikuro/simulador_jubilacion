@@ -1,18 +1,15 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-28 (P3.10 Config Command Frozen — 4583ab9)
-**Current Status:** `v0.4` Phase 3 (CLI Interface) fully complete. All packages P3.1 through P3.10 delivered and frozen:
-- P3.1 (Concrete Persistence Codecs) ✅
-- P3.2 (Persistence Context Factory) ✅
-- P3.3 (CLI Entry Point) ✅
-- P3.4 (Validate Command) ✅
-- P3.5 (Run Command) ✅
-- P3.6 (List Command) ✅
-- P3.7 (Export Command) ✅
-- P3.8 (Optimize Command) ✅
-- P3.9 (Compare Command) ✅
-- P3.10 (Config Command) ✅
-**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f. P3.7: b9705d8. P3.8: 8bbd7f6. P3.9: 8866ada. P3.10: 4583ab9.
+**Previous Session:** 2026-07-29 (P4.5 Documentation & Release Readiness)
+**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.4 complete. P4.5 active.
+- P3.1-P3.10 (CLI Interface) ✅ Frozen
+- P4.1 (Integration Test Framework) ✅ Complete
+- P4.2 (E2E Workflow Tests) ✅ Complete
+- P4.3 (Configuration Integration Tests) ✅ Complete
+- P4.4 (Performance Benchmarks) ✅ Complete
+- P4.5 (Documentation & Release Readiness) 📝 Active
+- P4.6-P4.8 (User Documentation, Developer Docs, Final Review) ⬜ Future
+**Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f. P3.7: b9705d8. P3.8: 8bbd7f6. P3.9: 8866ada. P3.10: 4583ab9. P4.1-P4.4 completed in current working tree.
 
 ---
 
@@ -40,34 +37,32 @@
 
 - SWROptimizer, StrategyComparator. All acceptance tests passing. All public APIs frozen.
 
-### In Progress (v0.4 Infrastructure & Deployment Phase 3 — P3.9 Frozen, P3.10 Next)
+### In Progress (v0.4 Infrastructure & Deployment Phase 4 — P4.5 Active)
 
 **Architectural Specification (FROZEN):**
 - INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
 
 **Phase 1 (COMPLETE) Parallel Execution:**
-- Commit: dda449a. 8 tests passing. Determinism verified, error isolation working.
+- Commit: dda449a. 8 tests. Determinism verified, error isolation working.
 
 **Phase 2 (COMPLETE) SQLite Persistence:**
 - Commit: 128bb54. 10 tables, lossless round-trip, reconstruction context. 39 tests.
 
-**Phase 3 (ACTIVE) CLI Interface:**
+**Phase 3 (COMPLETE) CLI Interface (P3.1-P3.10):**
+All seven CLI commands and configuration system frozen and committed.
+
+**Phase 4 (ACTIVE) Integration & Acceptance:**
 
 | Package | Objective | Status |
 |---------|-----------|--------|
-| P3.1 | Concrete Persistence Codecs | ✅ Done (efbeb61) |
-| P3.2 | Persistence Context Factory & Dataset Loading | ✅ Done (39977c6) |
-| P3.3 | CLI Entry Point & Framework | ✅ Done (90eafbb) — FROZEN |
-| P3.4 | `validate` command | ✅ Done (eb0518f) — FROZEN |
-| P3.5 | `run` command | ✅ Done (6a7c5b6) — FROZEN |
-| P3.6 | `list` command | ✅ Done (492299f) — FROZEN |
-| P3.7 | `export` command | ✅ Done (b9705d8) — FROZEN |
-| P3.8 | `optimize` command | ✅ Done (8bbd7f6) — FROZEN |
-| P3.9 | `compare` command | ✅ Done (8866ada) — FROZEN |
-| P3.10 | Configuration, Documentation & Handoff | ⬜ NEXT |
-
-**Phase 4 (FUTURE) Integration & Acceptance:**
-- End-to-end workflow tests, performance validation, documentation completion.
+| P4.1 | Integration Test Framework | ✅ Complete |
+| P4.2 | E2E Workflow Tests | ✅ Complete |
+| P4.3 | Configuration Integration Tests | ✅ Complete |
+| P4.4 | Performance Benchmarks | ✅ Complete |
+| P4.5 | Documentation & Release Readiness | 📝 ACTIVE |
+| P4.6 | User Documentation | ⬜ Future |
+| P4.7 | Developer Documentation | ⬜ Future |
+| P4.8 | Final Validation Review | ⬜ Future |
 
 ---
 
@@ -94,36 +89,29 @@
 
 ## Validation Status
 
-Committed test suite: **605 / 605 tests passing** (360 domain/research/optimization + 96 infrastructure + 149 CLI).
-Infrastructure mypy (src/infrastructure/persistence/ --strict): 0 errors (previous session)
+Test suite: **768 passing** (165 CLI + 96 infrastructure + 360 domain + 87 integration + 26 benchmarks).
+Infrastructure mypy (src/infrastructure/persistence/ --strict): 0 errors
 CLI mypy (src/cli/ --strict): 0 errors
+Benchmarks mypy (tests/benchmarks/): 36 pre-existing errors (untyped module imports only)
 Full codebase mypy (src/ --strict): 21 pre-existing errors in engine/research domain (not v0.4).
-P3.9 freeze commit: 8866ada.
 
 ---
 
 ## Exact Next Task
 
-**IMPLEMENTATION COMPLETE — PHASE 4 READY**
+**P4.5 ACTIVE — Documentation & Release Readiness**
 
-All Phase 3 packages delivered. **P3.10 Config Command is frozen and complete.**
+Phase 3 (P3.1-P3.10) frozen and Phase 4 P4.1-P4.4 complete. Current task is P4.5.
 
-The seven CLI commands (validate, run, list, export, optimize, compare, and config) are correctly registered
+Deliverables for P4.5:
+- Documentation consistency review
+- Repository readiness verification
+- Release checklist creation
+- Continuity document validation (CURRENT_STATE.md, NEXT_SESSION.md, OPERATIONAL_DASHBOARD.md)
+- README and user documentation verification
+- Verification that CLI documentation matches actual behaviour
+- Verification that documented workflows are executable
+- Final governance documentation
+- Release readiness artefacts
 
-Current status verification:
-- ✅ P3.10 implemented in commit 4583ab9
-- ✅ YAML configuration system with `sim-retire config` command
-- ✅ `--config FILE` global option integration
-- ✅ Configuration model with validation and persistence
-- ✅ 16 new tests, 165 total CLI tests passing
-- ✅ 0 mypy errors in src/cli/ --strict
-- ✅ All existing frozen tests continue passing
-
-All Phase 3 implementation components are now frozen:
-- P3.3–P3.10 comprehensive CLI command set
-- Full configuration integration with all CLI commands
-- Complete documentation and handoff preparation
-
-**Next:** Begin **Phase 4 (Integration & Acceptance)** — End-to-end workflow tests, performance validation, documentation completion.
-
-**Do not proceed without explicit architect approval for Phase 4.**
+**After P4.5:** Submit for architectural review. Do not proceed to P4.6-P4.8 without approval.
