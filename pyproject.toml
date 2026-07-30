@@ -183,3 +183,6 @@ package-dir = {"" = "src"}
 where = [
     "src"
 ]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
