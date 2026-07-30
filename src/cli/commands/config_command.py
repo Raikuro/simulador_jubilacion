@@ -181,7 +181,7 @@ class ConfigCommand(BaseCommand):
                 value = args.value
 
             # Load existing configuration if file exists
-            config_data = {}
+            config_data: dict[str, Any] = {}
             config_file = _DEFAULT_CONFIG_PATH
 
             if config_file.exists():
