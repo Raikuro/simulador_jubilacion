@@ -145,7 +145,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list"])
@@ -161,7 +161,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--format", "json"])
@@ -174,7 +174,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--format", "csv"])
@@ -187,7 +187,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--status", "completed"])
@@ -202,7 +202,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--status", "failed"])
@@ -216,7 +216,7 @@ class TestListCommand:
         self,
         db_with_pending: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", db_with_pending)
         rc = main(["list", "--status", "pending"])
@@ -230,7 +230,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--sort", "name"])
@@ -248,7 +248,7 @@ class TestListCommand:
         self,
         empty_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", empty_db)
         rc = main(["list"])
@@ -259,7 +259,7 @@ class TestListCommand:
     def test_database_unreachable(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr(
             "cli.commands.list_command._DEFAULT_DB_PATH", "/nonexistent_dir_xyz/studies.db"
@@ -271,7 +271,7 @@ class TestListCommand:
 
     def test_help_text(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["list", "--help"])
@@ -290,7 +290,7 @@ class TestListCommand:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--status", "pending"])
@@ -304,7 +304,7 @@ class TestListCommandEdgeCases:
         self,
         db_with_pending: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", db_with_pending)
         rc = main(["list", "--status", "pending", "--format", "json"])
@@ -317,7 +317,7 @@ class TestListCommandEdgeCases:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--format", "table"])
@@ -330,7 +330,7 @@ class TestListCommandEdgeCases:
         self,
         test_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.list_command._DEFAULT_DB_PATH", test_db)
         rc = main(["list", "--sort", "status"])

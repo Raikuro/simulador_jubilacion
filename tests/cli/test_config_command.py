@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +12,7 @@ from cli.commands.config_command import ConfigCommand, Configuration
 from cli.error_handling import ExitCode
 
 
-def test_config_load_yaml():
+def test_config_load_yaml() -> None:
     """Test configuration loading from YAML."""
     config_data = {"database": {"path": "test.db"}, "output": {"default_format": "csv"}}
 
@@ -29,7 +30,7 @@ def test_config_load_yaml():
         temp_path.unlink()
 
 
-def test_config_from_dict():
+def test_config_from_dict() -> None:
     """Test Configuration.from_dict() creates proper model."""
     data = {
         "database": {"path": "~/.sim-retire/config.yaml"},
@@ -46,7 +47,7 @@ def test_config_from_dict():
     assert config.logging["level"] == "INFO"
 
 
-def test_config_to_dict():
+def test_config_to_dict() -> None:
     """Test Configuration.to_dict() serializes properly."""
     config = Configuration(
         database={"path": "test.db"},
@@ -63,7 +64,7 @@ def test_config_to_dict():
     assert data["logging"]["level"] == "INFO"
 
 
-def test_config_validate():
+def test_config_validate() -> None:
     """Test Configuration.validate() checks all required fields."""
     config = Configuration(
         database={"path": "test.db"},
@@ -91,7 +92,7 @@ def test_config_validate():
     assert "logging.level must be a string" in errors
 
 
-def test_config_set_get_integration():
+def test_config_set_get_integration() -> None:
     """Test end-to-end config set/get operations."""
     with patch('pathlib.Path.exists', return_value=False), \
          patch('pathlib.Path.mkdir'), \
@@ -117,7 +118,7 @@ def test_config_set_get_integration():
         assert data["output"]["directory"] == "./custom_dir"
 
 
-def test_config_get_integration():
+def test_config_get_integration() -> None:
     """Test end-to-end config get operations."""
     with patch('pathlib.Path.exists', return_value=True), \
          patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\ndatabase:\n  path: test.db'):
@@ -130,7 +131,7 @@ def test_config_get_integration():
         assert result == ExitCode.SUCCESS
 
 
-def test_config_list_integration():
+def test_config_list_integration() -> None:
     """Test end-to-end config list operations."""
     with patch('pathlib.Path.exists', return_value=True), \
          patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\ndatabase:\n  path: test.db'):
@@ -140,7 +141,7 @@ def test_config_list_integration():
         assert result == ExitCode.SUCCESS
 
 
-def test_config_validate_integration():
+def test_config_validate_integration() -> None:
     """Test end-to-end config validation with YAML."""
     config_yaml = """
 database:
@@ -169,7 +170,7 @@ logging:
         assert result == ExitCode.SUCCESS
 
 
-def test_config_parse_key():
+def test_config_parse_key() -> None:
     """Test key parsing from dot notation."""
     from cli.commands.config_command import _parse_key
 
@@ -182,7 +183,7 @@ def test_config_parse_key():
     assert key == "path"
 
 
-def test_config_resolve_nested_dict():
+def test_config_resolve_nested_dict() -> None:
     """Test nested dictionary resolution."""
     from cli.commands.config_command import _resolve_nested_dict
 
@@ -202,11 +203,11 @@ def test_config_resolve_nested_dict():
     assert _resolve_nested_dict(data, "nonexistent.key") is None
 
 
-def test_config_set_nested_dict():
+def test_config_set_nested_dict() -> None:
     """Test nested dictionary setting with dot notation."""
     from cli.commands.config_command import _set_nested_dict
 
-    data = {}
+    data: dict[str, Any] = {}
     _set_nested_dict(data, "output.directory", "./results")
 
     assert data["output"]["directory"] == "./results"
@@ -215,7 +216,7 @@ def test_config_set_nested_dict():
     assert data["output"]["format"] == "csv"
 
 
-def test_config_value_yaml_parsing():
+def test_config_value_yaml_parsing() -> None:
     """Test that config values can be parsed as YAML."""
     from cli.commands.config_command import _load_config_yaml
 
@@ -247,7 +248,7 @@ logging:
         temp_path.unlink()
 
 
-def test_config_error_handling():
+def test_config_error_handling() -> None:
     """Test configuration error handling."""
     with patch('pathlib.Path.exists', return_value=True), \
          patch('pathlib.Path.read_text', side_effect=Exception("Read error")):
@@ -260,7 +261,7 @@ def test_config_error_handling():
         assert result == ExitCode.CONFIGURATION_ERROR
 
 
-def test_config_validate_error():
+def test_config_validate_error() -> None:
     """Test validation error handling."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
         f.write("invalid: yaml: [")

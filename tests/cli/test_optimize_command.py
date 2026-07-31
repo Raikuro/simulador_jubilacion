@@ -137,7 +137,7 @@ def _write_yaml(path: Path, content: str) -> Path:
 class TestOptimizeCommandValidation:
     def test_missing_file_exits_two(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         rc = main(
             [
@@ -155,7 +155,7 @@ class TestOptimizeCommandValidation:
     def test_invalid_yaml_syntax_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
         rc = main(
@@ -175,7 +175,7 @@ class TestOptimizeCommandValidation:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -194,7 +194,7 @@ class TestOptimizeCommandValidation:
     def test_missing_allocation_policy_arg_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         with pytest.raises(SystemExit) as exc_info:
@@ -204,7 +204,7 @@ class TestOptimizeCommandValidation:
     def test_target_success_rate_above_one_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -225,7 +225,7 @@ class TestOptimizeCommandValidation:
     def test_target_success_rate_below_zero_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -246,7 +246,7 @@ class TestOptimizeCommandValidation:
     def test_initial_capital_non_numeric_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -267,7 +267,7 @@ class TestOptimizeCommandValidation:
     def test_tolerance_non_numeric_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -288,7 +288,7 @@ class TestOptimizeCommandValidation:
     def test_invalid_dataset_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -305,7 +305,7 @@ class TestOptimizeCommandValidation:
 
     def test_help_text(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["optimize", "--help"])
@@ -327,7 +327,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -348,7 +348,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -369,7 +369,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -392,7 +392,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -416,7 +416,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -438,7 +438,7 @@ class TestOptimizeCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
@@ -463,7 +463,7 @@ class TestOptimizeCommandExecution:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         def mock_optimize_no_candidate(
@@ -500,7 +500,7 @@ class TestOptimizeCommandPersistence:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         db_path = str(tmp_path / "test_optimize.db")

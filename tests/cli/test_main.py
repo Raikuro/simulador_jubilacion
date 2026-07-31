@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterator
 
 import pytest
 
@@ -46,7 +47,7 @@ class _InterruptibleCommand(BaseCommand):
 
 
 @pytest.fixture(autouse=True)
-def _register_and_cleanup_commands() -> None:
+def _register_and_cleanup_commands() -> Iterator[None]:
     test_commands = {"echo": _EchoCommand, "fail": _FailingCommand, "interrupt": _InterruptibleCommand}
     COMMANDS.update(test_commands)
     yield
@@ -60,20 +61,20 @@ def _register_and_cleanup_commands() -> None:
 
 
 class TestHelpAndVersion:
-    def test_no_args_prints_help_and_exits_zero(self, capsys: pytest.CaptureFixture) -> None:
+    def test_no_args_prints_help_and_exits_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main([])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out
         assert "usage:" in stdout.lower()
 
-    def test_help_flag_exits_zero(self, capsys: pytest.CaptureFixture) -> None:
+    def test_help_flag_exits_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["--help"])
         assert exc_info.value.code == ExitCode.SUCCESS
         stdout = capsys.readouterr().out
         assert "usage:" in stdout.lower()
 
-    def test_version_prints_version_and_exits_zero(self, capsys: pytest.CaptureFixture) -> None:
+    def test_version_prints_version_and_exits_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main(["--version"])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out.strip()
@@ -105,20 +106,20 @@ class TestSharedOptions:
 
 
 class TestCommandDispatch:
-    def test_known_command_executes_and_returns_zero(self, capsys: pytest.CaptureFixture) -> None:
+    def test_known_command_executes_and_returns_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main(["echo", "Hello World"])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out.strip()
         assert stdout == "Hello World"
 
-    def test_unknown_command_exits_two(self, capsys: pytest.CaptureFixture) -> None:
+    def test_unknown_command_exits_two(self, capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["bogus"])
         assert exc_info.value.code == ExitCode.VALIDATION_ERROR
         stderr = capsys.readouterr().err
         assert "bogus" in stderr
 
-    def test_command_with_args_parsed_correctly(self, capsys: pytest.CaptureFixture) -> None:
+    def test_command_with_args_parsed_correctly(self, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main(["echo", "custom message"])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out.strip()
@@ -131,7 +132,7 @@ class TestCommandDispatch:
 
 
 class TestErrorHandling:
-    def test_failing_command_returns_error(self, capsys: pytest.CaptureFixture) -> None:
+    def test_failing_command_returns_error(self, capsys: pytest.CaptureFixture[str]) -> None:
         rc = main(["fail"])
         assert rc == ExitCode.ERROR
         stderr = capsys.readouterr().err

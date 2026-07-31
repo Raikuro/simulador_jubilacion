@@ -21,16 +21,17 @@ from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.application.simulation import (
     ExperimentRun as EngineExperimentRun,
     ExperimentDefinition as EngineExperimentDefinition,
-    SimulationContext,
     SimulationResult,
     SimulationStatistics,
     SimulationTimeline,
 )
+from engine.application.simulation_context import SimulationContext
 from engine.domain.model.asset import AssetClass
 from engine.domain.model.dataset import Dataset
 from engine.domain.model.market_snapshot import MarketSnapshot
 from engine.domain.model.money import Currency, Money
 from engine.domain.model.portfolio import Portfolio
+from engine.domain.optimizer.types import EvaluationResult
 from infrastructure.persistence.codecs import DefaultDatasetResolver
 from research.domain.cohort.specification import CohortSpecification
 from research.domain.experiment.definition import (
@@ -147,10 +148,12 @@ def _make_execution_result(
 ) -> ResearchExecutionResult:
     contexts = []
     for unit in plan.units:
+        cohort_id = unit.cohort.id
+        assert cohort_id is not None
         contexts.append(
             SimulationContext(
                 experiment_name="test",
-                cohort=unit.cohort.id,
+                cohort=cohort_id,
                 start_date=unit.cohort.start_date,
                 horizon_months=360,
                 initial_wealth=Money(Decimal("1000000"), Currency.EUR),
@@ -423,7 +426,7 @@ class TestExtractEvaluationResults:
 class TestCompareCommandValidation:
     def test_missing_file_exits_two(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         rc = main(
             [
@@ -443,7 +446,7 @@ class TestCompareCommandValidation:
     def test_invalid_yaml_syntax_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
         rc = main(
@@ -464,7 +467,7 @@ class TestCompareCommandValidation:
     def test_only_one_strategy_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -484,7 +487,7 @@ class TestCompareCommandValidation:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -506,7 +509,7 @@ class TestCompareCommandValidation:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -530,7 +533,7 @@ class TestCompareCommandValidation:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_no_withdrawal = """\
 metadata:
@@ -569,7 +572,7 @@ parameters:
     def test_non_numeric_capital_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -591,7 +594,7 @@ parameters:
 
     def test_help_text(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["compare", "--help"])
@@ -621,7 +624,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -646,7 +649,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(
             tmp_path / "study.yaml", _VALID_YAML_THREE_STRATEGIES
@@ -672,7 +675,7 @@ class TestCompareCommandExecution:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Higher success rate strategy ranked first."""
@@ -700,13 +703,13 @@ class TestCompareCommandExecution:
 
         def _mock_extract(
             label: str, plan: ResearchPlan, result: ResearchExecutionResult
-        ) -> list:
-            from engine.domain.optimizer.types import EvaluationResult
-
+        ) -> list[EvaluationResult]:
             data = strategy_data.get(label, [])
             evals = []
             for i, (success, fw, dd) in enumerate(data):
                 unit = plan.units[i]
+                cohort_id = unit.cohort.id
+                assert cohort_id is not None
                 evals.append(
                     EvaluationResult(
                         label=label,
@@ -716,7 +719,7 @@ class TestCompareCommandExecution:
                             "max_drawdown": Decimal(str(dd)),
                         },
                         provenance={
-                            "cohort": [unit.cohort.id],
+                            "cohort": [cohort_id],
                             "parameter_config": [
                                 f"equity_allocation={unit.parameter_config.values.get('equity_allocation', '0.75')}"
                             ],
@@ -753,7 +756,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -776,7 +779,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -800,7 +803,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(
             tmp_path / "study.yaml", _VALID_YAML_PARAM_CONFIGS
@@ -826,7 +829,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_parallel_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -850,7 +853,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -874,7 +877,7 @@ class TestCompareCommandExecution:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_multi_withdrawal = """\
 metadata:
@@ -922,7 +925,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         call_count: dict[str, int] = {"count": 0}
@@ -960,7 +963,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         def _mock_exec_all_fail(
@@ -999,7 +1002,7 @@ class TestStrategyComparatorIntegration:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -1024,7 +1027,7 @@ class TestStrategyComparatorIntegration:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
         rc = main(
@@ -1054,7 +1057,7 @@ class TestCompareCommandPersistence:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         db_path = str(tmp_path / "test_compare.db")
@@ -1082,7 +1085,7 @@ class TestCompareCommandPersistence:
         tmp_path: Path,
         mock_dataset: None,
         mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         db_path = str(tmp_path / "nonexistent_dir" / "studies.db")

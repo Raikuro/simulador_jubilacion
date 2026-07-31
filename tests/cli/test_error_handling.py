@@ -9,16 +9,16 @@ from cli.error_handling import ExitCode, format_error, handle_exception
 
 class TestExitCode:
     def test_success_is_zero(self) -> None:
-        assert ExitCode.SUCCESS == 0
+        assert ExitCode.SUCCESS.value == 0
 
     def test_error_is_one(self) -> None:
-        assert ExitCode.ERROR == 1
+        assert ExitCode.ERROR.value == 1
 
     def test_validation_error_is_two(self) -> None:
-        assert ExitCode.VALIDATION_ERROR == 2
+        assert ExitCode.VALIDATION_ERROR.value == 2
 
     def test_interrupted_is_130(self) -> None:
-        assert ExitCode.INTERRUPTED == 130
+        assert ExitCode.INTERRUPTED.value == 130
 
 
 class TestFormatError:
@@ -32,7 +32,7 @@ class TestFormatError:
 
 
 class TestHandleException:
-    def test_handle_exception_prints_to_stderr(self, capsys: pytest.CaptureFixture) -> None:
+    def test_handle_exception_prints_to_stderr(self, capsys: pytest.CaptureFixture[str]) -> None:
         exc = ValueError("Invalid value")
         rc = handle_exception(exc)
         assert rc == ExitCode.ERROR

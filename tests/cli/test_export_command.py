@@ -10,6 +10,7 @@ import csv
 import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,7 +29,7 @@ def _create_db(db_path: str) -> None:
     conn.close()
 
 
-def _to_canonical_json(data: dict) -> str:
+def _to_canonical_json(data: dict[str, Any]) -> str:
     """Match SQLiteRepository's canonical JSON format."""
     return json.dumps(data, sort_keys=True, separators=(",", ":"))
 
@@ -254,7 +255,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -280,7 +281,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -306,7 +307,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -340,7 +341,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -355,7 +356,7 @@ class TestExportCommand:
         self,
         empty_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", empty_db)
         rc = main(["export", "nonexistent-study"])
@@ -368,7 +369,7 @@ class TestExportCommand:
         self,
         experiment_only_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", experiment_only_db)
         rc = main(["export", "study-no-results"])
@@ -379,7 +380,7 @@ class TestExportCommand:
     def test_database_unreachable(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr(
             "cli.commands.export_command._DEFAULT_DB_PATH",
@@ -390,7 +391,7 @@ class TestExportCommand:
         out = capsys.readouterr().out
         assert "ERROR" in out
 
-    def test_help_text(self, capsys: pytest.CaptureFixture) -> None:
+    def test_help_text(self, capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["export", "--help"])
         assert exc_info.value.code == ExitCode.SUCCESS
@@ -409,7 +410,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -429,7 +430,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -462,7 +463,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -474,6 +475,7 @@ class TestExportCommand:
         with open(csv_path) as f:
             reader = csv.DictReader(f)
             rows = list(reader)
+        assert reader.fieldnames is not None
         assert "equity_allocation" in reader.fieldnames
         assert rows[0]["equity_allocation"] == "0.75"
         assert rows[3]["equity_allocation"] == "0.50"
@@ -482,7 +484,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -514,7 +516,7 @@ class TestExportCommand:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -531,7 +533,7 @@ class TestExportEdgeCases:
         self,
         empty_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", empty_db)
         rc = main(["export", "any-study"])
@@ -543,7 +545,7 @@ class TestExportEdgeCases:
         self,
         export_db: str,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.commands.export_command._DEFAULT_DB_PATH", export_db)
@@ -571,7 +573,7 @@ class TestExportEdgeCases:
     def test_csv_empty_rows_not_written(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         tmp_path: Path,
     ) -> None:
         db_path = str(tmp_path / "no_data.db")

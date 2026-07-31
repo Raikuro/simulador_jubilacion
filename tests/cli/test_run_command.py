@@ -114,7 +114,7 @@ class TestRunCommand:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--dry-run", str(study_file)])
@@ -129,7 +129,7 @@ class TestRunCommand:
 
     def test_missing_file_exits_two(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         rc = main(["run", "/tmp/nonexistent_study.yaml"])
         assert rc == ExitCode.VALIDATION_ERROR
@@ -140,7 +140,7 @@ class TestRunCommand:
     def test_invalid_yaml_syntax_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
         rc = main(["run", str(study_file)])
@@ -152,7 +152,7 @@ class TestRunCommand:
     def test_invalid_yaml_not_a_mapping_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "scalar.yaml", "just a string")
         rc = main(["run", str(study_file)])
@@ -163,7 +163,7 @@ class TestRunCommand:
     def test_invalid_dataset_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", str(study_file)])
@@ -174,7 +174,7 @@ class TestRunCommand:
     def test_invalid_experiment_definition_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         def mock_resolve(self: DefaultDatasetResolver, identifier: str) -> Dataset:
@@ -205,7 +205,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--dry-run", str(study_file)])
@@ -222,7 +222,7 @@ parameters:
 
     def test_help_text(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["run", "--help"])
@@ -241,7 +241,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -271,7 +271,7 @@ class TestRunCommandWorkers:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--dry-run", "--workers", "1", str(study_file)])
@@ -283,7 +283,7 @@ class TestRunCommandWorkers:
         self,
         tmp_path: Path,
         mock_dataset: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--dry-run", "--workers", "4", str(study_file)])
@@ -296,7 +296,7 @@ class TestRunCommandEdgeCases:
     def test_horizon_negative_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -322,7 +322,7 @@ parameters:
     def test_empty_policies_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:

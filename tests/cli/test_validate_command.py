@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from collections.abc import Iterator
 
 import pytest
 
@@ -113,7 +114,7 @@ def mock_dataset_resolver(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _register_validate_command() -> None:
+def _register_validate_command() -> Iterator[None]:
     """Ensure ValidateCommand is registered for CLI dispatch tests."""
     if "validate" not in COMMANDS:
         COMMANDS["validate"] = ValidateCommand
@@ -140,7 +141,7 @@ class TestValidateCommand:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["validate", str(study_file)])
@@ -155,7 +156,7 @@ class TestValidateCommand:
 
     def test_missing_file_exits_two(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         rc = main(["validate", "/tmp/nonexistent_study.yaml"])
         assert rc == ExitCode.VALIDATION_ERROR
@@ -166,7 +167,7 @@ class TestValidateCommand:
     def test_invalid_yaml_syntax_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
         rc = main(["validate", str(study_file)])
@@ -178,7 +179,7 @@ class TestValidateCommand:
     def test_invalid_yaml_not_a_mapping(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "scalar.yaml", "just a string")
         rc = main(["validate", str(study_file)])
@@ -189,7 +190,7 @@ class TestValidateCommand:
     def test_invalid_dataset_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test that an unresolvable dataset identifier causes exit 2."""
@@ -208,7 +209,7 @@ class TestValidateCommand:
     def test_invalid_cohort_exits_two(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """A dataset too small for the requested horizon should fail."""
@@ -227,7 +228,7 @@ class TestValidateCommand:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -254,7 +255,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -280,7 +281,7 @@ parameters: {}
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -305,7 +306,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["validate", str(study_file)])
@@ -325,7 +326,7 @@ parameters:
 
     def test_help_text(
         self,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         with pytest.raises(SystemExit) as exc_info:
             main(["validate", "--help"])
@@ -344,7 +345,7 @@ class TestValidateCommandEdgeCases:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -371,7 +372,7 @@ parameters:
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         yaml_content = """\
 metadata:
@@ -398,7 +399,7 @@ class TestValidateCommandWithRealDataset:
     def test_resolver_with_registered_dataset(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: _make_dataset(500))
@@ -411,7 +412,7 @@ class TestValidateCommandWithRealDataset:
     def test_plan_shows_correct_unit_count(
         self,
         tmp_path: Path,
-        capsys: pytest.CaptureFixture,
+        capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: _make_dataset(500))
