@@ -1,7 +1,7 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-29 (P4.5 Documentation & Release Readiness)
-**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.4 complete. P4.5 active.
+**Previous Session:** 2026-07-31 (WP3 Typing Cleanup — test suite)
+**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.4 complete. P4.5 active. Typing Quality Initiative WP1-WP3 complete.
 - P3.1-P3.10 (CLI Interface) ✅ Frozen
 - P4.1 (Integration Test Framework) ✅ Complete
 - P4.2 (E2E Workflow Tests) ✅ Complete
@@ -90,10 +90,17 @@ All seven CLI commands and configuration system frozen and committed.
 ## Validation Status
 
 Test suite: **768 passing** (165 CLI + 96 infrastructure + 360 domain + 87 integration + 26 benchmarks).
-Infrastructure mypy (src/infrastructure/persistence/ --strict): 0 errors
-CLI mypy (src/cli/ --strict): 0 errors
+Full codebase mypy (`src/ --strict`): **0 errors** (WP2 complete).
+Test suite mypy (`tests/ --strict`): **0 errors** (WP3 complete, 62 files).
 Benchmarks mypy (tests/benchmarks/): 36 pre-existing errors (untyped module imports only)
-Full codebase mypy (src/ --strict): 21 pre-existing errors in engine/research domain (not v0.4).
+
+### Typing Quality Initiative — COMPLETE (WP1-WP3)
+
+Cross-cutting `mypy --strict` hardening, independent of the v0.4 plan. See CURRENT_STATE.md "Typing Quality Initiative" section for the full record.
+
+- **WP1 (Setup):** ✅ Complete — `mypy --strict` config in `pyproject.toml`.
+- **WP2 (src):** ✅ Complete (`113450a`, `edc42a4`, `798cf10`) — 0 errors in `src/ --strict`; `py.typed` markers; `strategy_comparator.py` `sort_key` tuple fix.
+- **WP3 (tests):** ✅ Complete & APPROVED (`dcd456e`) — 0 errors in `tests/ --strict`; 106 → 63 audited `type: ignore` suppressions (all remaining irreducible negative tests).
 
 ---
 

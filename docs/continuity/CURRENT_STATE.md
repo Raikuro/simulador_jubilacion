@@ -2,7 +2,7 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-29  
+**Last Updated:** 2026-07-31  
 **Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.4 Complete → P4.5 Current
 
 ---
@@ -21,6 +21,19 @@
 - 📝 **v0.4 (Infrastructure & Deployment) — Phase 4 P4.5 (Documentation & Release Readiness) Active** — Documentation consistency, release checklist, continuity document validation
 
 **Immediate Next Task:** **P4.5 ACTIVE** — Documentation & Release Readiness. Complete release checklist, finalise continuity docs, verify repository readiness.
+
+## Typing Quality Initiative (WP1-WP3) ✅ COMPLETE
+
+Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 milestone plan.
+
+- **WP1 (Setup):** ✅ Complete — `mypy --strict` configuration established in `pyproject.toml`.
+- **WP2 (Production sources):** ✅ Complete (commits `113450a`, `edc42a4`) — 0 `mypy` errors across `src/ --strict`; PEP 561 `py.typed` markers; missing subpackage `__init__.py` files; approved `strategy_comparator.py` `sort_key` tuple fix (`798cf10`).
+- **WP3 (Test suite — APPROVED & CLOSED):** ✅ Complete (commit `dcd456e`) — 0 `mypy` errors across `tests/ --strict` (62 files).
+  - Proper typing solutions implemented before the audit: real `AllocationDecision`/`WithdrawalDecision` returns from policy stubs (removed 6 `[override]` ignores); frozen-dataclass subclassing of `MarketSnapshot`/`Portfolio`/`Dataset` instead of structural mocks (removed 19 `[arg-type]` ignores); `assert ... is not None` narrowing of optional state fields (removed 7 ignores); `setattr` over direct method assignment (removed 4 `[method-assign]` ignores); real domain values in statistics-builder fixtures (removed 5 ignores).
+  - Final audit: **106 → 63** `type: ignore` suppressions across **30 → 17** test files. Both `[override]` suppressions eliminated by keeping the parent signature and returning `cast(Decision, object())`, so the runtime `isinstance` guard still fails as intended. The remaining 63 are irreducible negative tests (invalid-input validation, frozen-immutability, null-state rejection) with no proper typing solution.
+  - **Gates:** `mypy src --strict` = 0 errors · `mypy tests --strict` = 0 errors · `pytest -q` = 768 passed.
+
+---
 
 ## Formal Completion Verification - Phase 3 ✅ COMPLETE
 
@@ -315,8 +328,8 @@ Total Tests:                         768
 ```
 
 **Type Checking (verified this session):**
-- `src/cli/ --strict`: 0 errors ✅
-- `src/infrastructure/persistence/ --strict`: 0 errors ✅
+- `src/ --strict`: 0 errors ✅ (all 104 files)
+- `tests/ --strict`: 0 errors ✅ (62 files)
 - `tests/benchmarks/`: 36 pre-existing errors (untyped module imports only) ✅
 
 ### Test Locations
