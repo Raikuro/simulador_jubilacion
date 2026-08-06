@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 import yaml
 
 from cli.commands.config_command import ConfigCommand, Configuration
@@ -121,7 +120,8 @@ def test_config_set_get_integration() -> None:
 def test_config_get_integration() -> None:
     """Test end-to-end config get operations."""
     with patch('pathlib.Path.exists', return_value=True), \
-         patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\ndatabase:\n  path: test.db'):
+         patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\n'
+                                                     'database:\n  path: test.db'):
 
         args = type('Args', (), {})()
         args.key = "output.directory"
@@ -134,7 +134,8 @@ def test_config_get_integration() -> None:
 def test_config_list_integration() -> None:
     """Test end-to-end config list operations."""
     with patch('pathlib.Path.exists', return_value=True), \
-         patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\ndatabase:\n  path: test.db'):
+         patch('pathlib.Path.read_text', return_value='output:\n  directory: ./custom_dir\n'
+                                                     'database:\n  path: test.db'):
 
         command = ConfigCommand()
         result = command._list_config_values()
@@ -266,13 +267,13 @@ def test_config_validate_error() -> None:
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
         f.write("invalid: yaml: [")
         temp_path = Path(f.name)
-    
+
     try:
         args = type('Args', (), {})()
         args.file = str(temp_path)
-        
+
         command = ConfigCommand()
-        
+
         result = command._validate_config(args)
         assert result == ExitCode.CONFIGURATION_ERROR
     finally:

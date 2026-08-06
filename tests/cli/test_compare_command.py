@@ -19,8 +19,8 @@ from cli.error_handling import ExitCode
 from cli.main import main
 from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.application.simulation import (
-    ExperimentRun as EngineExperimentRun,
     ExperimentDefinition as EngineExperimentDefinition,
+    ExperimentRun as EngineExperimentRun,
     SimulationResult,
     SimulationStatistics,
     SimulationTimeline,
@@ -721,7 +721,8 @@ class TestCompareCommandExecution:
                         provenance={
                             "cohort": [cohort_id],
                             "parameter_config": [
-                                f"equity_allocation={unit.parameter_config.values.get('equity_allocation', '0.75')}"
+                                f"equity_allocation="
+                                f"{unit.parameter_config.values.get('equity_allocation', '0.75')}"
                             ],
                         },
                     )

@@ -12,7 +12,6 @@ from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
 from cli.main import main
 
-
 # ---------------------------------------------------------------------------
 # Test command fixtures
 # ---------------------------------------------------------------------------
@@ -48,7 +47,11 @@ class _InterruptibleCommand(BaseCommand):
 
 @pytest.fixture(autouse=True)
 def _register_and_cleanup_commands() -> Iterator[None]:
-    test_commands = {"echo": _EchoCommand, "fail": _FailingCommand, "interrupt": _InterruptibleCommand}
+    test_commands = {
+        "echo": _EchoCommand,
+        "fail": _FailingCommand,
+        "interrupt": _InterruptibleCommand,
+    }
     COMMANDS.update(test_commands)
     yield
     for key in test_commands:
@@ -74,7 +77,9 @@ class TestHelpAndVersion:
         stdout = capsys.readouterr().out
         assert "usage:" in stdout.lower()
 
-    def test_version_prints_version_and_exits_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_version_prints_version_and_exits_zero(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         rc = main(["--version"])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out.strip()
@@ -106,7 +111,9 @@ class TestSharedOptions:
 
 
 class TestCommandDispatch:
-    def test_known_command_executes_and_returns_zero(self, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_known_command_executes_and_returns_zero(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         rc = main(["echo", "Hello World"])
         assert rc == ExitCode.SUCCESS
         stdout = capsys.readouterr().out.strip()

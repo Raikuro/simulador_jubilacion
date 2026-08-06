@@ -180,7 +180,7 @@ def _format_cohort_summary(cohorts: tuple[CohortSpecification, ...]) -> list[str
     end = max(c.start_date for c in cohorts)
     return [
         f"   Range: {start.isoformat()} to {end.isoformat()}",
-        f"   Type: monthly_rolling",
+        "   Type: monthly_rolling",
     ]
 
 
@@ -262,7 +262,11 @@ class ValidateCommand(BaseCommand):
 
         window_years = cohorts_info.get("window_years", 30)
         if not isinstance(window_years, int) or window_years <= 0:
-            _print_section("ExperimentDefinition: invalid", False, "window_years must be a positive integer")
+            _print_section(
+                "ExperimentDefinition: invalid",
+                False,
+                "window_years must be a positive integer",
+            )
             _print_verdict(errors, warnings)
             return ExitCode.VALIDATION_ERROR
         horizon_months = window_years * 12

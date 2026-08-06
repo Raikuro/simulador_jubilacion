@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections.abc import Sequence
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import yaml
 
@@ -22,7 +23,6 @@ from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
 from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.domain.model.money import Currency, Money
-from engine.domain.policies.allocation_policy import AllocationPolicy
 from engine.domain.optimizer.strategy_comparator import StrategyComparator
 from engine.domain.optimizer.types import (
     EvaluationResult,
@@ -30,6 +30,7 @@ from engine.domain.optimizer.types import (
     RankingRule,
     StrategyComparisonReport,
 )
+from engine.domain.policies.allocation_policy import AllocationPolicy
 from infrastructure.persistence.context import create_persistence_context
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
@@ -53,7 +54,7 @@ def _extract_evaluation_results(
     result: ResearchExecutionResult,
 ) -> Sequence[EvaluationResult]:
     evaluations: list[EvaluationResult] = []
-    for i, (unit, sim_result) in enumerate(zip(plan.units, result.results)):
+    for unit, sim_result in zip(plan.units, result.results, strict=True):
         success_val = Decimal("1") if sim_result.statistics.success else Decimal("0")
         evaluations.append(
             EvaluationResult(
@@ -121,13 +122,12 @@ def _format_metric(key: str, value: Decimal) -> str:
 
 
 def _format_metric_header(key: str) -> str:
-    if key == "success_rate":
-        return "Success Rate"
-    elif key == "final_wealth":
-        return "Mean Final Wealth"
-    elif key == "max_drawdown":
-        return "Max Drawdown"
-    return key
+    headers = {
+        "success_rate": "Success Rate",
+        "final_wealth": "Mean Final Wealth",
+        "max_drawdown": "Max Drawdown",
+    }
+    return headers.get(key, key)
 
 
 def _print_report(report: StrategyComparisonReport) -> None:
@@ -346,7 +346,8 @@ class CompareCommand(BaseCommand):
             except Exception as exc:
                 elapsed = time.perf_counter() - start_time
                 print(
-                    f"ERROR: Strategy '{strategy_name}' failed after {_format_duration(elapsed)}: {exc}",
+                    f"ERROR: Strategy '{strategy_name}' failed after "
+                    f"{_format_duration(elapsed)}: {exc}",
                     file=sys.stderr,
                 )
                 execution_failures.append(strategy_name)

@@ -195,7 +195,9 @@ class ConfigCommand(BaseCommand):
 
             # Save configuration to file
             config_file.parent.mkdir(parents=True, exist_ok=True)
-            config_file.write_text(yaml.dump(config_data, default_flow_style=False), encoding="utf-8")
+            config_file.write_text(
+                yaml.dump(config_data, default_flow_style=False), encoding="utf-8"
+            )
 
             print(f"Set {args.key} = {value}")
             return ExitCode.SUCCESS
@@ -219,9 +221,7 @@ class ConfigCommand(BaseCommand):
                 return ExitCode.VALIDATION_ERROR
 
             # Format output based on value type
-            if isinstance(value, str):
-                print(f"{args.key}: {value}")
-            elif isinstance(value, (int, float)):
+            if isinstance(value, (str, int, float)):
                 print(f"{args.key}: {value}")
             elif isinstance(value, bool):
                 print(f"{args.key}: {str(value).lower()}")

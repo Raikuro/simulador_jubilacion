@@ -67,7 +67,8 @@ def _setup_full_test_data(conn: sqlite3.Connection) -> None:
     for pid, pjson in param_configs:
         phash = str(hash(pjson))
         conn.execute(
-            "INSERT INTO parameter_configurations (param_config_id, params_json, params_hash, created_at) "
+            "INSERT INTO parameter_configurations "
+            "(param_config_id, params_json, params_hash, created_at) "
             "VALUES (?, ?, ?, ?)",
             (pid, pjson, phash, "2026-07-25T12:00:00Z"),
         )
@@ -77,7 +78,13 @@ def _setup_full_test_data(conn: sqlite3.Connection) -> None:
     conn.execute(
         "INSERT INTO policies (policy_id, policy_type, params_json, params_hash, created_at) "
         "VALUES (?, ?, ?, ?, ?)",
-        (policy_id, "AllocationPolicy", policy_json, str(hash(policy_json)), "2026-07-25T12:00:00Z"),
+        (
+            policy_id,
+            "AllocationPolicy",
+            policy_json,
+            str(hash(policy_json)),
+            "2026-07-25T12:00:00Z",
+        ),
     )
 
     cohort_ids: list[str] = []

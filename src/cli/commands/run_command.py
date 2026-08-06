@@ -12,7 +12,6 @@ import yaml
 
 from cli.builders import (
     build_cohort_specs,
-    build_initial_portfolio,
     build_parameter_configs,
     build_research_plan,
     load_yaml,
@@ -71,7 +70,9 @@ class _RunWithdrawalPolicy(WithdrawalPolicy):
 
     def decide(self, context: DecisionContext) -> WithdrawalDecision:
         zero = Money(Decimal("0"), Currency.EUR)
-        return WithdrawalDecision(reason="run command default", nominal_amount=zero, real_amount=zero)
+        return WithdrawalDecision(
+            reason="run command default", nominal_amount=zero, real_amount=zero
+        )
 
 
 def _build_allocation_policies(policies_data: list[Any]) -> tuple[AllocationPolicy, ...]:

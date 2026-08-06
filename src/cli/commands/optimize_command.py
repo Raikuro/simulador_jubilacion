@@ -17,7 +17,6 @@ import yaml
 
 from cli.builders import (
     build_cohort_specs,
-    build_initial_portfolio,
     build_parameter_configs,
     build_research_plan,
     load_yaml,
@@ -134,9 +133,14 @@ class _SWREvaluator:
         success_rate = Decimal(success_count) / Decimal(total) if total > 0 else Decimal("0")
 
         # Print iteration progress
-        direction = "Low — increasing rate" if success_rate >= self._target else "High — decreasing rate"
+        direction = (
+            "Low — increasing rate" if success_rate >= self._target else "High — decreasing rate"
+        )
         print(f"Iteration {self._iteration}: Testing {float(candidate):.4f} withdrawal rate")
-        print(f"  Cohorts: {total} | Success Rate: {float(success_rate * 100):.1f}% ({success_count}/{total})")
+        print(
+            f"  Cohorts: {total} | Success Rate: "
+            f"{float(success_rate * 100):.1f}% ({success_count}/{total})"
+        )
         print(f"  → {direction}")
         print()
 
@@ -199,7 +203,8 @@ class OptimizeCommand(BaseCommand):
         target_success_rate = args.target_success_rate
         if target_success_rate < 0.0 or target_success_rate > 1.0:
             print(
-                f"ERROR: --target-success-rate must be between 0.0 and 1.0, got {target_success_rate}",
+                f"ERROR: --target-success-rate must be between 0.0 and 1.0, "
+                f"got {target_success_rate}",
                 file=sys.stderr,
             )
             return ExitCode.VALIDATION_ERROR
@@ -322,7 +327,10 @@ class OptimizeCommand(BaseCommand):
             )
         except Exception as exc:
             elapsed = time.perf_counter() - start_time
-            print(f"ERROR: Optimization failed after {_format_duration(elapsed)}: {exc}", file=sys.stderr)
+            print(
+                f"ERROR: Optimization failed after {_format_duration(elapsed)}: {exc}",
+                file=sys.stderr,
+            )
             return ExitCode.ERROR
 
         elapsed = time.perf_counter() - start_time
@@ -334,14 +342,20 @@ class OptimizeCommand(BaseCommand):
 
         if outcome.candidate_value is not None:
             optimal_rate = outcome.candidate_value
-            print(f"Optimal Withdrawal Rate:   {float(optimal_rate) * 100:.2f}% \u00b1 {float(tolerance) * 100:.1f}%")
+            print(
+                f"Optimal Withdrawal Rate:   {float(optimal_rate) * 100:.2f}% "
+                f"\u00b1 {float(tolerance) * 100:.1f}%"
+            )
             success_rate_val = outcome.provenance.get("success_rate", "N/A")
             print(f"Success Rate Achieved:     {float(Decimal(str(success_rate_val))) * 100:.1f}%")
         else:
             print("No withdrawal rate satisfies criteria")
             print(f"Diagnostic: {outcome.diagnostic}")
 
-        print(f"Policy:                    ConstantAllocationPolicy(equity_ratio={getattr(allocation_policy, 'equity_allocation', 'N/A')})")
+        equity_ratio = getattr(allocation_policy, "equity_allocation", "N/A")
+        print(
+            f"Policy:                    ConstantAllocationPolicy(equity_ratio={equity_ratio})"
+        )
         print(f"Target Success Rate:       {target_success_rate:.1%}")
         print(f"Iterations Required:       {evaluator._iteration}")
         print(f"Execution Time:            {_format_duration(elapsed)}")
@@ -360,7 +374,9 @@ class OptimizeCommand(BaseCommand):
                 identity = ExperimentIdentity(name=name, revision=version_val)
 
                 # Build the experiment definition for the optimal run
-                optimal_withdrawal = ConstantWithdrawalPolicy(withdrawal_rate=outcome.candidate_value)
+                optimal_withdrawal = ConstantWithdrawalPolicy(
+                    withdrawal_rate=outcome.candidate_value
+                )
                 optimal_experiment_def = ExperimentDefinition(
                     name=name,
                     description=f"Optimal SWR: {outcome.candidate_value}",
@@ -372,7 +388,9 @@ class OptimizeCommand(BaseCommand):
                     withdrawal_policies=(optimal_withdrawal,),
                 )
 
-                experiment_id = repo.save_experiment(identity, optimal_experiment_def, persistence_context)
+                experiment_id = repo.save_experiment(
+                    identity, optimal_experiment_def, persistence_context
+                )
                 print(f"Study ID:                  {experiment_id}")
                 print()
 
@@ -399,10 +417,16 @@ class OptimizeCommand(BaseCommand):
                         plan_id, optimal_result, persistence_context, elapsed
                     )
                 except Exception as exec_exc:
-                    print(f"WARNING: Optimal execution failed (experiment saved): {exec_exc}", file=sys.stderr)
+                    print(
+                        f"WARNING: Optimal execution failed (experiment saved): {exec_exc}",
+                        file=sys.stderr,
+                    )
 
             except Exception as exc:
-                print(f"WARNING: Persistence failed (optimization completed): {exc}", file=sys.stderr)
+                print(
+                    f"WARNING: Persistence failed (optimization completed): {exc}",
+                    file=sys.stderr,
+                )
         else:
             print("No candidate found — nothing to persist.")
             print()
