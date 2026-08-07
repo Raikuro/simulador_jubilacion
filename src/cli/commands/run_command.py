@@ -19,10 +19,9 @@ from cli.builders import (
 )
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
-from engine.domain.model.decision_context import DecisionContext
+from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.domain.model.money import Currency, Money
 from engine.domain.policies.allocation_policy import AllocationPolicy
-from engine.domain.policies.decisions import AllocationDecision, WithdrawalDecision
 from engine.domain.policies.withdrawal_policy import WithdrawalPolicy
 from infrastructure.persistence.context import create_persistence_context
 from infrastructure.persistence.sqlite_repository import (
@@ -37,62 +36,29 @@ _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 _ESTIMATED_SECONDS_PER_UNIT = 0.3
 
 
-class _RunAllocationPolicy(AllocationPolicy):
-    """Concrete AllocationPolicy for the run command.
-
-    Stores YAML-supplied attributes and produces a default allocation
-    decision for engine compatibility.
-    """
-
-    def __init__(self, **kwargs: Any) -> None:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def decide(self, context: DecisionContext) -> AllocationDecision:
-        from engine.domain.model.allocation import AllocationTarget
-
-        return AllocationDecision(
-            reason="run command default",
-            allocation_target=AllocationTarget(weights={}),
-        )
-
-
-class _RunWithdrawalPolicy(WithdrawalPolicy):
-    """Concrete WithdrawalPolicy for the run command.
-
-    Stores YAML-supplied attributes and produces a zero-withdrawal
-    decision for engine compatibility.
-    """
-
-    def __init__(self, **kwargs: Any) -> None:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def decide(self, context: DecisionContext) -> WithdrawalDecision:
-        zero = Money(Decimal("0"), Currency.EUR)
-        return WithdrawalDecision(
-            reason="run command default", nominal_amount=zero, real_amount=zero
-        )
-
-
 def _build_allocation_policies(policies_data: list[Any]) -> tuple[AllocationPolicy, ...]:
-    """Build allocation policy instances from YAML allocation_policies section."""
+    """Build constant allocation policies from the YAML allocation_policies section.
+
+    Reuses the execution-grade ``ConstantAllocationPolicy`` so the study can be
+    executed through the real simulation engine (not a decision stub).
+    """
     if not policies_data:
         raise ValueError("At least one allocation policy is required")
     policies: list[AllocationPolicy] = []
     for policy in policies_data:
         if not isinstance(policy, dict):
             raise ValueError("Each allocation policy must be a mapping")
-        kwargs = {k: v for k, v in policy.items() if k != "name"}
-        policies.append(_RunAllocationPolicy(**kwargs))
+        ratio = Decimal(str(policy.get("equity_ratio", "0.75")))
+        policies.append(ConstantAllocationPolicy(equity_allocation=ratio))
     return tuple(policies)
 
 
 def _build_withdrawal_policy(policy_data: dict[str, Any]) -> tuple[WithdrawalPolicy, ...]:
-    """Build withdrawal policy instances from YAML withdrawal_policy section."""
+    """Build a constant withdrawal policy from the YAML ``withdrawal_policy`` section."""
     if not isinstance(policy_data, dict):
         raise ValueError("withdrawal_policy must be a mapping")
-    return (_RunWithdrawalPolicy(**dict(policy_data)),)
+    rate = Decimal(str(policy_data.get("withdrawal_rate", "0.04")))
+    return (ConstantWithdrawalPolicy(withdrawal_rate=rate),)
 
 
 def _format_duration(seconds: float) -> str:
