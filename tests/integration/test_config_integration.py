@@ -36,13 +36,9 @@ def _make_config(path: Path, **sections: object) -> Path:
     return path
 
 
-def _patch_default_config(
-    monkeypatch: pytest.MonkeyPatch, path: Path
-) -> None:
-    """Redirect _DEFAULT_CONFIG_PATH for config set/get/list to *path*."""
-    monkeypatch.setattr(
-        "cli.commands.config_command._DEFAULT_CONFIG_PATH", path
-    )
+def _config_args(path: Path) -> list[str]:
+    """Return the ``--config`` argv prefix selecting *path*."""
+    return ["--config", str(path)]
 
 
 # ===================================================================
@@ -262,8 +258,7 @@ class TestConfigValueTypes:
         cfg_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        rc_set = main(["config", "set", "output.verbose", "true"])
+        rc_set = main(_config_args(cfg_path) + ["config", "set", "output.verbose", "true"])
         assert rc_set == ExitCode.SUCCESS
 
         raw = cfg_path.read_text(encoding="utf-8")
@@ -276,11 +271,10 @@ class TestConfigValueTypes:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        rc_set = main(["config", "set", "execution.default_workers", "12"])
+        rc_set = main(_config_args(cfg_path) + ["config", "set", "execution.default_workers", "12"])
         assert rc_set == ExitCode.SUCCESS
 
-        rc_get = main(["config", "get", "execution.default_workers"])
+        rc_get = main(_config_args(cfg_path) + ["config", "get", "execution.default_workers"])
         assert rc_get == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "execution.default_workers: 12" in out
@@ -291,11 +285,10 @@ class TestConfigValueTypes:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        rc_set = main(["config", "set", "execution.timeout", "30.5"])
+        rc_set = main(_config_args(cfg_path) + ["config", "set", "execution.timeout", "30.5"])
         assert rc_set == ExitCode.SUCCESS
 
-        rc_get = main(["config", "get", "execution.timeout"])
+        rc_get = main(_config_args(cfg_path) + ["config", "get", "execution.timeout"])
         assert rc_get == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "execution.timeout: 30.5" in out
@@ -306,11 +299,12 @@ class TestConfigValueTypes:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        rc_set = main(["config", "set", "database.path", "/custom/path.db"])
+        rc_set = main(
+            _config_args(cfg_path) + ["config", "set", "database.path", "/custom/path.db"]
+        )
         assert rc_set == ExitCode.SUCCESS
 
-        rc_get = main(["config", "get", "database.path"])
+        rc_get = main(_config_args(cfg_path) + ["config", "get", "database.path"])
         assert rc_get == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "database.path: /custom/path.db" in out
@@ -321,13 +315,18 @@ class TestConfigValueTypes:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        assert main(["config", "set", "output.directory", "./out"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.directory", "./out"])
+            == ExitCode.SUCCESS
+        )
         capsys.readouterr()
-        assert main(["config", "set", "execution.workers", "4"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "execution.workers", "4"])
+            == ExitCode.SUCCESS
+        )
         capsys.readouterr()
 
-        rc_list = main(["config", "list"])
+        rc_list = main(_config_args(cfg_path) + ["config", "list"])
         assert rc_list == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "output" in out
@@ -354,8 +353,7 @@ class TestConfigPersistence:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         assert not cfg_path.exists()
-        _patch_default_config(monkeypatch, cfg_path)
-        rc = main(["config", "set", "output.directory", "./results"])
+        rc = main(_config_args(cfg_path) + ["config", "set", "output.directory", "./results"])
         assert rc == ExitCode.SUCCESS
         assert cfg_path.exists()
 
@@ -364,8 +362,10 @@ class TestConfigPersistence:
         cfg_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        assert main(["config", "set", "database.path", "my.db"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "database.path", "my.db"])
+            == ExitCode.SUCCESS
+        )
 
         raw = cfg_path.read_text(encoding="utf-8")
         data = yaml.safe_load(raw)
@@ -377,9 +377,14 @@ class TestConfigPersistence:
         cfg_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        assert main(["config", "set", "output.directory", "./a"]) == ExitCode.SUCCESS
-        assert main(["config", "set", "output.format", "json"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.directory", "./a"])
+            == ExitCode.SUCCESS
+        )
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.format", "json"])
+            == ExitCode.SUCCESS
+        )
 
         raw = cfg_path.read_text(encoding="utf-8")
         data: dict[str, Any] = yaml.safe_load(raw)
@@ -391,9 +396,14 @@ class TestConfigPersistence:
         cfg_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        assert main(["config", "set", "output.directory", "./v1"]) == ExitCode.SUCCESS
-        assert main(["config", "set", "output.directory", "./v2"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.directory", "./v1"])
+            == ExitCode.SUCCESS
+        )
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.directory", "./v2"])
+            == ExitCode.SUCCESS
+        )
 
         raw = cfg_path.read_text(encoding="utf-8")
         data: dict[str, Any] = yaml.safe_load(raw)
@@ -404,9 +414,14 @@ class TestConfigPersistence:
         cfg_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        _patch_default_config(monkeypatch, cfg_path)
-        assert main(["config", "set", "database.path", "db1"]) == ExitCode.SUCCESS
-        assert main(["config", "set", "output.format", "csv"]) == ExitCode.SUCCESS
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "database.path", "db1"])
+            == ExitCode.SUCCESS
+        )
+        assert (
+            main(_config_args(cfg_path) + ["config", "set", "output.format", "csv"])
+            == ExitCode.SUCCESS
+        )
 
         raw = cfg_path.read_text(encoding="utf-8")
         data: dict[str, Any] = yaml.safe_load(raw)
@@ -453,9 +468,7 @@ class TestConfigCliInteraction:
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )
-        monkeypatch.setattr(
-            DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24)
-        )
+        monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
         rc = main(["--config", str(cfg), "run", "--dry-run", str(study)])
         assert rc == ExitCode.SUCCESS
 
@@ -497,9 +510,7 @@ class TestConfigCliInteraction:
         rc = main(["--config", "/tmp/__p4_3__/nonexistent.yaml", "config", "list"])
         assert rc == ExitCode.SUCCESS
 
-    def test_config_flag_default_value_used(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_config_flag_default_value_used(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Without ``--config``, the default value is documented in help."""
         with pytest.raises(SystemExit) as exc:
             main(["--help"])
@@ -563,8 +574,7 @@ class TestConfigEdgeCases:
     ) -> None:
         nested = tmp_path / "a" / "b" / "c" / "config.yaml"
         assert not nested.parent.exists()
-        _patch_default_config(monkeypatch, nested)
-        rc = main(["config", "set", "output.directory", "./out"])
+        rc = main(_config_args(nested) + ["config", "set", "output.directory", "./out"])
         assert rc == ExitCode.SUCCESS
         assert nested.exists()
 
@@ -596,3 +606,157 @@ class TestConfigEdgeCases:
         )
         rc = main(["config", "validate", "--file", str(path)])
         assert rc == ExitCode.SUCCESS
+
+
+# ===================================================================
+# 8. Precedence and File Isolation Tests
+# ===================================================================
+
+
+class TestConfigPrecedenceAndIsolation:
+    """Precedence hierarchy (CLI > config file > defaults) and file isolation."""
+
+    def test_precedence_no_cli_no_config_uses_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """1. No CLI value + no config value -> hard-coded default."""
+        nonexistent = tmp_path / "nonexistent.yaml"
+        study = tmp_path / "study.yaml"
+        study.write_text(
+            "metadata:\n  name: T\n"
+            "dataset:\n  identifier: v1\n"
+            "cohorts:\n  window_years: 1\n"
+            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
+            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "parameters:\n  equity_allocation: [0.5]\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
+        rc = main(["--config", str(nonexistent), "run", "--dry-run", str(study)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "(1 workers)" in out
+
+    def test_precedence_config_over_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """2. Config value present + no CLI value -> config value wins over default."""
+        cfg = _make_config(
+            tmp_path / "custom_config.yaml",
+            execution={"default_workers": 8},
+            output={"default_format": "json", "default_directory": "./custom_out"},
+        )
+        study = tmp_path / "study.yaml"
+        study.write_text(
+            "metadata:\n  name: T\n"
+            "dataset:\n  identifier: v1\n"
+            "cohorts:\n  window_years: 1\n"
+            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
+            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "parameters:\n  equity_allocation: [0.5]\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
+        rc = main(["--config", str(cfg), "run", "--dry-run", str(study)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "(8 workers)" in out
+
+    def test_precedence_cli_over_config(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """3. CLI value present + config value present -> CLI value wins."""
+        cfg = _make_config(
+            tmp_path / "custom_config.yaml",
+            execution={"default_workers": 8},
+        )
+        study = tmp_path / "study.yaml"
+        study.write_text(
+            "metadata:\n  name: T\n"
+            "dataset:\n  identifier: v1\n"
+            "cohorts:\n  window_years: 1\n"
+            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
+            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "parameters:\n  equity_allocation: [0.5]\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
+        rc = main(["--config", str(cfg), "run", "--workers", "4", "--dry-run", str(study)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "(4 workers)" in out
+
+    def test_explicit_config_file_isolation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """4. Explicit --config FILE -> values come from that file."""
+        cfg1 = _make_config(tmp_path / "cfg1.yaml", execution={"default_workers": 8})
+        cfg2 = _make_config(tmp_path / "cfg2.yaml", execution={"default_workers": 2})
+        study = tmp_path / "study.yaml"
+        study.write_text(
+            "metadata:\n  name: T\n"
+            "dataset:\n  identifier: v1\n"
+            "cohorts:\n  window_years: 1\n"
+            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
+            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "parameters:\n  equity_allocation: [0.5]\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
+
+        rc1 = main(["--config", str(cfg1), "run", "--dry-run", str(study)])
+        assert rc1 == ExitCode.SUCCESS
+        out1 = capsys.readouterr().out
+        assert "(8 workers)" in out1
+
+        rc2 = main(["--config", str(cfg2), "run", "--dry-run", str(study)])
+        assert rc2 == ExitCode.SUCCESS
+        out2 = capsys.readouterr().out
+        assert "(2 workers)" in out2
+
+    def test_config_subcommands_operate_on_selected_file(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """5. config set/get/list/validate --config FILE all operate on selected file."""
+        cfg = tmp_path / "selected.yaml"
+        _make_config(
+            cfg,
+            database={"path": "db.sqlite"},
+            output={"default_format": "csv", "default_directory": "./res"},
+            execution={"default_workers": 4},
+            logging={"level": "INFO"},
+        )
+
+        # set
+        rc_set = main(["--config", str(cfg), "config", "set", "execution.default_workers", "16"])
+        assert rc_set == ExitCode.SUCCESS
+
+        # get
+        rc_get = main(["--config", str(cfg), "config", "get", "execution.default_workers"])
+        assert rc_get == ExitCode.SUCCESS
+        assert "execution.default_workers: 16" in capsys.readouterr().out
+
+        # list
+        rc_list = main(["--config", str(cfg), "config", "list"])
+        assert rc_list == ExitCode.SUCCESS
+        assert "default_workers: 16" in capsys.readouterr().out
+
+        # validate
+        rc_val = main(["--config", str(cfg), "config", "validate"])
+        assert rc_val == ExitCode.SUCCESS
+        assert "Configuration is valid" in capsys.readouterr().out
+
+    def test_second_config_file_remains_untouched(self, tmp_path: Path) -> None:
+        """6. A second config file remains untouched when another file is explicitly selected."""
+        cfg1 = _make_config(tmp_path / "cfg1.yaml", execution={"default_workers": 2})
+        cfg2 = _make_config(tmp_path / "cfg2.yaml", execution={"default_workers": 5})
+
+        initial_content_cfg2 = cfg2.read_text(encoding="utf-8")
+
+        rc = main(["--config", str(cfg1), "config", "set", "execution.default_workers", "10"])
+        assert rc == ExitCode.SUCCESS
+
+        assert cfg2.read_text(encoding="utf-8") == initial_content_cfg2
+        val = yaml.safe_load(cfg1.read_text(encoding="utf-8"))["execution"]["default_workers"]
+        assert val == 10
+

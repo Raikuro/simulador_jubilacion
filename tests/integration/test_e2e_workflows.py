@@ -100,9 +100,7 @@ def e2e_dataset() -> Dataset:
 
 @pytest.fixture
 def mock_resolver(e2e_dataset: Dataset, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        DefaultDatasetResolver, "resolve", lambda self, i: e2e_dataset
-    )
+    monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: e2e_dataset)
 
 
 @pytest.fixture
@@ -119,9 +117,7 @@ def e2e_repo(e2e_db: Path) -> SQLiteRepository:
 def e2e_context(
     e2e_dataset: Dataset, monkeypatch: pytest.MonkeyPatch
 ) -> PersistenceReconstructionContext:
-    monkeypatch.setattr(
-        DefaultDatasetResolver, "resolve", lambda self, i: e2e_dataset
-    )
+    monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: e2e_dataset)
     return create_persistence_context()
 
 
@@ -164,8 +160,7 @@ def seeded_db(
 
 
 @pytest.fixture
-def cli_setup(mock_resolver: None, persist_paths: None) -> None:
-    ...
+def cli_setup(mock_resolver: None, persist_paths: None) -> None: ...
 
 
 # ===================================================================
@@ -229,8 +224,11 @@ class TestCompleteStudyLifecycle:
         assert seeded_db.study_name in out
 
     def test_export_seeded_study(
-        self, seeded_db: _SeededDb, cli_setup: None,
-        tmp_path: Path, capsys: pytest.CaptureFixture[str],
+        self,
+        seeded_db: _SeededDb,
+        cli_setup: None,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         rc = main(["export", seeded_db.experiment_id, "--output", str(tmp_path)])
         assert rc == ExitCode.SUCCESS
@@ -274,9 +272,7 @@ class TestCliCommandInteroperability:
         out2 = capsys.readouterr().out
         assert "Total:" in out2 or "studies" in out2
 
-    def test_global_options_accepted(
-        self, tmp_path: Path, mock_resolver: None
-    ) -> None:
+    def test_global_options_accepted(self, tmp_path: Path, mock_resolver: None) -> None:
         study = _e2e_study_yaml(tmp_path / "global.yaml")
         rc = main(["--verbose", "validate", str(study)])
         assert rc == ExitCode.SUCCESS
@@ -297,7 +293,9 @@ class TestPersistenceRoundTrip:
     ) -> None:
         identity = ExperimentIdentity(name="E2E Round-Trip", revision="v1")
         exp_id = e2e_repo.save_experiment(
-            identity, make_experiment(name="E2E Round-Trip"), e2e_context,
+            identity,
+            make_experiment(name="E2E Round-Trip"),
+            e2e_context,
         )
         found = e2e_repo.find_experiment_by_name("E2E Round-Trip")
         assert found == exp_id
@@ -351,11 +349,13 @@ class TestPersistenceRoundTrip:
     ) -> None:
         e2e_repo.save_experiment(
             ExperimentIdentity(name="E2E List A", revision="v1"),
-            make_experiment(name="E2E List A"), e2e_context,
+            make_experiment(name="E2E List A"),
+            e2e_context,
         )
         e2e_repo.save_experiment(
             ExperimentIdentity(name="E2E List B", revision="v1"),
-            make_experiment(name="E2E List B"), e2e_context,
+            make_experiment(name="E2E List B"),
+            e2e_context,
         )
         experiments = e2e_repo.list_experiments()
         names = {e["name"] for e in experiments}
@@ -397,12 +397,18 @@ class TestExportWorkflowIntegration:
     def test_export_json_summary(
         self, seeded_db: _SeededDb, cli_setup: None, tmp_path: Path
     ) -> None:
-        rc = main([
-            "export", seeded_db.experiment_id,
-            "--format", "json",
-            "--metrics", "summary",
-            "--output", str(tmp_path),
-        ])
+        rc = main(
+            [
+                "export",
+                seeded_db.experiment_id,
+                "--format",
+                "json",
+                "--metrics",
+                "summary",
+                "--output",
+                str(tmp_path),
+            ]
+        )
         assert rc == ExitCode.SUCCESS
         json_files = [f for f in tmp_path.iterdir() if f.suffix == ".json"]
         assert len(json_files) >= 1
@@ -476,25 +482,20 @@ class TestConfigLoading:
         out = capsys.readouterr().out
         assert "validation failed" in out.lower()
 
-    def test_config_set_and_get(
-        self, config_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(
-            "cli.commands.config_command._DEFAULT_CONFIG_PATH", config_path
+    def test_config_set_and_get(self, config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        rc_set = main(
+            ["--config", str(config_path), "config", "set", "output.directory", "./e2e_results"]
         )
-        rc_set = main(["config", "set", "output.directory", "./e2e_results"])
         assert rc_set == ExitCode.SUCCESS
 
-        rc_get = main(["config", "get", "output.directory"])
+        assert config_path.exists()
+        rc_get = main(["--config", str(config_path), "config", "get", "output.directory"])
         assert rc_get == ExitCode.SUCCESS
 
     def test_config_list_when_no_config(
         self, config_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        monkeypatch.setattr(
-            "cli.commands.config_command._DEFAULT_CONFIG_PATH", config_path
-        )
-        rc = main(["config", "list"])
+        rc = main(["--config", str(config_path), "config", "list"])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "No configuration" in out
@@ -502,10 +503,7 @@ class TestConfigLoading:
     def test_config_get_nonexistent_key(
         self, config_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr(
-            "cli.commands.config_command._DEFAULT_CONFIG_PATH", config_path
-        )
-        rc = main(["config", "get", "nonexistent.key"])
+        rc = main(["--config", str(config_path), "config", "get", "nonexistent.key"])
         assert rc == ExitCode.VALIDATION_ERROR
 
 
@@ -532,7 +530,9 @@ class TestErrorPathValidation:
         assert "Invalid YAML" in out
 
     def test_invalid_yaml_structure(
-        self, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         scalar = tmp_path / "scalar.yaml"
         scalar.write_text("just a string", encoding="utf-8")
@@ -586,9 +586,9 @@ class TestWorkflowFailureHandling:
     ) -> None:
         study = tmp_path / "bad_horizon.yaml"
         study.write_text(
-            "metadata:\n  name: \"Bad Study\"\ndataset:\n  identifier: \"E2E_TEST_v1\"\n"
+            'metadata:\n  name: "Bad Study"\ndataset:\n  identifier: "E2E_TEST_v1"\n'
             "cohorts:\n  window_years: -5\nallocation_policies:\n"
-            "  - name: \"p1\"\n    equity_ratio: 0.75\n"
+            '  - name: "p1"\n    equity_ratio: 0.75\n'
             "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.50]\n",
             encoding="utf-8",
@@ -663,11 +663,18 @@ class TestRegressionCoverage:
         from cli.commands import COMMANDS
 
         assert set(COMMANDS.keys()) == {
-            "validate", "run", "list", "export", "optimize", "compare", "config"
+            "validate",
+            "run",
+            "list",
+            "export",
+            "optimize",
+            "compare",
+            "config",
         }
 
     def test_main_function_signature(self) -> None:
         import inspect
+
         sig = inspect.signature(main)
         assert "argv" in sig.parameters
         assert sig.parameters["argv"].default is None

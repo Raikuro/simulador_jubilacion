@@ -18,6 +18,7 @@ from cli.builders import (
     resolve_dataset,
 )
 from cli.commands.base import BaseCommand, ExecutionContext
+from cli.commands.config_command import load_configuration
 from cli.error_handling import ExitCode
 from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.domain.model.money import Currency, Money
@@ -96,20 +97,20 @@ class RunCommand(BaseCommand):
         parser.add_argument(
             "--output-dir",
             type=str,
-            default="./results/",
-            help="Output directory",
+            default=None,
+            help="Output directory (default: ./results/, or output.default_directory from config)",
         )
         parser.add_argument(
             "--workers",
             type=int,
-            default=1,
-            help="Number of parallel workers",
+            default=None,
+            help="Number of parallel workers (default: config execution.default_workers or 1)",
         )
         parser.add_argument(
             "--format",
             choices=["csv", "json", "sqlite", "all"],
-            default="csv",
-            help="Output format",
+            default=None,
+            help="Output format (default: csv, or output.default_format from config)",
         )
         parser.add_argument(
             "--dry-run",
@@ -125,6 +126,18 @@ class RunCommand(BaseCommand):
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
         study_path = Path(args.study_file)
+
+        # --- 0. Resolve config-driven execution defaults (CLI > config > defaults) --
+        config = load_configuration(context)
+        args.workers = (
+            args.workers
+            if args.workers is not None
+            else int(config.execution.get("default_workers", 1))
+        )
+        args.format = args.format or str(config.output.get("default_format", "csv"))
+        args.output_dir = args.output_dir or str(
+            config.output.get("default_directory", "./results/")
+        )
 
         # --- 1. Parse YAML ---------------------------------------------------
         try:

@@ -16,6 +16,39 @@ from cli.error_handling import ExitCode
 _DEFAULT_CONFIG_PATH = Path("~/.sim-retire/config.yaml").expanduser()
 
 
+def resolve_config_path(
+    context: ExecutionContext | None = None,
+    explicit: str | None = None,
+) -> Path:
+    """Resolve the effective configuration file path.
+
+    Precedence: an explicit CLI path (``--config`` or a subcommand ``--file``)
+    wins over the global ``--config`` propagated through ``ExecutionContext``,
+    which in turn wins over the packaged default ``~/.sim-retire/config.yaml``.
+    """
+    if explicit:
+        return Path(explicit).expanduser()
+    if context is not None and context.config_file:
+        return Path(context.config_file).expanduser()
+    return _DEFAULT_CONFIG_PATH
+
+
+def load_configuration(
+    context: ExecutionContext | None = None,
+) -> Configuration:
+    """Load and parse the effective configuration for a CLI invocation.
+
+    Missing/invalid files degrade to an empty ``Configuration`` so other commands
+    can apply ``CLI args > config file > defaults`` precedence without failing.
+    """
+    config_file = resolve_config_path(context)
+    try:
+        data = _load_config_yaml(config_file)
+    except ValueError:
+        data = {}
+    return Configuration.from_dict(data)
+
+
 @dataclass
 class Configuration:
     """Configuration model for the CLI."""
@@ -158,18 +191,22 @@ class ConfigCommand(BaseCommand):
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
         if args.action == "set":
-            return self._set_config_value(args)
+            return self._set_config_value(args, context)
         elif args.action == "get":
-            return self._get_config_value(args)
+            return self._get_config_value(args, context)
         elif args.action == "validate":
-            return self._validate_config(args)
+            return self._validate_config(args, context)
         elif args.action == "list":
-            return self._list_config_values()
+            return self._list_config_values(context)
         else:
             print("ERROR: Unknown action", file=sys.stderr)
             return ExitCode.ERROR
 
-    def _set_config_value(self, args: argparse.Namespace) -> int:
+    def _set_config_value(
+        self,
+        args: argparse.Namespace,
+        context: ExecutionContext | None = None,
+    ) -> int:
         """Set configuration value."""
         try:
             category, key = _parse_key(args.key)
@@ -180,9 +217,10 @@ class ConfigCommand(BaseCommand):
             except yaml.YAMLError:
                 value = args.value
 
+            config_file = resolve_config_path(context)
+
             # Load existing configuration if file exists
             config_data: dict[str, Any] = {}
-            config_file = _DEFAULT_CONFIG_PATH
 
             if config_file.exists():
                 raw = config_file.read_text(encoding="utf-8")
@@ -206,10 +244,14 @@ class ConfigCommand(BaseCommand):
             print(f"ERROR: Failed to set configuration: {exc}", file=sys.stderr)
             return ExitCode.CONFIGURATION_ERROR
 
-    def _get_config_value(self, args: argparse.Namespace) -> int:
+    def _get_config_value(
+        self,
+        args: argparse.Namespace,
+        context: ExecutionContext | None = None,
+    ) -> int:
         """Get configuration value."""
         try:
-            config_file = _DEFAULT_CONFIG_PATH
+            config_file = resolve_config_path(context)
 
             # Load configuration
             config_data = _load_config_yaml(config_file)
@@ -236,10 +278,15 @@ class ConfigCommand(BaseCommand):
             print(f"ERROR: Failed to get configuration: {exc}", file=sys.stderr)
             return ExitCode.CONFIGURATION_ERROR
 
-    def _validate_config(self, args: argparse.Namespace) -> int:
+    def _validate_config(
+        self,
+        args: argparse.Namespace,
+        context: ExecutionContext | None = None,
+    ) -> int:
         """Validate configuration."""
         try:
-            config_data = _load_config_yaml(Path(args.file) if args.file else None)
+            config_file = resolve_config_path(context, explicit=args.file)
+            config_data = _load_config_yaml(config_file)
 
             config = Configuration.from_dict(config_data)
 
@@ -258,10 +305,10 @@ class ConfigCommand(BaseCommand):
             print(f"ERROR: Failed to validate configuration: {exc}", file=sys.stderr)
             return ExitCode.CONFIGURATION_ERROR
 
-    def _list_config_values(self) -> int:
+    def _list_config_values(self, context: ExecutionContext | None = None) -> int:
         """List all configuration values."""
         try:
-            config_file = _DEFAULT_CONFIG_PATH
+            config_file = resolve_config_path(context)
 
             # Load configuration
             config_data = _load_config_yaml(config_file)
