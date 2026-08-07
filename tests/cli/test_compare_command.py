@@ -108,13 +108,17 @@ def _make_plan_unit(
     param_key: str = "equity_allocation",
     param_value: str = "0.75",
     withdrawal_rate: str = "0.04",
+    dataset: Dataset | None = None,
 ) -> PlannedSimulationUnit:
+    if dataset is None:
+        dataset = _make_dataset(400)
     return PlannedSimulationUnit(
         cohort=CohortSpecification(start_date=date(1871, 1, 1), id=cohort_id),
         parameter_config=ParameterConfiguration(values={param_key: param_value}),
         allocation_policy=ConstantAllocationPolicy(Decimal(param_value)),
         withdrawal_policy=ConstantWithdrawalPolicy(Decimal(withdrawal_rate)),
         initial_portfolio=_NULL_PORTFOLIO,
+        dataset=dataset,
     )
 
 
@@ -122,11 +126,13 @@ def _make_research_plan(
     name: str = "test",
     num_units: int = 2,
 ) -> ResearchPlan:
-    dataset = _make_dataset(400)
+    full_dataset = _make_dataset(400)
+    # Single cohort at origin; slice once for horizon=360
+    sliced_dataset = full_dataset.slice(date(1871, 1, 1), 360)
     experiment_def = ResearchExperimentDefinition(
         name=name,
         description=f"Test: {name}",
-        dataset=dataset,
+        dataset=full_dataset,
         horizon_months=360,
         initial_wealth=Money(Decimal("1000000"), Currency.EUR),
         cohorts=(
@@ -136,7 +142,7 @@ def _make_research_plan(
         withdrawal_policies=(ConstantWithdrawalPolicy(Decimal("0.04")),),
     )
     units = tuple(
-        _make_plan_unit(param_value=str(v))
+        _make_plan_unit(param_value=str(v), dataset=sliced_dataset)
         for v in (Decimal("0.75") + Decimal(i) * Decimal("0.01") for i in range(num_units))
     )
     return ResearchPlan(experiment_definition=experiment_def, units=units)

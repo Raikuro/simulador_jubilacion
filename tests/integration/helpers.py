@@ -119,7 +119,7 @@ def make_experiment(
     initial_wealth: Money | None = None,
 ) -> ExperimentDefinition:
     if dataset is None:
-        dataset = make_dataset(horizon_months + 12)
+        dataset = make_dataset(horizon_months + 12, start_year=2000)
     if initial_wealth is None:
         initial_wealth = Money(Decimal("1000000"), Currency.EUR)
     return ExperimentDefinition(
@@ -144,9 +144,11 @@ def make_plan(
         experiment = make_experiment()
     units: list[PlannedSimulationUnit] = []
     for i in range(num_units):
+        cohort_date = date(2000, i + 1, 1)
+        sliced = experiment.dataset.slice(cohort_date, experiment.horizon_months)
         units.append(
             PlannedSimulationUnit(
-                cohort=CohortSpecification(start_date=date(2000, i + 1, 1)),
+                cohort=CohortSpecification(start_date=cohort_date),
                 parameter_config=ParameterConfiguration(
                     values={"withdrawal_rate": 0.04}
                 ),
@@ -159,6 +161,7 @@ def make_plan(
                         ),
                     )
                 ),
+                dataset=sliced,
             )
         )
     return ResearchPlan(experiment_definition=experiment, units=tuple(units))

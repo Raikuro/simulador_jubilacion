@@ -305,7 +305,7 @@ class TestPersistenceRoundTrip:
         e2e_repo: SQLiteRepository,
         e2e_context: PersistenceReconstructionContext,
     ) -> None:
-        exp = make_experiment(name="E2E Plan Round-Trip")
+        exp = make_experiment(name="E2E Plan Round-Trip", horizon_months=12)
         identity = ExperimentIdentity(name="E2E Plan Round-Trip", revision="v1")
         exp_id = e2e_repo.save_experiment(identity, exp, e2e_context)
         plan = make_plan(exp, num_units=3)
@@ -318,7 +318,7 @@ class TestPersistenceRoundTrip:
         e2e_repo: SQLiteRepository,
         e2e_context: PersistenceReconstructionContext,
     ) -> None:
-        exp = make_experiment(name="E2E Result Round-Trip")
+        exp = make_experiment(name="E2E Result Round-Trip", horizon_months=12)
         identity = ExperimentIdentity(name="E2E Result Round-Trip", revision="v1")
         exp_id = e2e_repo.save_experiment(identity, exp, e2e_context)
         plan = make_plan(exp, num_units=2)

@@ -148,6 +148,7 @@ def make_benchmark_plan(
                     AssetHolding(asset_class=BENCHMARK_ASSET, units=Decimal("1000")),
                 )
             ),
+            dataset=dataset.slice(date(2000, 1 + i, 1), horizon_months),
         )
         for i in range(num_units)
     )
@@ -180,7 +181,7 @@ def make_persistence_context(dataset: Dataset) -> PersistenceReconstructionConte
 
 @pytest.fixture
 def bm_dataset_small() -> Dataset:
-    return make_benchmark_dataset(24)
+    return make_benchmark_dataset(60)
 
 
 @pytest.fixture

@@ -156,7 +156,7 @@ def persistence_context_with_dataset(
 
 @pytest.fixture
 def sample_dataset() -> Dataset:
-    return _make_dataset(500)
+    return _make_dataset(500, start_year=2000)
 
 
 @pytest.fixture
@@ -178,6 +178,8 @@ def sample_experiment(sample_dataset: Dataset) -> ExperimentDefinition:
 
 @pytest.fixture
 def sample_plan(sample_experiment: ExperimentDefinition) -> ResearchPlan:
+    dataset1 = sample_experiment.dataset.slice(date(2000, 1, 1), 120)
+    dataset2 = sample_experiment.dataset.slice(date(2000, 2, 1), 120)
     unit1 = PlannedSimulationUnit(
         cohort=CohortSpecification(start_date=date(2000, 1, 1)),
         parameter_config=ParameterConfiguration(values={"withdrawal_rate": 0.04}),
@@ -186,6 +188,7 @@ def sample_plan(sample_experiment: ExperimentDefinition) -> ResearchPlan:
         initial_portfolio=Portfolio(
             holdings=(AssetHolding(asset_class=_INTEGRATION_ASSET, units=Decimal("1000")),)
         ),
+        dataset=dataset1,
     )
     unit2 = PlannedSimulationUnit(
         cohort=CohortSpecification(start_date=date(2000, 2, 1)),
@@ -195,6 +198,7 @@ def sample_plan(sample_experiment: ExperimentDefinition) -> ResearchPlan:
         initial_portfolio=Portfolio(
             holdings=(AssetHolding(asset_class=_INTEGRATION_ASSET, units=Decimal("1000")),)
         ),
+        dataset=dataset2,
     )
     return ResearchPlan(experiment_definition=sample_experiment, units=(unit1, unit2))
 
