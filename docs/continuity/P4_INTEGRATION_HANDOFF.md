@@ -103,8 +103,8 @@ CLI Layer (P3.3–P3.10) → Research Layer (v0.2.3) → Domain Layer (v0.1+v0.3
 | P4.2 (E2E Workflow Tests) | P4.1 test framework | 100% workflow coverage | P4.1 | P4.1 | All core CLI → Research → Domain → Infrastructure flows validated |
 | P4.3 (Configuration Integration Tests) | P4.1 test framework, CLI implementations | 100% configuration coverage | P4.1, P3.10 | P3.10 | All --config FILE integration scenarios tested |
 | P4.4 (Performance Benchmarks) | P4.1 test framework, workflow tests | Performance baselines | P4.1, P4.2 | P4.2 | All performance benchmarks established and validated |
-| P4.5 (Error Handling Integration Tests) | P4.1 test framework, configuration tests | Comprehensive error coverage | P4.1, P4.3 | P4.3 | All error propagation scenarios verified |
-| P4.6 (User Documentation) | P4.4 benchmarks, P4.5 tests | Complete documentation set | P4.1, P4.4, P4.5 | P4.5 | All user/developer guides completed |
+| P4.5 (Documentation & Release Readiness) | P4.1 test framework, P4.4 benchmarks | Documentation synchronization, release readiness | P4.1, P4.4 | P4.4 | All documentation synchronized with implementation |
+| P4.6 (User Documentation) | P4.4 benchmarks, P4.5 docs | Complete user documentation set | P4.1, P4.4, P4.5 | P4.5 | All user guides + runnable examples completed |
 | P4.7 (Developer Documentation) | All P4 packages complete | Integration guides, tuning docs | P4.1, P4.4, P4.6 | P4.6 | All developer documentation completed |
 | P4.8 (Final Validation Review) | All P4 packages complete | Phase 4 readiness report | P4.1-P4.7 | P4.7 | All Phase 4 requirements verified and approved |
 
@@ -112,7 +112,7 @@ CLI Layer (P3.3–P3.10) → Research Layer (v0.2.3) → Domain Layer (v0.1+v0.3
 - P4.2 depends on completion of P4.1
 - P4.3 depends on completion of P4.1 and P3.10
 - P4.4 depends on completion of P4.1 and P4.2
-- P4.5 depends on completion of P4.1 and P4.3
+- P4.5 depends on completion of P4.1 and P4.4
 - P4.6 depends on completion of P4.4 and P4.5
 - P4.7 depends on completion of P4.4, P4.5, and P4.6
 - P4.8 depends on completion of P4.1-P4.7
@@ -143,9 +143,9 @@ Phase 4 is structured into 8 sequentially deliverable packages, each independent
    - Establishes performance baselines
    - Compares parallel vs sequential execution
 
-5. **P4.5 Error Handling Integration Tests**
-   - Ensures consistent error propagation
-   - Tests database error handling and CLI error messages
+5. **P4.5 Documentation & Release Readiness**
+   - Synchronizes all documentation with actual implementation
+   - Creates release checklist, verifies repository readiness
 
 6. **P4.6 User Documentation**
    - Completes user guides, configuration reference
@@ -226,7 +226,7 @@ Phase 4 is **COMPLETE AND ACCEPTED** when all of the following behavior-based cr
 **Integration Debt (Addressed in Phase 4):**
 
 - ✅ **Documentation gaps in CLI integration paths:** Resolved in P4.7 documentation
-- ✅ **Error propagation across layers:** Resolved in P4.5 error handling integration tests
+- ✅ **Error propagation across layers:** Resolved in P4.2 E2E workflow integration tests
 - ✅ **Performance measurement framework missing:** Resolved in P4.4 performance benchmarks
 
 **Remaining Debt (Phase 5+):**
@@ -286,7 +286,7 @@ Phase 4 ⬜ (Integration & Acceptance) ← YOUR TASK
 | 2-4 | Implement integration test framework (P4.1) | Implementation Engineer |
 | 5-8 | Develop end-to-end workflow tests (P4.2, P4.3) | Implementation Engineer |
 | 6-9 | Establish performance benchmarks (P4.4) | Implementation Engineer |
-| 8-10 | Implement error handling tests (P4.5) | Implementation Engineer |
+| 8-10 | Complete documentation & release readiness (P4.5) | Technical Writer |
 | 9-12 | Complete user documentation (P4.6) | Technical Writer |
 | 10-12 | Developer documentation & final review (P4.7, P4.8) | Technical Writer |
 | 12 | Phase 4 readiness review | All teams |
@@ -301,9 +301,9 @@ P4.3 (Config Tests) ← uses framework & workflow tests
     ↓
 P4.4 (Performance) ← uses framework & workflow tests
     ↓
-P4.5 (Error Handling) ← uses framework & config tests
+P4.5 (Documentation) ← uses framework & performance tests
     ↓
-P4.6 (User Documentation) ← needs performance & error tests
+P4.6 (User Documentation) ← needs performance & documentation
     ↓
 P4.7 (Developer Documentation) ← needs previous packages
     ↓
@@ -360,7 +360,7 @@ Every implementation handoff requires approval before proceeding:
 - ✅ **P4.1:** Integration framework prevents future integration debt
 - ✅ **P4.2:** Complete workflow tests verify all integration paths
 - ✅ **P4.4:** Performance framework establishes baselines
-- ✅ **P4.5:** Cross-layer error tests verify error propagation
+- ✅ **P4.5:** Documentation synchronization verifies doc-implementation consistency
 - ✅ **P4.7:** Documentation prevents knowledge debt
 
 **Remaining Debt (Phase 5+):**

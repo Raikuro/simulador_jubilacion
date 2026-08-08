@@ -1,0 +1,32 @@
+# Example 1: Minimal study — a single fixed allocation and withdrawal rate.
+#
+# Run:
+#   sim-retire --data-dir examples/data validate examples/studies/01_minimal.yaml
+#   sim-retire --data-dir examples/data run --dry-run examples/studies/01_minimal.yaml
+#   sim-retire --data-dir examples/data run examples/studies/01_minimal.yaml
+
+metadata:
+  name: "Minimal Single-Strategy Study"
+  version: "1.0"
+  description: "A baseline 75/25 strategy with a 4% safe withdrawal rate"
+
+dataset:
+  identifier: "market_monthly"
+  start_year: 1990
+  end_year: 2024
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policies:
+  - name: "Static 75/25"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.75
+
+withdrawal_policy:
+  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  equity_allocation: [0.75]

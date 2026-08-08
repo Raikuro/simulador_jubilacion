@@ -37,12 +37,12 @@
 
 ## 4. Test Suite
 
-- [x] All CLI tests pass (165)
-- [x] All infrastructure tests pass (96)
-- [x] All domain tests pass (360)
-- [x] All integration tests pass (87)
+- [x] All CLI tests pass (168)
+- [x] All infrastructure tests pass (102)
+- [x] All domain tests pass (369)
+- [x] All integration tests pass (135)
 - [x] All benchmark tests pass (26)
-- [x] Total: **768 tests passing**
+- [x] Total: **808 tests passing**
 
 ## 5. Type Checking
 

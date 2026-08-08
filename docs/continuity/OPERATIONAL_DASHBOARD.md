@@ -75,12 +75,13 @@
 ### Test Suite Status
 
 ```
-Tests: 768 passing (100%)
-├─ CLI Tests:             165 (P3.3-P3.10)
-├─ Infrastructure Tests:   96 (parallel + persistence + codecs + context)
-├─ Domain Tests:          360 (engine + research + optimization)
-├─ Integration Tests:      87 (E2E workflows: 50, config: 37)
-└─ Benchmark Tests:        26 (execution: 13, persistence: 10, CLI: 3)
+Tests: 808 passing (100%)
+├─ CLI Tests:             168 (P3.3-P3.10)
+├─ Infrastructure Tests:  102 (parallel + persistence + codecs + context + dataset identity)
+├─ Domain Tests:          369 (engine + research + optimization)
+├─ Integration Tests:     135 (E2E workflows: 45, config: 43, framework infra: 41, multi-cohort: 3, real engine: 3)
+├─ Dataset Slice Tests:     8 (tests/unit/)
+└─ Benchmark Tests:        26 (CLI: 10, execution: 9, persistence: 7)
 
 Type Checking:
   src/cli/ --strict: 0 errors ✅
@@ -261,6 +262,6 @@ Before starting work each session:
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 768 passing (165 CLI + 96 infrastructure + 360 domain + 87 integration + 26 benchmarks)  
+**Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
 **Blockers:** None  
 **Next Action:** Complete P4.5 Documentation & Release Readiness

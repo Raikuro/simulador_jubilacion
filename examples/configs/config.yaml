@@ -1,0 +1,19 @@
+# Example configuration file for sim-retire.
+#
+# This file is optional. sim-retire reads it from ~/.sim-retire/config.yaml
+# by default, or from any path passed with --config.
+#
+# Precedence: CLI flags > config file > built-in defaults.
+
+database:
+  path: ~/.sim-retire/studies.db
+
+output:
+  default_format: csv
+  default_directory: ./results/
+
+execution:
+  default_workers: 4
+
+logging:
+  level: INFO

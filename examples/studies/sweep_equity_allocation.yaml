@@ -1,0 +1,33 @@
+# Example 2: Parameter sweep — exploring the effect of the equity allocation
+# ratio and the duration of the glidepath on retirement success.
+#
+# Run:
+#   sim-retire --data-dir data validate examples/studies/parameter_sweep.yaml
+#   sim-retire --data-dir data run --dry-run examples/studies/parameter_sweep.yaml
+#   sim-retire --data-dir data run examples/studies/parameter_sweep.yaml
+
+metadata:
+  name: "Equity Allocation Sweep"
+  version: "2.0"
+  description: "Sweep equity allocation from 50% to 100% across 30-year horizons"
+
+dataset:
+  identifier: "market_monthly"
+  start_year: 1990
+  end_year: 2024
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policies:
+  - name: "Static Allocation"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.75
+
+withdrawal_policy:
+  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  equity_allocation: [0.50, 0.75, 0.90]

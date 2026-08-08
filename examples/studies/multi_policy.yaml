@@ -1,0 +1,43 @@
+# Example 3: Strategy comparison — multiple allocation policies in one study.
+#
+# Validate shows every allocation policy; `run` executes the study using the
+# constant-allocation execution path.
+#
+# Run:
+#   sim-retire --data-dir examples/data validate examples/studies/multi_policy.yaml
+#   sim-retire --data-dir examples/data run --dry-run examples/studies/multi_policy.yaml \
+#     --workers 2
+#   sim-retire --data-dir examples/data run examples/studies/multi_policy.yaml \
+#     --workers 2 --format csv
+
+metadata:
+  name: "Multi-Policy Comparison"
+  version: "1.0"
+  description: "Compare static equity allocations against retirement success"
+
+dataset:
+  identifier: "market_monthly"
+  start_year: 1990
+  end_year: 2024
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policies:
+  - name: "Static 60/40"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.60
+  - name: "Static 75/25"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.75
+  - name: "Static 90/10"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.90
+
+withdrawal_policy:
+  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  equity_allocation: [0.60, 0.75, 0.90]

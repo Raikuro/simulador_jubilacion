@@ -2,7 +2,7 @@
 
 **Document Type:** Reference Guide  
 **Status:** Active  
-**Last Updated:** 2026-07-23
+**Last Updated:** 2026-08-08
 
 ---
 
@@ -81,6 +81,7 @@
 | **SIMULATION_STATE_UPDATE_STEP_SPECIFICATION.md** | State update pipeline | Frozen |
 | **SIMULATION_STATISTICS_BUILDER_SPECIFICATION.md** | Statistics builder | Frozen |
 | **MARKET_EVOLUTION_SPECIFICATION_FINAL_APPROVAL.md** | Final approval | Frozen |
+| **DATASET_MODEL_SPECIFICATION.md** | Dataset domain model (identifier, slice) | Frozen |
 
 #### Research Specifications (v0.2.3 — Frozen)
 
@@ -90,6 +91,7 @@
 | **EXPERIMENT_DEFINITION_SPECIFICATION.md** | Experiment definition contract | Frozen |
 | **PARAMETER_SWEEP_ENGINE_SPECIFICATION.md** | Parameter sweep contract | Frozen |
 | **RESEARCH_EXECUTOR_SPECIFICATION.md** | Research executor contract | Frozen |
+| **RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md** | Research plan materialization contract | Frozen |
 
 #### Optimization Specifications (v0.3 — Frozen)
 
@@ -163,6 +165,10 @@
 | **ARCHITECTURE_OVERVIEW.md** | High-level system overview | Active |
 | **CONTRIBUTION.md** | Contribution guidelines | Active |
 | **IMPLEMENTATION_PROMPT.md** | Implementation guidance | Active |
+| **INSTALLATION_AND_QUICKSTART.md** | Installation and first steps | Active |
+| **CLI_USAGE.md** | CLI command reference | Active |
+| **CONFIG_REFERENCE.md** | Configuration file reference | Active |
+| **CONFIG_PRECEDENCE.md** | CLI/config/default precedence | Active |
 
 ---
 
@@ -242,8 +248,8 @@ docs/
 │       ├── SIMULATION_EXECUTOR_PUBLIC_API_REVIEW.md
 │       └── RESEARCH_SWROPTIMIZER_PUBLIC_API_REVIEW.md
 │
-├── specifications/                    [19 files - Implementation contracts]
-│   ├── engine/                        [8 files - v0.1 specs]
+├── specifications/                    [21 files - Implementation contracts]
+│   ├── engine/                        [9 files - v0.1 specs]
 │   │   ├── MARKET_EVOLUTION_STEP_SPECIFICATION.md
 │   │   ├── MONTHLY_RESULT_BUILDER_STEP_SPECIFICATION.md
 │   │   ├── PORTFOLIO_REBALANCE_STEP_SPECIFICATION.md
@@ -251,13 +257,15 @@ docs/
 │   │   ├── SIMULATION_RUNNER_SPECIFICATION.md
 │   │   ├── SIMULATION_STATE_UPDATE_STEP_SPECIFICATION.md
 │   │   ├── SIMULATION_STATISTICS_BUILDER_SPECIFICATION.md
-│   │   └── MARKET_EVOLUTION_SPECIFICATION_FINAL_APPROVAL.md
+│   │   ├── MARKET_EVOLUTION_SPECIFICATION_FINAL_APPROVAL.md
+│   │   └── DATASET_MODEL_SPECIFICATION.md
 │   │
-│   ├── research/                      [4 files - v0.2.3 specs]
+│   ├── research/                      [5 files - v0.2.3 specs]
 │   │   ├── COHORT_GENERATOR_SPECIFICATION.md
 │   │   ├── EXPERIMENT_DEFINITION_SPECIFICATION.md
 │   │   ├── PARAMETER_SWEEP_ENGINE_SPECIFICATION.md
-│   │   └── RESEARCH_EXECUTOR_SPECIFICATION.md
+│   │   ├── RESEARCH_EXECUTOR_SPECIFICATION.md
+│   │   └── RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md
 │   │
 │   ├── optimization/                  [4 files - v0.3 specs]
 │   │   ├── RESEARCH_SWROPTIMIZER_SPECIFICATION.md
@@ -285,10 +293,14 @@ docs/
 │   ├── ARCHITECTURE_RESOLUTION_REPORT_V0.4.md
 │   └── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
 │
-├── development/                       [3 files - Dev guidelines]
+├── development/                       [7 files - Dev guidelines]
 │   ├── ARCHITECTURE_OVERVIEW.md
 │   ├── CONTRIBUTION.md
-│   └── IMPLEMENTATION_PROMPT.md
+│   ├── IMPLEMENTATION_PROMPT.md
+│   ├── INSTALLATION_AND_QUICKSTART.md
+│   ├── CLI_USAGE.md
+│   ├── CONFIG_REFERENCE.md
+│   └── CONFIG_PRECEDENCE.md
 │
 └── history/                           [9 files - Historical migration records]
     ├── CLEANUP_SUMMARY.md
@@ -326,7 +338,9 @@ docs/
 3. **docs/continuity/OPERATIONAL_DASHBOARD.md** — Operational health & metrics (10 min)
 4. **docs/continuity/NEXT_SESSION.md** — Session initialization (5 min)
 5. **docs/README.md** — Development setup (10 min)
-6. **docs/development/ARCHITECTURE_OVERVIEW.md** — System design walkthrough
+6. **docs/development/INSTALLATION_AND_QUICKSTART.md** — Install `sim-retire` & run first study (10 min)
+7. **docs/development/CLI_USAGE.md** — CLI command reference (10 min)
+8. **docs/development/ARCHITECTURE_OVERVIEW.md** — System design walkthrough
 
 ### Quality Gates
 
@@ -352,7 +366,7 @@ docs/
 - ✅ Each document has a single, clear responsibility
 - ✅ The governance rule is understood and followed
 - ✅ New documentation follows the established patterns
-- ✅ All 407 tests still passing
+- ✅ All 808 tests still passing
 - ✅ 0 mypy errors in v0.4 infrastructure modules
 - ✅ All specifications frozen and approved
 - ✅ Clear separation of frozen vs. active documentation
@@ -367,5 +381,5 @@ For questions about documentation governance, consult the Chief Architect.
 ---
 
 **Document Status:** Complete & Accurate  
-**Last Updated:** 2026-07-27
+**Last Updated:** 2026-08-08
 **Maintainer:** Chief Architect

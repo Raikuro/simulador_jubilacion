@@ -89,7 +89,7 @@ All seven CLI commands and configuration system frozen and committed.
 
 ## Validation Status
 
-Test suite: **768 passing** (165 CLI + 96 infrastructure + 360 domain + 87 integration + 26 benchmarks).
+Test suite: **808 passing** (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice).
 Full codebase mypy (`src/ --strict`): **0 errors** (WP2 complete).
 Test suite mypy (`tests/ --strict`): **0 errors** (WP3 complete, 62 files).
 Benchmarks mypy (tests/benchmarks/): 36 pre-existing errors (untyped module imports only)

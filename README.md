@@ -16,6 +16,9 @@ To provide a transparent, testable, and extensible platform for academic-grade f
 - **Implementation Engineers** → `docs/continuity/NEXT_SESSION.md` & `docs/continuity/CURRENT_STATE.md`
 - **Documentation Tree** → `docs/DOCUMENTATION_TREE.md`
 - **Canonical Sources** → `docs/continuity/SOURCE_OF_TRUTH.md`
+- **Installation & Quickstart** → `docs/development/INSTALLATION_AND_QUICKSTART.md`
+- **CLI Reference** → `docs/development/CLI_USAGE.md`
+- **Runnable Examples** → `examples/EXAMPLES.md`
 
 ---
 

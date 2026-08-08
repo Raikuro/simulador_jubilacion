@@ -322,29 +322,36 @@ This standard applies to all future package handoffs (P3.6–P3.10) and is enfor
 ### Current Test Coverage
 
 ```
-Total Tests:                         768
-├─ CLI Tests:                       165
-│  ├─ Framework (P3.3):              26
+Total Tests:                         808
+├─ CLI Tests:                       168
+│  ├─ Framework (P3.3):              23
 │  ├─ Validate (P3.4):               16
 │  ├─ Run (P3.5):                    14
 │  ├─ List (P3.6):                   15
 │  ├─ Export (P3.7):                 17
-│  ├─ Optimize (P3.8):               27
+│  ├─ Optimize (P3.8):               19
 │  ├─ Compare (P3.9):                34
-│  └─ Config (P3.10):                16
-├─ Infrastructure Tests:             96
+│  ├─ Config (P3.10):                14
+│  ├─ Error Handling:                 8
+│  └─ Policies:                       8
+├─ Infrastructure Tests:            102
 │  ├─ Parallel Execution:             8
 │  ├─ SQLite Persistence:            39
 │  ├─ Concrete Codecs:               30
-│  └─ Context Factory:               19
-├─ Engine/Research/Optimization:    360
-├─ Integration Tests (P4.1-P4.3):    87
-│  ├─ E2E Workflows:                 50
-│  └─ Config Integration:            37
+│  ├─ Context Factory:               19
+│  └─ Dataset Identity Persistence:   6
+├─ Engine/Research/Optimization:    369
+├─ Integration Tests (P4.1-P4.3):   135
+│  ├─ E2E Workflows:                 45
+│  ├─ Config Integration:            43
+│  ├─ Framework Infrastructure:      41
+│  ├─ Multi-Cohort Execution:         3
+│  └─ Real Engine Execution:          3
+├─ Unit: Dataset Slice (P4.5):        8
 └─ Benchmarks (P4.4):                26
-   ├─ Execution Performance:         13
-   ├─ Persistence Performance:       10
-   └─ CLI Performance:                3
+   ├─ Cli Performance:               10
+   ├─ Execution Performance:          9
+   └─ Persistence Performance:        7
 ```
 
 **Type Checking (verified this session):**
@@ -355,10 +362,11 @@ Total Tests:                         768
 ### Test Locations
 
 - Engine/Research/Optimization tests: `tests/test_*.py` (core domain)
-- Infrastructure tests: `tests/infrastructure/` (parallel execution: 8, persistence: 39, codecs: 30, context: 19)
-- CLI tests: `tests/cli/` (framework: 26, validate: 16, run: 14, list: 15, export: 17, policies: 8, optimize: 19, compare: 34, config: 16)
-- Integration tests: `tests/integration/` (e2e workflows: 50, config integration: 37)
-- Benchmark tests: `tests/benchmarks/` (execution: 13, persistence: 10, CLI: 3)
+- Infrastructure tests: `tests/infrastructure/` (parallel execution: 8, persistence: 39, codecs: 30, context: 19, dataset identity persistence: 6)
+- CLI tests: `tests/cli/` (framework: 23, validate: 16, run: 14, list: 15, export: 17, optimize: 19, compare: 34, config: 14, error handling: 8, policies: 8)
+- Integration tests: `tests/integration/` (e2e workflows: 45, config integration: 43, framework infrastructure: 41, multi-cohort execution: 3, real engine execution: 3)
+- Dataset slice tests: `tests/unit/test_dataset_slice.py` (8)
+- Benchmark tests: `tests/benchmarks/` (CLI: 10, execution: 9, persistence: 7)
 
 ---
 
@@ -434,12 +442,12 @@ All dependencies are in place:
 | `src/infrastructure/execution/` | Parallel execution (v0.4 Phase 1) | ✅ Complete |
 | `src/cli/` | CLI framework + 7 commands (v0.4 Phase 3) | ✅ Frozen P3.3-P3.10 |
 | `src/cli/builders.py` | Shared CLI builder functions | ✅ Complete |
-| `tests/` | Test suite | 768 passing |
-| `tests/infrastructure/` | Infrastructure tests | ✅ 96 passing |
-| `tests/cli/` | CLI tests | ✅ 165 passing |
-| `tests/integration/` | Integration/E2E tests (P4.1-P4.3) | ✅ 87 passing |
+| `tests/` | Test suite | 808 passing |
+| `tests/infrastructure/` | Infrastructure tests | ✅ 102 passing |
+| `tests/cli/` | CLI tests | ✅ 168 passing |
+| `tests/integration/` | Integration/E2E tests (P4.1-P4.3) | ✅ 135 passing |
 | `tests/benchmarks/` | Performance benchmarks (P4.4) | ✅ 26 passing |
-| `tests/test_*.py` | Domain tests | ✅ 360 passing |
+| `tests/test_*.py` | Domain tests | ✅ 369 passing |
 | `docs/continuity/` | Handover documents | 📝 This folder |
 | `docs/specifications/` | Implementation contracts | ✅ Frozen |
 | `docs/specifications/infrastructure/` | v0.4 infrastructure specs | ✅ Frozen |
@@ -548,6 +556,6 @@ Before starting work each session:
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 768 passing (165 CLI + 96 infrastructure + 360 domain + 87 integration + 26 benchmarks)  
+**Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
 **Blockers:** None  
 **Next Action:** Complete P4.5 Documentation & Release Readiness
