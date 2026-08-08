@@ -175,6 +175,26 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 
 **Important:** DO NOT modify v0.2.3 without explicit architect approval.
 
+#### v0.2.3 Extended (Multi-Cohort Dataset Support)
+
+**New features for multi-cohort execution (commits 553074c, 000323e, d3ccbf3):**
+
+- **Dataset.identifier field:** Optional external resource identity (distinct from `version` metadata). Derived from file path stem when loading; preserved through slicing; used as primary key in persistence.
+- **Dataset.slice(start_date, horizon_months) method:** Cohort-level dataset materialization. Slices to exact start_date and horizon_months; preserves identifier, version, frequency; validation ensures start_date is present and sufficient history available.
+- **materialize_research_plan() function:** Planning component that builds fully materialized ResearchPlan from study components. Performs per-cohort dataset slicing with local cache by cohort.start_date; ensures all units share identical Dataset instances for same cohort; maintains Cartesian product ordering (cohorts outer, parameters inner).
+
+**Documentation & Specifications:**
+- [DATASET_MODEL_SPECIFICATION.md](../specifications/engine/DATASET_MODEL_SPECIFICATION.md) — Complete Dataset model specification including identifier vs. version semantics and slice() behavior
+- [RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md](../specifications/research/RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md) — Complete materialization process specification including input/output contracts and caching semantics
+- [RESEARCH_EXECUTOR_PUBLIC_API.md](../architecture/api/RESEARCH_EXECUTOR_PUBLIC_API.md) — Updated with dataset field in PlannedSimulationUnit public contract
+- [RESEARCH_EXECUTOR_SPECIFICATION.md](../specifications/research/RESEARCH_EXECUTOR_SPECIFICATION.md) — Updated with dataset requirement in planned unit specification
+
+**Quality Metrics:**
+- 808 tests passing (including regression tests for dataset identity persistence)
+- 0 mypy errors
+- 100% specification compliance
+- Fully backward compatible with existing research workflows
+
 ---
 
 ## 2. Completed Milestone (v0.3 — Frozen)

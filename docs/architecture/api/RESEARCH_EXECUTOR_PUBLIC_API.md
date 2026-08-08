@@ -111,6 +111,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from engine.domain.model.dataset import Dataset
     from engine.domain.model.portfolio import Portfolio
     from engine.domain.policies.allocation_policy import AllocationPolicy
     from engine.domain.policies.withdrawal_policy import WithdrawalPolicy
@@ -120,8 +121,11 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, slots=True)
 class PlannedSimulationUnit:
     """Immutable representation of one planned simulation run within a ResearchPlan.
-    
+
     Canonical identity is the value tuple: (cohort.start_date, parameter_config).
+
+    This unit represents a fully materialized, execution-ready simulation instance.
+    All fields are concrete values ready for direct consumption by SimulationExecutor.
     """
 
     cohort: CohortSpecification
@@ -129,15 +133,32 @@ class PlannedSimulationUnit:
     allocation_policy: AllocationPolicy
     withdrawal_policy: WithdrawalPolicy
     initial_portfolio: Portfolio
+    dataset: Dataset
 
     def __post_init__(self) -> None:
+        if self.cohort is None:
+            raise ValueError("PlannedSimulationUnit.cohort cannot be None")
+        if self.parameter_config is None:
+            raise ValueError("PlannedSimulationUnit.parameter_config cannot be None")
         if self.allocation_policy is None:
-            raise ValueError("allocation_policy cannot be None")
+            raise ValueError("PlannedSimulationUnit.allocation_policy cannot be None")
         if self.withdrawal_policy is None:
-            raise ValueError("withdrawal_policy cannot be None")
+            raise ValueError("PlannedSimulationUnit.withdrawal_policy cannot be None")
         if self.initial_portfolio is None:
-            raise ValueError("initial_portfolio cannot be None")
+            raise ValueError("PlannedSimulationUnit.initial_portfolio cannot be None")
+        if self.dataset is None or not isinstance(self.dataset, Dataset):
+            raise ValueError(
+                "PlannedSimulationUnit.dataset must be a valid engine Dataset instance"
+            )
 ```
+
+> **Design Decision (Dataset Field Inclusion and Execution Readiness):**
+> The `dataset` field is **required** and must be a fully materialized `Dataset` instance. The planning boundary owns dataset materialization—specifically, cohort-level slicing via `Dataset.slice()` performed by `materialize_research_plan()`. `ResearchExecutor` receives a pre-materialized dataset in each unit and **never** performs slicing or dataset reconstruction. This ensures:
+> - Dataset responsibility is localized to the planning phase
+> - Execution is deterministic; datasets cannot vary based on executor decisions
+> - Cohort-aligned data integrity is preserved
+>
+> See [RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md](../../specifications/research/RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md) for the materialization contract and [DATASET_MODEL_SPECIFICATION.md](../../specifications/engine/DATASET_MODEL_SPECIFICATION.md) for dataset slicing semantics.
 
 > **Design Decision (Omission of `unit_id` from Public Contract):**
 > `unit_id` is completely omitted from the public domain contract. The canonical identity of a `PlannedSimulationUnit` is strictly the value tuple `(cohort.start_date, parameter_config)`. Any string formatting or hashing used internally for duplicate detection or logging remains an unexposed implementation detail.

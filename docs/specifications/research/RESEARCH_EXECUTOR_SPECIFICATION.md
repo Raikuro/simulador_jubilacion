@@ -88,10 +88,11 @@ Each planned simulation unit must contain:
 
 - one immutable `CohortSpecification`;
 - one immutable `ParameterConfiguration`;
-- one complete concrete `AllocationPolicy` / `WithdrawalPolicy` pair; and
+- one complete concrete `AllocationPolicy` / `WithdrawalPolicy` pair;
+- one fully materialized `Dataset` that is cohort-aligned (sliced to the cohort start date and experiment horizon_months); and
 - no `SimulationState`, `SimulationResult`, mutable portfolio, generated result metric, or hidden factory/callback.
 
-The concrete policy pair is execution materialisation, not part of the identity of `ParameterConfiguration`. Neither the plan nor its unit may mutate or attach policies to a configuration or cohort value object.
+The dataset is pre-materialized by the planning component via `Dataset.slice()` and is ready for direct engine execution. The dataset `identifier` and `version` are preserved from the original experiment dataset to maintain external resource traceability. The concrete policy pair is execution materialisation, not part of the identity of `ParameterConfiguration`. Neither the plan nor its unit may mutate or attach policies to a configuration or cohort value object.
 
 ### Identity, completeness, and validation
 
@@ -149,8 +150,11 @@ The planning boundary, not `ResearchExecutor`, is responsible for coordinating:
 
 - `ExperimentDefinition` as immutable study intent;
 - `CohortGenerator` as the sole owner of temporal feasibility and generation;
-- `ParameterSweepEngine` as the sole owner of parameter-grid construction; and
-- an explicit policy materialiser/factory as the sole owner of configuration-to-policy interpretation.
+- `ParameterSweepEngine` as the sole owner of parameter-grid construction;
+- an explicit policy materialiser/factory as the sole owner of configuration-to-policy interpretation; and
+- `materialize_research_plan()` as the sole owner of cohort-level dataset slicing and plan assembly.
+
+See [RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md](./RESEARCH_PLAN_MATERIALIZATION_SPECIFICATION.md) for the complete materialization contract, including dataset slicing, caching, and unit construction semantics.
 
 ---
 
