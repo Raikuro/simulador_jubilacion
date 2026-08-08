@@ -72,7 +72,7 @@ sim-retire config list
 Read a single key:
 
 ```bash
-sim-retire config get output.directory
+sim-retire config get output.default_directory
 ```
 
 Set a key and persist it to the active configuration file:

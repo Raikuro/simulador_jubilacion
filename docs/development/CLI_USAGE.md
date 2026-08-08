@@ -155,8 +155,8 @@ at least twice.
 Manages the configuration file.
 
 ```bash
-sim-retire config set KEY VALUE      # e.g. output.directory ./results
-sim-retire config get KEY            # e.g. output.directory
+sim-retire config set KEY VALUE      # e.g. output.default_directory ./results
+sim-retire config get KEY            # e.g. output.default_directory
 sim-retire config validate [--file FILE]
 sim-retire config list
 ```

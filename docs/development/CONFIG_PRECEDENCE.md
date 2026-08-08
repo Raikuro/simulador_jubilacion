@@ -54,8 +54,8 @@ explicitly validate configuration, such as `config validate`.
 
 The active file is resolved in this order:
 
-1. The `--config FILE` global option.
-2. The `--file FILE` option of `config validate` / subcommands that accept it.
+1. The `--file FILE` option of `config validate` / subcommands that accept it.
+2. The `--config FILE` global option.
 3. The default `~/.sim-retire/config.yaml`.
 
 ## See also
