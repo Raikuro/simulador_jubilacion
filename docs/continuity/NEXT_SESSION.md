@@ -1,14 +1,16 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-07-31 (WP3 Typing Cleanup — test suite)
-**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.4 complete. P4.5 active. Typing Quality Initiative WP1-WP3 complete.
+**Previous Session:** 2026-08-08 (P4.6 User Documentation — CLI/CONFIG guides + runnable examples)
+**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.7 complete. P4.6 (user docs) complete. P4.7 (developer docs) complete. P4.8 current. Typing Quality Initiative WP1-WP3 complete.
 - P3.1-P3.10 (CLI Interface) ✅ Frozen
 - P4.1 (Integration Test Framework) ✅ Complete
 - P4.2 (E2E Workflow Tests) ✅ Complete
 - P4.3 (Configuration Integration Tests) ✅ Complete
 - P4.4 (Performance Benchmarks) ✅ Complete
-- P4.5 (Documentation & Release Readiness) 📝 Active
-- P4.6-P4.8 (User Documentation, Developer Docs, Final Review) ⬜ Future
+- P4.5 (Documentation & Release Readiness) ✅ Complete
+- P4.6 (User Documentation & Examples) ✅ Complete
+- P4.7 (Developer Documentation) ✅ Complete
+- P4.8 (Final Review) ⬜ Future
 **Milestone Status:** Phase 1: dda449a. Phase 2: 128bb54. P3.1: efbeb61. P3.2: 39977c6. P3.3: 90eafbb. P3.4: eb0518f. P3.5: 6a7c5b6. P3.6: 492299f. P3.7: b9705d8. P3.8: 8bbd7f6. P3.9: 8866ada. P3.10: 4583ab9. P4.1-P4.4 completed in current working tree.
 
 ---
@@ -37,7 +39,7 @@
 
 - SWROptimizer, StrategyComparator. All acceptance tests passing. All public APIs frozen.
 
-### In Progress (v0.4 Infrastructure & Deployment Phase 4 — P4.5 Active)
+### In Progress (v0.4 Infrastructure & Deployment Phase 4 — P4.8 Current)
 
 **Architectural Specification (FROZEN):**
 - INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
@@ -51,7 +53,7 @@
 **Phase 3 (COMPLETE) CLI Interface (P3.1-P3.10):**
 All seven CLI commands and configuration system frozen and committed.
 
-**Phase 4 (ACTIVE) Integration & Acceptance:**
+**Phase 4 (COMPLETE P4.1-P4.7) Integration & Acceptance:**
 
 | Package | Objective | Status |
 |---------|-----------|--------|
@@ -59,9 +61,9 @@ All seven CLI commands and configuration system frozen and committed.
 | P4.2 | E2E Workflow Tests | ✅ Complete |
 | P4.3 | Configuration Integration Tests | ✅ Complete |
 | P4.4 | Performance Benchmarks | ✅ Complete |
-| P4.5 | Documentation & Release Readiness | 📝 ACTIVE |
-| P4.6 | User Documentation | ⬜ Future |
-| P4.7 | Developer Documentation | ⬜ Future |
+| P4.5 | Documentation & Release Readiness | ✅ Complete |
+| P4.6 | User Documentation & Examples | ✅ Complete |
+| P4.7 | Developer Documentation | ✅ Complete |
 | P4.8 | Final Validation Review | ⬜ Future |
 
 ---
@@ -106,19 +108,25 @@ Cross-cutting `mypy --strict` hardening, independent of the v0.4 plan. See CURRE
 
 ## Exact Next Task
 
-**P4.5 ACTIVE — Documentation & Release Readiness**
+**P4.8 — Final Validation Review**
 
-Phase 3 (P3.1-P3.10) frozen and Phase 4 P4.1-P4.4 complete. Current task is P4.5.
+P4.5 (Documentation & Release Readiness), P4.6 (User Documentation &
+Examples), and P4.7 (Developer Documentation) are complete. Current task is
+P4.8.
 
-Deliverables for P4.5:
-- Documentation consistency review
-- Repository readiness verification
-- Release checklist creation
-- Continuity document validation (CURRENT_STATE.md, NEXT_SESSION.md, OPERATIONAL_DASHBOARD.md)
-- README and user documentation verification
-- Verification that CLI documentation matches actual behaviour
-- Verification that documented workflows are executable
-- Final governance documentation
-- Release readiness artefacts
+Deliverables for P4.8:
+- Final validation review of the v0.4 milestone
+- Verification of all acceptance criteria from the v0.4 architecture
+- Full test suite, typing, and lint gate
+- Release readiness confirmation against `docs/RELEASE_CHECKLIST.md`
+- Final governance and documentation validation
 
-**After P4.5:** Submit for architectural review. Do not proceed to P4.6-P4.8 without approval.
+Developer documentation added in P4.7:
+- `docs/development/DEVELOPMENT_WORKFLOW.md` — day-to-day development loop
+- `docs/development/EXTENSION_PATTERNS.md` — supported extension points
+- `docs/development/PERFORMANCE_GUIDE.md` — benchmark suite & rules
+- `docs/development/DEBUGGING_GUIDE.md` — SQLite & dataset troubleshooting
+- `docs/development/MIGRATION_GUIDE.md` — schema, dataset, config migration
+
+**After P4.8:** Submit for architectural review. Do not proceed beyond
+without approval.

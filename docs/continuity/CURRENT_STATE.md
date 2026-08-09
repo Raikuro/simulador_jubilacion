@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-07-31  
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.4 Complete → P4.5 Current
+**Last Updated:** 2026-08-08
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.7 Complete → P4.8 Current
 
 ---
 
@@ -18,9 +18,11 @@
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 2 (SQLite Persistence) Complete** — 10 tables, reconstruction context pattern, lossless round-trip, lock retry
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 3 (CLI Interface) P3.1-P3.10 Complete** — All seven CLI commands plus configuration system frozen
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 (Integration & Acceptance) P4.1-P4.4 Complete** — Integration test framework, E2E workflow tests, configuration integration tests, performance benchmarks
-- 📝 **v0.4 (Infrastructure & Deployment) — Phase 4 P4.5 (Documentation & Release Readiness) Active** — Documentation consistency, release checklist, continuity document validation
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.5 (Documentation & Release Readiness) Complete** — Documentation consistency, release checklist, continuity document validation
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.6 (User Documentation) Complete** — CLI/CONFIG user guides plus runnable study examples
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.7 (Developer Documentation) Complete** — Workflow, extension, performance, debug, and migration guides under `docs/development/`
 
-**Immediate Next Task:** **P4.5 ACTIVE** — Documentation & Release Readiness. Complete release checklist, finalise continuity docs, verify repository readiness.
+**Immediate Next Task:** **P4.8** — Final Validation Review. Verified against `docs/RELEASE_CHECKLIST.md` and final architectural review.
 
 ## Typing Quality Initiative (WP1-WP3) ✅ COMPLETE
 
@@ -101,9 +103,30 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 - `tests/benchmarks/test_persistence_performance.py` — 10 tests (single-op, write pipeline, round-trip)
 - `tests/benchmarks/test_cli_performance.py` — 10 tests (startup, validate, config, list)
 
-### P4.5 Documentation & Release Readiness 📝 Active
+### P4.5 Documentation & Release Readiness ✅ Complete
 **Package:** Documentation consistency, release checklist, continuity validation.
-**Current task:** This implementation.
+**Release checklist:** delivered (`docs/RELEASE_CHECKLIST.md`); continuity docs validated; all P4.1-P4.5 gates recorded.
+
+### P4.6 User Documentation & Examples ✅ Complete
+**Package:** User-facing guides and runnable examples.
+**Deliverables:**
+- `docs/development/CLI_USAGE.md` — command reference
+- `docs/development/CONFIG_REFERENCE.md` — configuration file reference
+- `docs/development/CONFIG_PRECEDENCE.md` — CLI/config/default precedence
+- `docs/development/INSTALLATION_AND_QUICKSTART.md` — installation and first steps (updated)
+- `examples/` — runnable studies (`basic_minimal.yaml`, `multi_policy.yaml`, `sweep_equity_allocation.yaml`), dataset, and config
+
+### P4.7 Developer Documentation ✅ Complete
+**Package:** Developer guides under `docs/development/`.
+**Deliverables:**
+- `DEVELOPMENT_WORKFLOW.md` — day-to-day development loop, verification gates
+- `EXTENSION_PATTERNS.md` — supported extension points (datasets, policies, CLI, persistence)
+- `PERFORMANCE_GUIDE.md` — benchmark suite (26 tests) and performance rules
+- `DEBUGGING_GUIDE.md` — SQLite, dataset, and CLI troubleshooting
+- `MIGRATION_GUIDE.md` — schema, dataset, and config migration
+
+### P4.8 Final Validation Review ⬜ Future
+**Package:** Release readiness verification and final architectural review.
 
 ---
 
@@ -236,9 +259,9 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 
 ## 3. Active Milestone
 
-### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.4 Complete | P4.5 Current
+### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.7 Complete | P4.8 Current
 
-**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), and P4.4 (Performance Benchmarks) complete. P4.5 (Documentation & Release Readiness) in progress.
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), P4.4 (Performance Benchmarks), P4.5 (Documentation & Release Readiness), P4.6 (User Documentation), and P4.7 (Developer Documentation) complete. P4.8 (Final Validation Review) is current.
 
 **Completed v0.4 Phases:**
 - ✅ **Phase 1 (Parallel Execution)** — Complete (commit `dda449a`)
@@ -248,7 +271,10 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 - ✅ **Phase 4 P4.2 (E2E Workflow Tests)** — Complete
 - ✅ **Phase 4 P4.3 (Configuration Integration Tests)** — Complete
 - ✅ **Phase 4 P4.4 (Performance Benchmarks)** — Complete
-- 📝 **Phase 4 P4.5 (Documentation & Release Readiness)** — Active
+- ✅ **Phase 4 P4.5 (Documentation & Release Readiness)** — Complete
+- ✅ **Phase 4 P4.6 (User Documentation)** — Complete
+- ✅ **Phase 4 P4.7 (Developer Documentation)** — Complete
+- ⬜ **Phase 4 P4.8 (Final Validation Review)** — Future
 
 ---
 
@@ -549,13 +575,14 @@ Before starting work each session:
 2. ✅ Read [NEXT_SESSION.md](NEXT_SESSION.md)
 3. ✅ Phase 3 (P3.1-P3.10) complete and frozen
 4. ✅ Phase 4 P4.1-P4.4 complete
-5. ✅ P4.5 continuity docs updated to reflect current state
-6. ⬜ Complete P4.5 (Documentation & Release Readiness)
-7. ⬜ Phase 4 readiness review (P4.8)
+5. ✅ P4.5 Documentation & Release Readiness complete
+6. ✅ P4.6 User Documentation complete
+7. ✅ P4.7 Developer Documentation complete
+8. ⬜ Phase 4 readiness review (P4.8)
 
 ---
 
 **Document Status:** Complete & Accurate  
 **Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
 **Blockers:** None  
-**Next Action:** Complete P4.5 Documentation & Release Readiness
+**Next Action:** Complete P4.8 Final Validation Review

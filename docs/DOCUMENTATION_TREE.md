@@ -169,6 +169,11 @@
 | **CLI_USAGE.md** | CLI command reference | Active |
 | **CONFIG_REFERENCE.md** | Configuration file reference | Active |
 | **CONFIG_PRECEDENCE.md** | CLI/config/default precedence | Active |
+| **DEVELOPMENT_WORKFLOW.md** | Day-to-day development loop | Active |
+| **EXTENSION_PATTERNS.md** | Supported extension points | Active |
+| **PERFORMANCE_GUIDE.md** | Benchmark suite & performance rules | Active |
+| **DEBUGGING_GUIDE.md** | SQLite & dataset troubleshooting | Active |
+| **MIGRATION_GUIDE.md** | Migrating schema, datasets, config | Active |
 
 ---
 
@@ -293,14 +298,19 @@ docs/
 │   ├── ARCHITECTURE_RESOLUTION_REPORT_V0.4.md
 │   └── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
 │
-├── development/                       [7 files - Dev guidelines]
+├── development/                       [12 files - Dev guidelines]
 │   ├── ARCHITECTURE_OVERVIEW.md
 │   ├── CONTRIBUTION.md
 │   ├── IMPLEMENTATION_PROMPT.md
 │   ├── INSTALLATION_AND_QUICKSTART.md
 │   ├── CLI_USAGE.md
 │   ├── CONFIG_REFERENCE.md
-│   └── CONFIG_PRECEDENCE.md
+│   ├── CONFIG_PRECEDENCE.md
+│   ├── DEVELOPMENT_WORKFLOW.md
+│   ├── EXTENSION_PATTERNS.md
+│   ├── PERFORMANCE_GUIDE.md
+│   ├── DEBUGGING_GUIDE.md
+│   └── MIGRATION_GUIDE.md
 │
 └── history/                           [9 files - Historical migration records]
     ├── CLEANUP_SUMMARY.md
