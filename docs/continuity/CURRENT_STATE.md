@@ -381,9 +381,9 @@ Total Tests:                         808
 ```
 
 **Type Checking (verified this session):**
-- `src/ --strict`: 0 errors ✅ (all 104 files)
+- `src/ --strict`: 0 errors ✅ (all 105 files)
 - `tests/ --strict`: 0 errors ✅ (62 files)
-- `tests/benchmarks/`: 36 pre-existing errors (untyped module imports only) ✅
+- `tests/benchmarks/`: 0 errors ✅ (previously 36 pre-existing; resolved by da10934)
 
 ### Test Locations
 

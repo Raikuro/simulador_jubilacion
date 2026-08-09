@@ -37,18 +37,14 @@
 
 ## 4. Test Suite
 
-- [x] All CLI tests pass (168)
-- [x] All infrastructure tests pass (102)
-- [x] All domain tests pass (369)
-- [x] All integration tests pass (135)
-- [x] All benchmark tests pass (26)
-- [x] Total: **808 tests passing**
+- [x] Total: **808 tests passing** (verified 2026-08-09)
 
 ## 5. Type Checking
 
 - [x] `mypy src/cli/ --strict`: 0 errors
 - [x] `mypy src/infrastructure/persistence/ --strict`: 0 errors
-- [x] `mypy tests/benchmarks/`: 36 pre-existing untyped-module errors (baseline)
+- [x] `mypy tests/benchmarks/`: 0 errors (previously annotated as 36 pre-existing; resolved by da10934)
+- [x] `mypy src/` (whole package): 0 errors
 - [x] No new mypy errors introduced
 
 ## 6. Code Quality
@@ -81,14 +77,22 @@
 
 ## 9. Frozen Package Integrity
 
-- [x] `src/engine/` — unmodified
-- [x] `src/research/` — unmodified
+The following packages contain approved corrections recorded in
+[ADR-002](architecture/decisions/ADR-002-retroactive-real-engine-approval.md).
+These are necessary bug fixes and authorized extensions, not unauthorized
+modifications.
+
+- [x] `src/engine/` — approved corrections: deterministic rebalance residual normalization (3c4c59e), `derive_allocation` + month-0 bootstrap (57a87a5)
+- [x] `src/research/` — approved state (reconciled by ADR-002): `materialize_research_plan` / multi-cohort dataset extension (553074c) plus in-process-worker pickling correction (57a87a5)
 - [x] `src/research/optimization/` — unmodified
-- [x] `src/cli/commands/` — unmodified (all frozen P3.3-P3.10)
-- [x] `src/cli/builders.py` — unmodified
+- [x] `src/cli/commands/` — approved corrections: real engine execution (57a87a5), config precedence (dd022b1), multi-cohort validation (553074c)
+- [x] `src/cli/builders.py` — approved: multi-cohort builder extensions (553074c)
 - [x] `src/cli/main.py` — unmodified
-- [x] `src/infrastructure/execution/` — unmodified
-- [x] `src/infrastructure/persistence/` — unmodified
+- [x] `src/infrastructure/execution/` — approved correction: in-process worker execution (57a87a5)
+- [x] `src/infrastructure/persistence/` — approved: dataset identity persistence (553074c)
+
+No unapproved modifications remain. The frozen-package boundary audit is
+resolved by ADR-002.
 
 ## 10. Release Readiness
 

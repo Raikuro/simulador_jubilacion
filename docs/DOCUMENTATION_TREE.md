@@ -22,6 +22,8 @@
 | **GOVERNANCE.md** | Documentation governance rules | Reference |
 | **SOURCE_OF_TRUTH.md** | Canonical source references | Reference |
 | **IMPLEMENTATION_PROGRESS_TEMPLATE.md** | Template for phase progress tracking | Reference |
+| **P4_INTEGRATION_HANDOFF.md** | Final P4 integration handoff | 7 |
+| **PHASE3_CLOSURE_REPORT.md** | Phase 3 closure report | Historical |
 
 ---
 
@@ -34,6 +36,7 @@
 | Document | Purpose | Status |
 |----------|---------|--------|
 | **ADR-001-cli-framework-selection.md** | CLI framework: argparse vs click | Accepted |
+| **ADR-002-retroactive-real-engine-approval.md** | Retroactive approval of real-engine corrections | Approved |
 
 #### Reviews (Design Decisions)
 
@@ -50,6 +53,7 @@
 | **SIMULATION_EXECUTOR_REVIEW.md** | Implementation review | Frozen |
 | **SIMULATION_RUNNER_ARCHITECTURAL_REVIEW.md** | Runner design | Frozen |
 | **SIMULATION_RUNNER_REVIEW.md** | Runner implementation review | Frozen |
+| **LIST_COMMAND_ARCHITECTURE_REVIEW.md** | List command design review | Frozen |
 
 #### Public APIs (Interface Contracts)
 
@@ -126,6 +130,13 @@
 | **V0.4_P3.1_CODECS_HANDOFF.md** | P3.1 concrete persistence codecs | Frozen |
 | **V0.4_P3.2_CONTEXT_FACTORY_HANDOFF.md** | P3.2 context factory & dataset loading | Frozen |
 | **V0.4_P3.3_CLI_FRAMEWORK_HANDOFF.md** | P3.3 CLI entry point & framework | Frozen |
+| **V0.4_P3.4_VALIDATE_HANDOFF.md** | P3.4 validate command | Frozen |
+| **V0.4_P3.5_RUN_HANDOFF.md** | P3.5 run command | Frozen |
+| **V0.4_P3.6_LIST_HANDOFF.md** | P3.6 list command | Frozen |
+| **V0.4_P3.7_EXPORT_HANDOFF.md** | P3.7 export command | Frozen |
+| **V0.4_P3.8_OPTIMIZE_HANDOFF.md** | P3.8 optimize command | Frozen |
+| **V0.4_P3.9_COMPARE_HANDOFF.md** | P3.9 compare command | Frozen |
+| **V0.4_P3.10_CONFIG_HANDOFF.md** | P3.10 config command | Frozen |
 
 ---
 
@@ -137,6 +148,9 @@
 |----------|---------|--------|
 | **ARCHITECTURE_RESOLUTION_REPORT_V0.4.md** | v0.4 architecture resolution | Active |
 | **RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md** | StrategyComparator implementation handoff | Active |
+| **P4.5_DOCUMENTATION_SYNCHRONIZATION_AUDIT_REPORT.md** | P4.5 documentation sync audit | Historical |
+| **P4.5_IMPLEMENTATION_REPORT.md** | P4.5 implementation report | Historical |
+| **P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md** | P4.8 final validation review | Active |
 
 ### docs/history/
 
@@ -206,7 +220,12 @@
 
 ## 9. Project Root
 
-*No project-root documentation files exist. All documentation resides under `docs/`.*
+*No project-root documentation files exist outside `docs/`.*
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| **RELEASE_CHECKLIST.md** | Release readiness checklist for v0.4 | Active |
+
 *The previously referenced `MIGRATION_REPORT.md` was planned but never created in any commit; its scope is covered by this document and the git rename history.*
 
 ---
@@ -216,7 +235,8 @@
 ```
 docs/
 ├── README.md                          [NEW - Documentation index]
-├── continuity/                        [10 files - AI handover & governance]
+├── RELEASE_CHECKLIST.md               [Release readiness checklist]
+├── continuity/                        [12 files - AI handover & governance]
 │   ├── AI_ARCHITECT_GUIDE.md          [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
 │   ├── OPERATIONAL_DASHBOARD.md       [Operational health & metrics]
@@ -226,12 +246,15 @@ docs/
 │   ├── IMPLEMENTATION_PROGRESS_TEMPLATE.md [Phase tracking template]
 │   ├── HUMAN_CONTRIBUTOR_GUIDE.md     [Human-AI collaboration]
 │   ├── GOVERNANCE.md                  [Documentation governance]
-│   └── SOURCE_OF_TRUTH.md             [Canonical sources]
+│   ├── SOURCE_OF_TRUTH.md             [Canonical sources]
+│   ├── P4_INTEGRATION_HANDOFF.md      [Final P4 integration handoff]
+│   └── PHASE3_CLOSURE_REPORT.md       [Phase 3 closure report]
 │
-├── architecture/                      [19 files - Design decisions & APIs]
-│   ├── decisions/                     [1 file - Architecture Decision Records]
-│   │   └── ADR-001-cli-framework-selection.md
-│   ├── reviews/                       [11 files - Design decisions]
+├── architecture/                      [21 files - Design decisions & APIs]
+│   ├── decisions/                     [2 files - Architecture Decision Records]
+│   │   ├── ADR-001-cli-framework-selection.md
+│   │   └── ADR-002-retroactive-real-engine-approval.md
+│   ├── reviews/                       [12 files - Design decisions]
 │   │   ├── COHORT_GENERATOR_ARCHITECTURE_REVIEW.md
 │   │   ├── EXPERIMENT_DEFINITION_ARCHITECTURE_REVIEW.md
 │   │   ├── PARAMETER_SWEEP_ENGINE_ARCHITECTURE_REVIEW.md
@@ -242,7 +265,8 @@ docs/
 │   │   ├── SIMULATION_EXECUTOR_CODE_REVIEW.md
 │   │   ├── SIMULATION_EXECUTOR_REVIEW.md
 │   │   ├── SIMULATION_RUNNER_ARCHITECTURAL_REVIEW.md
-│   │   └── SIMULATION_RUNNER_REVIEW.md
+│   │   ├── SIMULATION_RUNNER_REVIEW.md
+│   │   └── LIST_COMMAND_ARCHITECTURE_REVIEW.md
 │   │
 │   └── api/                           [7 files - Public APIs]
 │       ├── COHORT_GENERATOR_PUBLIC_API.md
@@ -284,7 +308,7 @@ docs/
 │       └── CLI_INTERFACE_SPECIFICATION.md
 │
 ├── roadmaps/                           [1 file - Planning docs]
-│   └── milestones/                    [8 files - Milestone planning + handoff]
+│   └── milestones/                    [15 files - Milestone planning + handoff]
 │       ├── RESEARCH_LAYER_FINAL_ROADMAP.md
 │       ├── RESEARCH_LAYER_ROADMAP.md
 │       ├── EXECUTION_ENGINE_COMPLETION.md
@@ -292,11 +316,21 @@ docs/
 │       ├── V0.4_IMPLEMENTATION_HANDOFF.md
 │       ├── V0.4_P3.1_CODECS_HANDOFF.md
 │       ├── V0.4_P3.2_CONTEXT_FACTORY_HANDOFF.md
-│       └── V0.4_P3.3_CLI_FRAMEWORK_HANDOFF.md
+│       ├── V0.4_P3.3_CLI_FRAMEWORK_HANDOFF.md
+│       ├── V0.4_P3.4_VALIDATE_HANDOFF.md
+│       ├── V0.4_P3.5_RUN_HANDOFF.md
+│       ├── V0.4_P3.6_LIST_HANDOFF.md
+│       ├── V0.4_P3.7_EXPORT_HANDOFF.md
+│       ├── V0.4_P3.8_OPTIMIZE_HANDOFF.md
+│       ├── V0.4_P3.9_COMPARE_HANDOFF.md
+│       └── V0.4_P3.10_CONFIG_HANDOFF.md
 │
-├── reports/                           [2 files - Active implementation reports]
+├── reports/                           [5 files - Implementation reports]
 │   ├── ARCHITECTURE_RESOLUTION_REPORT_V0.4.md
-│   └── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
+│   ├── RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md
+│   ├── P4.5_DOCUMENTATION_SYNCHRONIZATION_AUDIT_REPORT.md
+│   ├── P4.5_IMPLEMENTATION_REPORT.md
+│   └── P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md
 │
 ├── development/                       [12 files - Dev guidelines]
 │   ├── ARCHITECTURE_OVERVIEW.md

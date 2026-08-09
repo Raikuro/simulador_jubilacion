@@ -312,6 +312,15 @@ This defines the financial model independently of the implementation.
 - the service must not introduce binary floating point error.
 - final unit values may be rounded only in a deterministic way specified by the project.
 - if the project defines a minimum tradable unit, that rule must be documented and applied consistently.
+- **Deterministic residual normalization (ADR-002).** Because per-asset target
+  values are computed by Decimal division/truncation, their sum can differ from
+  the portfolio value by a rounding residual. The service closes this gap
+  deterministically: assets are processed in a canonical ordering (stable,
+  independent of insertion order), and the full residual is assigned to the last
+  asset in that ordering. No wealth-conservation error is raised for expected
+  simulation behaviour; portfolio value before and after rebalancing is therefore
+  equal by construction, always, including for a fully concentrated single-asset
+  portfolio.
 
 ---
 

@@ -94,7 +94,7 @@ All seven CLI commands and configuration system frozen and committed.
 Test suite: **808 passing** (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice).
 Full codebase mypy (`src/ --strict`): **0 errors** (WP2 complete).
 Test suite mypy (`tests/ --strict`): **0 errors** (WP3 complete, 62 files).
-Benchmarks mypy (tests/benchmarks/): 36 pre-existing errors (untyped module imports only)
+Benchmarks mypy (tests/benchmarks/): 0 errors (previously 36 pre-existing; resolved by da10934)
 
 ### Typing Quality Initiative — COMPLETE (WP1-WP3)
 

@@ -92,8 +92,8 @@ Tests: 808 passing (100%)
 Type Checking:
   src/cli/ --strict: 0 errors ✅
   src/infrastructure/persistence/ --strict: 0 errors ✅
-  tests/benchmarks/: 36 pre-existing errors (untyped module imports only)
-  src/ --strict: 21 pre-existing errors in engine/research domain (not v0.4)
+  tests/benchmarks/: 0 errors ✅ (previously 36 pre-existing; resolved by da10934)
+  src/ --strict: 0 errors ✅ (previously 21 pre-existing; resolved by cd4f52c)
 ```
 
 ### Specification Compliance
@@ -208,7 +208,7 @@ All dependencies are in place:
 | `src/engine/` | Execution engine | ✅ Frozen v0.1 |
 | `src/research/` | Research layer | ✅ Frozen v0.2.3 |
 | `src/research/optimization/` | Optimization (v0.3) | 📋 Ready |
-| `tests/` | Test suite | ✅ 276 passing |
+| `tests/` | Test suite | ✅ 808 passing |
 | `docs/continuity/` | Handover documents | 📝 This folder |
 | `docs/specifications/` | Implementation contracts | ✅ Frozen |
 | `docs/architecture/reviews/` | Design decisions | ✅ Frozen |
@@ -231,7 +231,7 @@ All dependencies are in place:
 
 Before starting work each session:
 
-- [ ] All 276 tests still passing
+- [ ] All 808 tests still passing
 - [ ] 0 mypy errors
 - [ ] I've read the relevant frozen specification
 - [ ] I understand the exact scope from the spec

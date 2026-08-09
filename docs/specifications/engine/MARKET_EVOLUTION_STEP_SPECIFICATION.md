@@ -246,6 +246,25 @@ class PortfolioMarketEvolutionService:
         ...
 ```
 
+### Extension: `derive_allocation` (ADR-002)
+
+For month-0 bootstrap allocation, the service exposes `derive_allocation`:
+
+```python
+    def derive_allocation(self, portfolio: Portfolio, market_snapshot: MarketSnapshot) -> Allocation:
+        ...
+```
+
+- Derives the `Allocation` from the given `Portfolio` valued at `market_snapshot`
+  prices, without evolving the portfolio or altering holding units.
+- Used by `InitializeAllocationStep` to seed the initial allocation decision for
+  the first simulation month.
+- Subject to the same invariants as `apply_market_evolution`: returned
+  `Allocation` must be derived from the supplied `Portfolio`, allocation must sum
+  to 1.00 and be non-negative, and `units` must remain unchanged.
+- This is an extension to the frozen public surface recorded and approved under
+  ADR-002; it does not alter `apply_market_evolution` semantics.
+
 ### Inputs
 
 - `portfolio: Portfolio`
