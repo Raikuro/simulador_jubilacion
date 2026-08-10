@@ -165,6 +165,13 @@ class RunCommand(BaseCommand):
             help="Keep only aggregate statistics in memory (strip per-month "
             "timelines); cannot be combined with --persist-study",
         )
+        parser.add_argument(
+            "--fast-path",
+            action="store_true",
+            help="Use the closed-form fast path for constant-allocation + "
+            "fixed-real-withdrawal studies (results validated equivalent to the "
+            "reference Decimal engine)",
+        )
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
         study_path = Path(args.study_file)
@@ -311,10 +318,23 @@ class RunCommand(BaseCommand):
             print("       Persisted results require full per-month timelines.")
             return ExitCode.VALIDATION_ERROR
 
+        if args.fast_path and args.persist_study:
+            print("ERROR: --fast-path cannot be combined with --persist-study")
+            print("       The fast path produces summary-grade results without")
+            print("       per-month timelines, so persisted results would be")
+            print("       silently empty. Re-run with --no-persist or --summary-only.")
+            return ExitCode.VALIDATION_ERROR
+
         from cli.progress import ProgressDisplay
 
         progress = ProgressDisplay(total_units)
         start_time = time.perf_counter()
+
+        simulation_executor = None
+        if args.fast_path:
+            from cli.fast_path import FastPathSimulationExecutor
+
+            simulation_executor = FastPathSimulationExecutor(precision="float")
 
         try:
             if workers == 1:
@@ -324,6 +344,7 @@ class RunCommand(BaseCommand):
 
                 research_result = sequential_execute(
                     plan,
+                    simulation_executor=simulation_executor,
                     progress_callback=progress.update,
                     summary_only=args.summary_only,
                 )
@@ -335,6 +356,7 @@ class RunCommand(BaseCommand):
                 research_result = parallel_execute(
                     plan,
                     max_workers=workers,
+                    simulation_executor=simulation_executor,
                     progress_callback=progress.update,
                     summary_only=args.summary_only,
                 )
@@ -374,6 +396,12 @@ class RunCommand(BaseCommand):
         print(f"Status:         {'SUCCESS' if failure_count == 0 else 'COMPLETED WITH ERRORS'}")
         print(f"Units Run:      {total_units:,}")
         print(f"Units Failed:   {failure_count:,}")
+        if args.fast_path:
+            from cli.fast_path import fast_path_unit_counts
+
+            fast_units, reference_units = fast_path_unit_counts(plan)
+            print(f"Fast Path:      {fast_units:,} units (closed form)")
+            print(f"Reference Path: {reference_units:,} units (fallback)")
         print(f"Execution Time: {_format_duration(elapsed)}")
 
         return ExitCode.SUCCESS

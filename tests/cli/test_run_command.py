@@ -416,6 +416,43 @@ class TestPersistenceControls:
         assert rc == ExitCode.VALIDATION_ERROR
         assert "--summary-only" in capsys.readouterr().out
 
+    def test_fast_path_conflicts_with_persist(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """F1: --fast-path must not silently persist empty timelines."""
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--fast-path", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "--fast-path" in out
+
+    def test_fast_path_with_no_persist_reports_coverage(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """F6: the completion summary reports fast-path vs reference coverage."""
+        import unittest.mock
+
+        import infrastructure.execution.parallel_executor as pe
+
+        repo_cls = unittest.mock.Mock()
+        monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
+        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--fast-path", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Fast Path:" in out
+        assert "Reference Path:" in out
+        repo_cls.assert_not_called()
+
     def test_no_persist_skips_database(
         self,
         tmp_path: Path,

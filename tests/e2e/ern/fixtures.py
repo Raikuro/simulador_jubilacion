@@ -59,6 +59,7 @@ def cell_success_rate(
     harness: CliHarness,
     study_yaml: Path,
     workers: int = 4,
+    fast_path: bool = False,
 ) -> tuple[float, int]:
     """Run one cell study and return ``(success_rate_percent, units_run)``.
 
@@ -71,7 +72,7 @@ def cell_success_rate(
     statistics are identical to the persisted path.
     """
     result: CliResult = harness.run_study(
-        study_yaml, workers=workers, persist=False
+        study_yaml, workers=workers, persist=False, fast_path=fast_path
     )
     if result.exit_code != 0 or result.units_run is None or result.units_failed is None:
         raise RuntimeError(
