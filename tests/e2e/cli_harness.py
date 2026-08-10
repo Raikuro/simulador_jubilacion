@@ -18,6 +18,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, TypedDict, cast
 
 _UNITS_RUN_RE = re.compile(r"Units Run:\s+([0-9,]+)")
 _UNITS_FAILED_RE = re.compile(r"Units Failed:\s+([0-9,]+)")
@@ -46,6 +47,17 @@ class CliResult:
     def status(self) -> str | None:
         match = _STATUS_RE.search(self.stdout)
         return match.group(1) if match else None
+
+
+class StudyInfo(TypedDict):
+    """One entry of the ``sim-retire list --format json`` ``studies`` array."""
+
+    study_id: str
+    name: str
+    version: str
+    status: str
+    units: int
+    created_at: str
 
 
 def _parse_int(value: str) -> int:
@@ -140,21 +152,21 @@ class CliHarness:
             argv += ["--no-persist", "--summary-only"]
         return self.run(argv, timeout=timeout)
 
-    def list_studies(self) -> list[dict]:
+    def list_studies(self) -> list[StudyInfo]:
         """List stored studies (``sim-retire list --format json``)."""
         result = self.run(["list", "--format", "json"])
         if result.exit_code != 0:
             raise RuntimeError(f"sim-retire list failed: {result.stderr or result.stdout}")
         import json
 
-        return json.loads(result.stdout).get("studies", [])
+        return cast(list[StudyInfo], json.loads(result.stdout).get("studies", []))
 
     def find_study_id(self, name: str) -> str | None:
         """Find the most recently created study id matching *name*."""
         candidates = [s for s in self.list_studies() if s.get("name") == name]
         return candidates[-1]["study_id"] if candidates else None
 
-    def export_summary(self, study_id: str) -> dict:
+    def export_summary(self, study_id: str) -> dict[str, Any]:
         """Export a study's summary JSON (``export --format json --metrics summary``)."""
         output = self.home_dir / "export" if self.home_dir else Path.cwd()
         result = self.run(
@@ -178,4 +190,4 @@ class CliHarness:
             raise RuntimeError(f"No export file produced for {study_id}")
         import json
 
-        return json.loads(Path(files[0]).read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(Path(files[0]).read_text(encoding="utf-8")))

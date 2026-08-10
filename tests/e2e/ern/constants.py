@@ -19,6 +19,9 @@ DATA_DIR = Path("data/ern")
 ORACLE_CSV = DATA_DIR / "p49_oracle_table.csv"
 RETURNS_CSV = DATA_DIR / "ern_real_returns_1871_2016.csv"
 
+# Pinned oracle matrix: {(weight, horizon_years): {rate: success_pct}}.
+type OracleTable = dict[tuple[float, int], dict[float, int]]
+
 WEIGHTS = [1.0, 0.75, 0.5, 0.25, 0.0]
 HORIZON_YEARS = [30, 40, 50, 60]
 RATES = [0.03, 0.0325, 0.035, 0.0375, 0.04, 0.0425, 0.045, 0.0475, 0.05]
@@ -54,9 +57,9 @@ SMOKE_CELLS = [
 ]
 
 
-def load_oracle_table(path: Path = ORACLE_CSV) -> dict[tuple[float, int], dict[float, int]]:
+def load_oracle_table(path: Path = ORACLE_CSV) -> OracleTable:
     """Load the pinned oracle matrix as ``{(weight, horizon_years): {rate: percent}}``."""
-    table: dict[tuple[float, int], dict[float, int]] = {}
+    table: OracleTable = {}
     with open(path, newline="") as f:
         rows = list(csv.DictReader(f))
     for row in rows:

@@ -15,6 +15,8 @@ from cli.main import main
 from engine.domain import AssetClass, Dataset, MarketSnapshot
 from engine.domain.model.money import Currency, Money
 from infrastructure.persistence.codecs import DefaultDatasetResolver
+from research.domain.plan import ResearchPlan
+from research.orchestration.result import ResearchExecutionResult
 
 # ---------------------------------------------------------------------------
 # Test dataset factory
@@ -345,7 +347,9 @@ parameters:
         assert "ERROR" in out
 
 
-def _make_fake_executor_result(plan: object, **kwargs: object) -> object:
+def _make_fake_executor_result(
+    plan: ResearchPlan, **kwargs: object
+) -> ResearchExecutionResult:
     """Build a ResearchExecutionResult that satisfies the completion summary."""
     from datetime import date
 
@@ -357,9 +361,8 @@ def _make_fake_executor_result(plan: object, **kwargs: object) -> object:
         SimulationTimeline,
     )
     from engine.application.simulation_context import SimulationContext
-    from research.orchestration.result import ResearchExecutionResult
 
-    units = getattr(plan, "units", ())
+    units = plan.units
     results = tuple(
         SimulationResult(
             timeline=SimulationTimeline(monthly_results=()),
@@ -381,15 +384,15 @@ def _make_fake_executor_result(plan: object, **kwargs: object) -> object:
             start_date=date(2000, 1, 1),
             horizon_months=360,
             initial_wealth=Money(Decimal("1000000"), Currency.EUR),
-            initial_portfolio=None,
-            dataset=None,
-            allocation_policy=None,
-            withdrawal_policy=None,
+            initial_portfolio=unit.initial_portfolio,
+            dataset=unit.dataset,
+            allocation_policy=unit.allocation_policy,
+            withdrawal_policy=unit.withdrawal_policy,
         )
-        for _ in units
+        for unit in units
     )
     engine_def = EngineExperimentDefinition(
-        name=getattr(plan.experiment_definition, "name", "fake"),
+        name=plan.experiment_definition.name,
         description="fake",
         simulation_contexts=contexts,
     )
