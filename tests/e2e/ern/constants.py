@@ -1,0 +1,71 @@
+"""ERN SWR Part 1 replication: constants and oracle-table access.
+
+Source data lives in the repository under ``data/ern/`` (see the P4.9
+investigation report, docs/continuity/P4_9_E2E_REPLICATION_INVESTIGATION.md):
+
+- ``ern_real_returns_1871_2016.csv``  extracted monthly real returns (source).
+- ``ern_swr_h{360,480,600,720}.json`` per-horizon datasets (derived).
+- ``p49_oracle_table.csv``            pinned ERN oracle matrix (derived).
+
+Provenance of every file is documented in Section 4 of that report.
+"""
+
+from __future__ import annotations
+
+import csv
+from pathlib import Path
+
+DATA_DIR = Path("data/ern")
+ORACLE_CSV = DATA_DIR / "p49_oracle_table.csv"
+RETURNS_CSV = DATA_DIR / "ern_real_returns_1871_2016.csv"
+
+WEIGHTS = [1.0, 0.75, 0.5, 0.25, 0.0]
+HORIZON_YEARS = [30, 40, 50, 60]
+RATES = [0.03, 0.0325, 0.035, 0.0375, 0.04, 0.0425, 0.045, 0.0475, 0.05]
+
+DATASET_SPEC = {
+    30: ("ern_swr_h360", 360),
+    40: ("ern_swr_h480", 480),
+    50: ("ern_swr_h600", 600),
+    60: ("ern_swr_h720", 720),
+}
+
+# Hard-fail acceptance anchors from the ERN paper Table 1 (Section 5.2).
+ANCHOR_CELLS = [
+    (0.5, 30, 0.04, 95),
+    (0.5, 60, 0.04, 65),
+    (0.75, 60, 0.035, 97),
+]
+
+# Representative cells across weights, horizons and rates (Section 5.2 grid).
+SMOKE_CELLS = [
+    (0.0, 30, 0.03, 89),
+    (0.0, 30, 0.04, 55),
+    (0.25, 30, 0.04, 80),
+    (0.25, 60, 0.04, 33),
+    (0.5, 30, 0.04, 95),
+    (0.5, 60, 0.04, 65),
+    (0.5, 60, 0.05, 36),
+    (0.75, 30, 0.04, 98),
+    (0.75, 60, 0.035, 97),
+    (0.75, 60, 0.0425, 80),
+    (1.0, 40, 0.05, 76),
+    (1.0, 60, 0.04, 89),
+]
+
+
+def load_oracle_table(path: Path = ORACLE_CSV) -> dict[tuple[float, int], dict[float, int]]:
+    """Load the pinned oracle matrix as ``{(weight, horizon_years): {rate: percent}}``."""
+    table: dict[tuple[float, int], dict[float, int]] = {}
+    with open(path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        weight = float(row["equity_weight"])
+        horizon = int(row["horizon_years"])
+        table[(weight, horizon)] = {rate: int(row[f"{rate:g}"]) for rate in RATES}
+    return table
+
+
+def cell_name(weight: float, horizon_years: int, rate: float) -> str:
+    """Deterministic unique study name for a grid cell."""
+    return f"ERN SWR w{int(weight * 100):02d} h{horizon_years:02d} r{rate * 100:.2f}"

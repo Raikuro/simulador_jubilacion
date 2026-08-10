@@ -20,7 +20,11 @@ from cli.builders import (
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.commands.config_command import load_configuration
 from cli.error_handling import ExitCode
-from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
+from cli.policies import (
+    ConstantAllocationPolicy,
+    ConstantWithdrawalPolicy,
+    FixedRealWithdrawalPolicy,
+)
 from engine.domain.model.money import Currency, Money
 from engine.domain.policies.allocation_policy import AllocationPolicy
 from engine.domain.policies.withdrawal_policy import WithdrawalPolicy
@@ -55,10 +59,18 @@ def _build_allocation_policies(policies_data: list[Any]) -> tuple[AllocationPoli
 
 
 def _build_withdrawal_policy(policy_data: dict[str, Any]) -> tuple[WithdrawalPolicy, ...]:
-    """Build a constant withdrawal policy from the YAML ``withdrawal_policy`` section."""
+    """Build a withdrawal policy from the YAML ``withdrawal_policy`` section.
+
+    Dispatches on the ``type`` key: ``FixedRealWithdrawalPolicy`` builds the
+    fixed-real policy; any other or absent ``type`` builds the legacy
+    constant policy (backwards compatible).
+    """
     if not isinstance(policy_data, dict):
         raise ValueError("withdrawal_policy must be a mapping")
     rate = Decimal(str(policy_data.get("withdrawal_rate", "0.04")))
+    policy_type = policy_data.get("type", "ConstantWithdrawalPolicy")
+    if policy_type == "FixedRealWithdrawalPolicy":
+        return (FixedRealWithdrawalPolicy(withdrawal_rate=rate),)
     return (ConstantWithdrawalPolicy(withdrawal_rate=rate),)
 
 
