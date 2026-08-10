@@ -59,13 +59,20 @@ def cell_success_rate(
     harness: CliHarness,
     study_yaml: Path,
     workers: int = 4,
-) -> float:
-    """Run one cell study and return the observable success rate (percent).
+) -> tuple[float, int]:
+    """Run one cell study and return ``(success_rate_percent, units_run)``.
 
     The rate is derived exclusively from the CLI completion summary
     (``Units Run`` / ``Units Failed``), i.e. from public observable output.
+
+    The cell runs in non-persistent, summary-only mode: no study database is
+    written and per-month timelines are never materialized, because the oracle
+    comparison needs only the aggregate success statistics. The aggregate
+    statistics are identical to the persisted path.
     """
-    result: CliResult = harness.run_study(study_yaml, workers=workers)
+    result: CliResult = harness.run_study(
+        study_yaml, workers=workers, persist=False
+    )
     if result.exit_code != 0 or result.units_run is None or result.units_failed is None:
         raise RuntimeError(
             f"sim-retire run failed (exit={result.exit_code}): "
@@ -77,4 +84,5 @@ def cell_success_rate(
         raise RuntimeError(
             f"CLI reported {failed} failed units of {total} (inconsistent output)."
         )
-    return 100.0 * (total - failed) / total
+    rate = 100.0 * (total - failed) / total
+    return rate, total

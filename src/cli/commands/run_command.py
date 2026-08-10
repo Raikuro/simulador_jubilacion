@@ -38,7 +38,13 @@ from research.domain.experiment.definition import ExperimentDefinition
 _DEFAULT_INITIAL_WEALTH = Money(Decimal("1000000"), Currency.EUR)
 _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 
-_ESTIMATED_SECONDS_PER_UNIT = 0.3
+# Conservative per-unit estimate used ONLY by the dry-run preview. Measured
+# reference throughput on the ERN 360-month slice is ~0.027-0.03 s/unit with a
+# single worker; the constant is set higher (0.05) so the dry-run preview is an
+# upper bound rather than an optimistic promise. It is deliberately separate
+# from the LIVE ETA, which is computed from observed throughput as units
+# actually complete (see cli.progress.ProgressDisplay).
+_DRY_RUN_SECONDS_PER_UNIT = 0.05
 
 
 def _build_allocation_policies(policies_data: list[Any]) -> tuple[AllocationPolicy, ...]:
@@ -95,8 +101,12 @@ def _format_cohort_range(cohorts: Any) -> str:
 
 
 def _estimate_execution_time(total_units: int, workers: int) -> str:
-    """Estimate execution time based on unit count and worker count."""
-    est_seconds = (total_units * _ESTIMATED_SECONDS_PER_UNIT) / max(workers, 1)
+    """Estimate execution time based on unit count and worker count.
+
+    Uses the conservative dry-run constant (an upper bound) — live execution
+    reports an observed-throughput ETA instead. See ``_DRY_RUN_SECONDS_PER_UNIT``.
+    """
+    est_seconds = (total_units * _DRY_RUN_SECONDS_PER_UNIT) / max(workers, 1)
     return _format_duration(est_seconds)
 
 
@@ -134,6 +144,26 @@ class RunCommand(BaseCommand):
             type=str,
             default=None,
             help="Resume interrupted study ID",
+        )
+        persist_group = parser.add_mutually_exclusive_group()
+        persist_group.add_argument(
+            "--persist-study",
+            dest="persist_study",
+            action="store_true",
+            default=True,
+            help="Save study, plan and results to the database (default)",
+        )
+        persist_group.add_argument(
+            "--no-persist",
+            dest="persist_study",
+            action="store_false",
+            help="Execute without persisting any study, plan or result data",
+        )
+        parser.add_argument(
+            "--summary-only",
+            action="store_true",
+            help="Keep only aggregate statistics in memory (strip per-month "
+            "timelines); cannot be combined with --persist-study",
         )
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
@@ -275,6 +305,15 @@ class RunCommand(BaseCommand):
 
         # --- 11. Execute study -----------------------------------------------
         workers = max(args.workers, 1)
+
+        if args.persist_study and args.summary_only:
+            print("ERROR: --summary-only cannot be combined with --persist-study")
+            print("       Persisted results require full per-month timelines.")
+            return ExitCode.VALIDATION_ERROR
+
+        from cli.progress import ProgressDisplay
+
+        progress = ProgressDisplay(total_units)
         start_time = time.perf_counter()
 
         try:
@@ -283,34 +322,46 @@ class RunCommand(BaseCommand):
                     sequential_execute,
                 )
 
-                research_result = sequential_execute(plan)
+                research_result = sequential_execute(
+                    plan,
+                    progress_callback=progress.update,
+                    summary_only=args.summary_only,
+                )
             else:
                 from infrastructure.execution.parallel_executor import (
                     parallel_execute,
                 )
 
-                research_result = parallel_execute(plan, max_workers=workers)
+                research_result = parallel_execute(
+                    plan,
+                    max_workers=workers,
+                    progress_callback=progress.update,
+                    summary_only=args.summary_only,
+                )
         except Exception as exc:
+            progress.finish()
             elapsed = time.perf_counter() - start_time
             print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
             return ExitCode.ERROR
 
+        progress.finish()
         elapsed = time.perf_counter() - start_time
 
-        # --- 12. Persist results ---------------------------------------------
-        try:
-            db_path = Path(_DEFAULT_DB_PATH).expanduser()
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            repo = SQLiteRepository(str(db_path))
-            persistence_context = create_persistence_context(context.data_dir)
+        # --- 12. Persist results (skipped entirely when --no-persist) ---------
+        if args.persist_study:
+            try:
+                db_path = Path(_DEFAULT_DB_PATH).expanduser()
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+                repo = SQLiteRepository(str(db_path))
+                persistence_context = create_persistence_context(context.data_dir)
 
-            identity = ExperimentIdentity(name=name, revision=version or "1.0")
+                identity = ExperimentIdentity(name=name, revision=version or "1.0")
 
-            experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
-            plan_id = repo.save_plan(plan, experiment_id, persistence_context)
-            repo.save_execution_result(plan_id, research_result, persistence_context, elapsed)
-        except Exception as exc:
-            print(f"WARNING: Persistence failed (execution completed): {exc}")
+                experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
+                plan_id = repo.save_plan(plan, experiment_id, persistence_context)
+                repo.save_execution_result(plan_id, research_result, persistence_context, elapsed)
+            except Exception as exc:
+                print(f"WARNING: Persistence failed (execution completed): {exc}")
 
         # --- 13. Print completion summary ------------------------------------
         sim_results = research_result.results

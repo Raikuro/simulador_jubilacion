@@ -13,6 +13,7 @@ from cli.commands.run_command import RunCommand
 from cli.error_handling import ExitCode
 from cli.main import main
 from engine.domain import AssetClass, Dataset, MarketSnapshot
+from engine.domain.model.money import Currency, Money
 from infrastructure.persistence.codecs import DefaultDatasetResolver
 
 # ---------------------------------------------------------------------------
@@ -340,3 +341,136 @@ parameters:
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["run", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "ERROR" in out
+
+
+def _make_fake_executor_result(plan: object, **kwargs: object) -> object:
+    """Build a ResearchExecutionResult that satisfies the completion summary."""
+    from datetime import date
+
+    from engine.application.simulation import (
+        ExperimentDefinition as EngineExperimentDefinition,
+        ExperimentRun,
+        SimulationResult,
+        SimulationStatistics,
+        SimulationTimeline,
+    )
+    from engine.application.simulation_context import SimulationContext
+    from research.orchestration.result import ResearchExecutionResult
+
+    units = getattr(plan, "units", ())
+    results = tuple(
+        SimulationResult(
+            timeline=SimulationTimeline(monthly_results=()),
+            statistics=SimulationStatistics(
+                final_wealth=Money(Decimal("1000000"), Currency.EUR),
+                max_drawdown=0.0,
+                success=True,
+                failure_month=None,
+                months_simulated=360,
+                execution_time_seconds=0.01,
+            ),
+        )
+        for _ in units
+    )
+    contexts = tuple(
+        SimulationContext(
+            experiment_name="fake",
+            cohort="c",
+            start_date=date(2000, 1, 1),
+            horizon_months=360,
+            initial_wealth=Money(Decimal("1000000"), Currency.EUR),
+            initial_portfolio=None,
+            dataset=None,
+            allocation_policy=None,
+            withdrawal_policy=None,
+        )
+        for _ in units
+    )
+    engine_def = EngineExperimentDefinition(
+        name=getattr(plan.experiment_definition, "name", "fake"),
+        description="fake",
+        simulation_contexts=contexts,
+    )
+    return ResearchExecutionResult(
+        plan=plan,
+        experiment_result=ExperimentRun(
+            definition=engine_def, simulation_results=results
+        ),
+    )
+
+
+class TestPersistenceControls:
+    def test_summary_only_conflicts_with_persist(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--summary-only", "--persist-study", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        assert "--summary-only" in capsys.readouterr().out
+
+    def test_no_persist_skips_database(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        import unittest.mock
+
+        import infrastructure.execution.parallel_executor as pe
+
+        repo_cls = unittest.mock.Mock()
+        monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
+        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--no-persist", "--summary-only", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Units Run:" in out
+        repo_cls.assert_not_called()
+
+    def test_default_persists(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        import unittest.mock
+
+        import infrastructure.execution.parallel_executor as pe
+
+        repo_cls = unittest.mock.Mock()
+        repo = unittest.mock.Mock()
+        repo.save_experiment.return_value = "exp-1"
+        repo.save_plan.return_value = "plan-1"
+        repo.save_execution_result.return_value = "res-1"
+        repo_cls.return_value = repo
+        monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
+        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        repo_cls.assert_called_once()
+        repo.save_experiment.assert_called_once()
+        repo.save_plan.assert_called_once()
+        repo.save_execution_result.assert_called_once()
+
+    def test_progress_display_silent_on_non_tty(self) -> None:
+        import io
+
+        from cli.progress import ProgressDisplay
+
+        stream = io.StringIO()
+        display = ProgressDisplay(total=10, stream=stream)
+        assert display.enabled is False
+        display.update(5, 10)
+        display.finish()
+        assert stream.getvalue() == ""

@@ -235,7 +235,7 @@ Only the minimum changes genuinely required after Section 7.
 - **Boundary:** `sim-retire --data-dir <dir> run <study.yaml> --workers N` then `sim-retire export <study_id> --format csv --output <dir>`.
 - **Harness:** generates one study YAML per grid cell (weight × rate × horizon): `allocation_policies[0].equity_ratio`, `withdrawal_policy.type=fixed_real_withdrawal`, `withdrawal_policy.withdrawal_rate`, `cohorts.window_years`. Window: Table 1 cells (5 weights × 9 rates × 4 horizons = 180 cells) for the acceptance run; the three anchor cells as a fast CI smoke.
 - **Assertions:** per cell, CLI cohort success fraction ≈ oracle cell (Section 5.4); hard-fail on the three anchors.
-- **Runtime estimate:** Table-1 grid ≈ 313k simulation units (180 × 1,739). At the CLI's own estimate (0.3 s/unit, `run_command._ESTIMATED_SECONDS_PER_UNIT`) ≈ 26 h on 1 worker, ≈ 3.3 h on 8 workers. Anchor-cell smoke ≈ 5.2k units (≈ 0.4 h / 1 worker).
+- **Runtime estimate (measured, `--no-persist --summary-only`):** Table-1 grid ≈ 313k simulation units (180 × 1,739). Measured on the reference host with the 360-month slice: ~0.028 s/unit single-worker; worker scaling is sub-linear (`1→48.3s, 2→30.3s, 4→22.3s, 8→22.2s` for a 30y cell; ~2.2× at 8 workers). The full 180-cell acceptance run is therefore on the order of **a few hours** (not the earlier ~26 h figure, which used the superseded `0.3 s/unit` constant). Live ETA during execution is derived from observed throughput (see `cli.progress.ProgressDisplay`). Anchor-cell smoke ≈ 5.2k units (≈ 1–2 min / 8 workers).
 - **Observable output used:** exported CSV `success`/`success_rate` (exact per-row semantics to be pinned against the run summary during implementation).
 
 ### 8.4 No other changes
@@ -260,7 +260,7 @@ Only the minimum changes genuinely required after Section 7.
 - **Forward-assumption switch:** current toolbox defaults must NOT be used (Section 3.3).
 - **OCR table was a cross-check only:** the recomputed matrix is authoritative.
 - **Export semantics:** the per-row `success` column must be pinned to the run summary (`failure_count`) during implementation before assertions are finalized.
-- **Runtime:** full-grid acceptance run is multi-hour; staged approach (anchor smoke → Table-1 grid) recommended.
+- **Runtime:** full-grid acceptance run is on the order of a few hours with `--no-persist --summary-only` (measured ~22 s/cell at 8 workers on the 30y horizon; 60y horizons are heavier). Staged approach (anchor smoke → Table-1 grid) recommended and implemented.
 - **OCI/approval risk:** the single code change touches the P3.4/P3.5 frozen CLI surface; the data files and E2E suite touch `tests/` and `data/`. All gated on approval.
 
 ---

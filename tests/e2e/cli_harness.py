@@ -124,12 +124,21 @@ class CliHarness:
         study_yaml: Path,
         workers: int = 4,
         timeout: int = 3600,
+        persist: bool = True,
     ) -> CliResult:
-        """Run a study file and return the CLI completion summary."""
-        return self.run(
-            ["run", str(study_yaml), "--workers", str(workers)],
-            timeout=timeout,
-        )
+        """Run a study file and return the CLI completion summary.
+
+        Parameters
+        ----------
+        persist:
+            When False the CLI is invoked with ``--no-persist --summary-only``:
+            nothing is written to the study database and only aggregate
+            statistics are kept in memory (the summary output is identical).
+        """
+        argv = ["run", str(study_yaml), "--workers", str(workers)]
+        if not persist:
+            argv += ["--no-persist", "--summary-only"]
+        return self.run(argv, timeout=timeout)
 
     def list_studies(self) -> list[dict]:
         """List stored studies (``sim-retire list --format json``)."""

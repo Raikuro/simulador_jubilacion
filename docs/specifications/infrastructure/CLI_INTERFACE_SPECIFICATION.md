@@ -130,12 +130,23 @@ Workers:        4 (parallel execution)
 Estimated Time: ~8 minutes
 
 Executing...
-[████████████████████░░░░░░░░░░░░░░░░░░░░░░░] 45% (777/1728) [5m 32s]
+[█████░░░░░] 50% (870/1,739) [elapsed: 1m 32s] [ETA: 1m 31s]
 ```
 
 **Progress Updates:**
 
-- Every 2 seconds: `[progress_bar] percentage (current/total) [elapsed_time]`
+- Rendered in-place on a single line, at most every ~2 seconds (or per batch when
+  batches complete slower than that): `[progress_bar] percentage (current/total) [elapsed: HHh MMm SSs] [ETA: HHh MMm SSs]`
+- Percentage is `completed/total × 100` rounded to the nearest integer; the bar is
+  10 blocks (filled = percentage of total, `█` = done, `░` = remaining).
+- `elapsed` and `ETA` are rendered by the shared duration formatter
+  (`Xs`, `Xm Ys`, or `Xh Ym Zs`).
+- **ETA is computed from observed throughput** (completed units ÷ elapsed time),
+  never from a static per-unit constant. It adapts continuously as execution
+  proceeds and converges once enough units have completed.
+- Nothing is rendered when stdout is not a TTY (scripts, pipes, subprocesses such
+  as the black-box E2E harness): stdout stays machine-parseable.
+- The progress line is cleared before the final summary is printed.
 - Press Ctrl+C to interrupt (execution can be resumed)
 
 **Final Summary:**

@@ -199,7 +199,7 @@ class TestCompleteStudyLifecycle:
 
         captured_plans: list[Any] = []
 
-        def _mock_execute(plan: Any) -> Any:
+        def _mock_execute(plan: Any, **kwargs: Any) -> Any:
             captured_plans.append(plan)
             return make_execution_result(plan)
 
@@ -260,13 +260,19 @@ class TestCliCommandInteroperability:
             assert exc.value.code == ExitCode.SUCCESS, f"{cmd} --help failed"
 
     def test_validate_then_list_empty(
-        self, tmp_path: Path, mock_resolver: None, capsys: pytest.CaptureFixture[str]
+        self,
+        tmp_path: Path,
+        mock_resolver: None,
+        cli_setup: None,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         study = _e2e_study_yaml(tmp_path / "compose.yaml")
         rc1 = main(["validate", str(study)])
         assert rc1 == ExitCode.SUCCESS
         capsys.readouterr()
 
+        # cli_setup redirects _DEFAULT_DB_PATH to the isolated e2e database, so
+        # this never touches (or depends on) the real ~/.sim-retire/ database.
         rc2 = main(["list"])
         assert rc2 == ExitCode.SUCCESS
         out2 = capsys.readouterr().out

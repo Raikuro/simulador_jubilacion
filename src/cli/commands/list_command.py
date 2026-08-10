@@ -10,6 +10,7 @@ from pathlib import Path
 
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
+from infrastructure.persistence.errors import PersistenceError
 
 _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 
@@ -51,7 +52,9 @@ def _fetch_studies(
                            PARTITION BY experiment_id ORDER BY created_at DESC
                        ) AS rn
                 FROM research_plans
+                WHERE deleted_at IS NULL
             ) rp ON e.experiment_id = rp.experiment_id AND rp.rn = 1
+            WHERE e.deleted_at IS NULL
             """
         ).fetchall()
     finally:
@@ -164,8 +167,13 @@ class ListCommand(BaseCommand):
         db_path = str(Path(_DEFAULT_DB_PATH).expanduser())
 
         try:
+            # Ensure the database exists with the current schema (including any
+            # migrations) before querying it with raw SQL.
+            from infrastructure.persistence.sqlite_repository import SQLiteRepository
+
+            SQLiteRepository(db_path)
             studies = _fetch_studies(db_path, args.status, args.sort)
-        except sqlite3.OperationalError as exc:
+        except (sqlite3.OperationalError, PersistenceError) as exc:
             print(f"ERROR: Database error: {exc}")
             return ExitCode.ERROR
 

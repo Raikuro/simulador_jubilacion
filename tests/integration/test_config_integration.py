@@ -484,9 +484,8 @@ class TestConfigCliInteraction:
             str(tmp_path / "studies.db"),
         )
         rc = main(["--config", str(cfg), "list"])
-        # --config is accepted; command fails with DB error (tables missing)
-        assert rc != ExitCode.SUCCESS
-        assert rc != ExitCode.VALIDATION_ERROR
+        # --config is accepted; list initializes the schema and finds no studies
+        assert rc == ExitCode.SUCCESS
 
     def test_config_flag_with_export(
         self,
