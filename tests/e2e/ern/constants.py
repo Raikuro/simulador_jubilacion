@@ -13,11 +13,81 @@ Provenance of every file is documented in Section 4 of that report.
 from __future__ import annotations
 
 import csv
+import os
 from pathlib import Path
 
 DATA_DIR = Path("data/ern")
 ORACLE_CSV = DATA_DIR / "p49_oracle_table.csv"
 RETURNS_CSV = DATA_DIR / "ern_real_returns_1871_2016.csv"
+
+# ---------------------------------------------------------------------------
+# E2E worker selection
+# ---------------------------------------------------------------------------
+# The ERN E2E grid runs each cell as a subprocess of the public CLI
+# (``sim-retire run --workers N ...``).  The worker count is resolved here so
+# the whole suite honours one documented knob:
+#
+# - ``ERN_E2E_WORKERS`` unset       -> conservative default (8), never a hard cap
+# - ``ERN_E2E_WORKERS=N``           -> exactly N workers (capped to host CPUs)
+# - ``ERN_E2E_WORKERS=max``         -> every available logical CPU
+#
+# ``max`` is the explicit "use all available CPUs" option; it maps to
+# ``os.cpu_count()`` so a full acceptance run can saturate the host without the
+# suite being hard-capped at 8 workers.
+
+ERN_E2E_WORKERS_ENV = "ERN_E2E_WORKERS"
+ERN_E2E_MAX_WORKERS = "max"
+ERN_E2E_WORKERS_BASELINE = 8
+
+
+def resolve_e2e_workers(
+    value: str | None = None,
+    host_cpu_count: int | None = None,
+) -> int:
+    """Resolve the ERN E2E worker count from the ``ERN_E2E_WORKERS`` value.
+
+    Parameters
+    ----------
+    value:
+        Raw environment value (``os.environ.get("ERN_E2E_WORKERS")``).
+        ``None`` or empty selects the conservative default (8).  The literal
+        ``"max"`` (case-insensitive) selects every available logical CPU.
+        A positive integer selects exactly that many workers.
+    host_cpu_count:
+        Override of the host CPU count (used by unit tests for determinism).
+        Defaults to ``os.cpu_count()`` with a fallback of 8 when it is None.
+
+    Returns
+    -------
+    int
+        The worker count to pass to ``sim-retire run --workers N``.
+
+    Raises
+    ------
+    ValueError
+        If *value* is neither empty, ``"max"`` nor a positive integer.
+    """
+    cpu_count = host_cpu_count or os.cpu_count() or ERN_E2E_WORKERS_BASELINE
+    if value is None:
+        value = ""
+    value = str(value).strip()
+    if value == "":
+        return min(ERN_E2E_WORKERS_BASELINE, cpu_count)
+    if value.lower() == ERN_E2E_MAX_WORKERS:
+        return cpu_count
+    try:
+        requested = int(value)
+    except ValueError:
+        raise ValueError(
+            f"{ERN_E2E_WORKERS_ENV} must be a positive integer or "
+            f"'{ERN_E2E_MAX_WORKERS}', got {value!r}"
+        ) from None
+    if requested <= 0:
+        raise ValueError(
+            f"{ERN_E2E_WORKERS_ENV} must be a positive integer or "
+            f"'{ERN_E2E_MAX_WORKERS}', got {value!r}"
+        )
+    return min(requested, cpu_count)
 
 # Pinned oracle matrix: {(weight, horizon_years): {rate: success_pct}}.
 type OracleTable = dict[tuple[float, int], dict[float, int]]

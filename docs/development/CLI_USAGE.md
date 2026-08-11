@@ -64,6 +64,10 @@ sim-retire run [OPTIONS] STUDY_FILE
 | `--format {csv,json,sqlite,all}` | Output format (default: `csv`) |
 | `--dry-run` | Print the plan summary without executing |
 | `--resume ID` | Resume an interrupted study |
+| `--no-persist` | Execute without persisting study, plan or result data |
+| `--summary-only` | Keep only aggregate statistics in memory (strips per-month timelines) |
+| `--fast-path` | Use the closed-form fast path for constant-allocation + fixed-real-withdrawal studies |
+| `--validate` | Pre-flight: run a deterministic sample through both the fast path and the canonical Decimal reference engine, failing loudly on any divergence; requires `--fast-path` |
 
 Dry-run is the fastest way to sanity-check a study before a full run:
 
@@ -78,6 +82,26 @@ Full run:
 sim-retire --data-dir examples/data run \
   examples/studies/basic_minimal.yaml --workers 4 --format csv
 ```
+
+### Fast path and pre-flight validation
+
+For studies using a `ConstantAllocationPolicy` + `FixedRealWithdrawalPolicy`
+pair, `--fast-path` replaces the monthly engine pipeline with an equivalent
+closed-form recurrence (`--no-persist` or `--summary-only` is required, since
+the fast path produces summary-grade results without per-month timelines).
+Add `--validate` to compare a small deterministic sample of units through both
+the fast path and the Decimal reference engine before executing:
+
+```bash
+sim-retire --data-dir data run \
+  --fast-path --validate --summary-only <study.yaml>
+```
+
+The completion summary reports fast-path vs reference coverage
+(`Fast Path:` / `Reference Path:`) and the pre-flight result
+(`Validation: OK (N fast-path unit(s) vs Decimal reference)`).  Studies whose
+policies fall outside the fast-path family are reported as 0 fast-path units
+and `--validate` reports the sample as skipped.
 
 ---
 

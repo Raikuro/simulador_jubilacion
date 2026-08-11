@@ -453,6 +453,57 @@ class TestPersistenceControls:
         assert "Reference Path:" in out
         repo_cls.assert_not_called()
 
+    def test_validate_requires_fast_path(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """F7: --validate without --fast-path is a pre-flight error."""
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--validate", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        assert "--fast-path" in capsys.readouterr().out
+
+    def test_fast_path_validate_runs_and_reports(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """F7: --fast-path --validate runs the pre-flight and reports coverage."""
+        import unittest.mock
+
+        import cli.fast_path as fp
+        import infrastructure.execution.parallel_executor as pe
+
+        repo_cls = unittest.mock.Mock()
+        monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
+        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+        monkeypatch.setattr(fp, "sequential_execute", _make_fake_executor_result)
+        monkeypatch.setattr(
+            fp,
+            "select_validation_units",
+            lambda plan, max_units=8: tuple(plan.units[:2]),
+        )
+
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(
+            [
+                "run",
+                "--fast-path",
+                "--validate",
+                "--no-persist",
+                str(study_file),
+            ]
+        )
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Validation:" in out
+        assert "fast-path unit(s)" in out
+        repo_cls.assert_not_called()
+
     def test_no_persist_skips_database(
         self,
         tmp_path: Path,

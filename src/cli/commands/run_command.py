@@ -172,6 +172,13 @@ class RunCommand(BaseCommand):
             "fixed-real-withdrawal studies (results validated equivalent to the "
             "reference Decimal engine)",
         )
+        parser.add_argument(
+            "--validate",
+            action="store_true",
+            help="Run a deterministic sample of the fast-path execution through "
+            "both the fast path and the canonical Decimal reference engine and "
+            "fail loudly on any divergence; requires --fast-path",
+        )
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
         study_path = Path(args.study_file)
@@ -324,6 +331,26 @@ class RunCommand(BaseCommand):
             print("       per-month timelines, so persisted results would be")
             print("       silently empty. Re-run with --no-persist or --summary-only.")
             return ExitCode.VALIDATION_ERROR
+
+        if args.validate and not args.fast_path:
+            print("ERROR: --validate requires --fast-path")
+            print("       --validate compares the fast path against the canonical")
+            print("       Decimal reference engine, so it is meaningless without it.")
+            return ExitCode.VALIDATION_ERROR
+
+        if args.validate:
+            from cli.fast_path import FastPathValidationError, run_fast_path_validation
+
+            try:
+                sampled_units, _eligible_units = run_fast_path_validation(plan)
+            except FastPathValidationError as exc:
+                print("ERROR: " + str(exc))
+                return ExitCode.VALIDATION_ERROR
+            if sampled_units == 0:
+                print("Validation:     skipped (no fast-path-eligible units)")
+            else:
+                print(f"Validation:     OK ({sampled_units} fast-path unit(s) "
+                      f"vs Decimal reference)")
 
         from cli.progress import ProgressDisplay
 

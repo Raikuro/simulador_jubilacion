@@ -66,8 +66,10 @@ list of modules is maintained.
 - `RUN_ERN_E2E=1` — runs the slow black-box ERN anchors and smoke-grid tests.
 - `RUN_ERN_E2E_FULL=1` — additionally runs the full 180-cell ERN grid; it only
   has effect when `RUN_ERN_E2E=1` is also set.
-- `ERN_E2E_WORKERS` — override the default worker count (defaults to `8`, capped
-  at the host CPU count) used for ERN grid cells.
+- `ERN_E2E_WORKERS` — worker count for ERN grid cells. Unset → conservative
+  default `min(8, cpu_count())`; `ERN_E2E_WORKERS=N` → exactly `N` (capped at
+  the host CPU count); `ERN_E2E_WORKERS=max` → every available logical CPU.
+  See `tests/e2e/ern/constants.py::resolve_e2e_workers`.
 - `SIM_RETIRE_BIN` — override the `sim-retire` binary the harness launches
   (default: the console script next to the running interpreter).
 
