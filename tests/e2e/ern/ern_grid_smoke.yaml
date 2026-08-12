@@ -1,0 +1,38 @@
+# ERN SWR smoke grid as ONE research plan (cheap E2E fixture).
+#
+# A reduced parameter grid (2 weights x 2 rates x 2 horizons x 1739 cohorts
+# = 13,912 unique simulation units) that exercises exactly the same single-plan
+# CLI architecture as the full 180-cell grid: the same dataset-family builder,
+# grid ResearchPlan, per-cell summary output and oracle comparison, at a
+# fraction of the full-grid reference wall time.
+#
+# The two hard-fail anchors (50/50 30y 4% = 95 and 50/50 60y 4% = 65) are
+# deliberately included.
+
+metadata:
+  name: "ERN SWR Smoke Grid"
+  version: "1.0"
+  description: "ERN SWR smoke grid: 2 weights x 2 rates x 2 horizons x 1739 cohorts"
+
+datasets:
+  - identifier: "ern_swr_h360"
+    horizon_years: 30
+  - identifier: "ern_swr_h720"
+    horizon_years: 60
+
+cohorts:
+  type: "monthly_rolling"
+
+allocation_policies:
+  - name: "Static equity/bond (driven by parameters)"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.5
+
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  equity_allocation: [0.5, 0.0]
+  withdrawal_rate: [0.04, 0.05]
+  horizon_years: [30, 60]

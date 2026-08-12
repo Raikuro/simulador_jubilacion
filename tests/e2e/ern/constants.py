@@ -23,17 +23,14 @@ RETURNS_CSV = DATA_DIR / "ern_real_returns_1871_2016.csv"
 # ---------------------------------------------------------------------------
 # E2E worker selection
 # ---------------------------------------------------------------------------
-# The ERN E2E grid runs each cell as a subprocess of the public CLI
-# (``sim-retire run --workers N ...``).  The worker count is resolved here so
-# the whole suite honours one documented knob:
+# The ERN E2E runs the whole grid as ONE ``sim-retire run --workers <N>``
+# subprocess.  The CLI itself supports ``--workers max`` (every available
+# logical CPU) since P4.11; ``ERN_E2E_WORKERS`` remains an optional override
+# for hosts that want a pinned count:
 #
-# - ``ERN_E2E_WORKERS`` unset       -> conservative default (8), never a hard cap
-# - ``ERN_E2E_WORKERS=N``           -> exactly N workers (capped to host CPUs)
-# - ``ERN_E2E_WORKERS=max``         -> every available logical CPU
-#
-# ``max`` is the explicit "use all available CPUs" option; it maps to
-# ``os.cpu_count()`` so a full acceptance run can saturate the host without the
-# suite being hard-capped at 8 workers.
+# - ``ERN_E2E_WORKERS`` unset       -> pass ``--workers max`` (CLI resolves)
+# - ``ERN_E2E_WORKERS=N``           -> pass exactly N workers (capped to host CPUs)
+# - ``ERN_E2E_WORKERS=max``         -> pass ``--workers max`` (same as unset)
 
 ERN_E2E_WORKERS_ENV = "ERN_E2E_WORKERS"
 ERN_E2E_MAX_WORKERS = "max"
@@ -46,11 +43,15 @@ def resolve_e2e_workers(
 ) -> int:
     """Resolve the ERN E2E worker count from the ``ERN_E2E_WORKERS`` value.
 
+    Used for the explicit ``ERN_E2E_WORKERS=N`` override path (an exact count
+    capped to host CPUs).  The default path passes the literal ``"max"`` to the
+    CLI, which resolves it to every available logical CPU itself.
+
     Parameters
     ----------
     value:
         Raw environment value (``os.environ.get("ERN_E2E_WORKERS")``).
-        ``None`` or empty selects the conservative default (8).  The literal
+        ``None`` or empty selects the conservative baseline (8).  The literal
         ``"max"`` (case-insensitive) selects every available logical CPU.
         A positive integer selects exactly that many workers.
     host_cpu_count:
@@ -60,7 +61,7 @@ def resolve_e2e_workers(
     Returns
     -------
     int
-        The worker count to pass to ``sim-retire run --workers N``.
+        The worker count for the ``ERN_E2E_WORKERS=N`` override path.
 
     Raises
     ------
@@ -89,6 +90,7 @@ def resolve_e2e_workers(
         )
     return min(requested, cpu_count)
 
+
 # Pinned oracle matrix: {(weight, horizon_years): {rate: success_pct}}.
 type OracleTable = dict[tuple[float, int], dict[float, int]]
 
@@ -96,34 +98,26 @@ WEIGHTS = [1.0, 0.75, 0.5, 0.25, 0.0]
 HORIZON_YEARS = [30, 40, 50, 60]
 RATES = [0.03, 0.0325, 0.035, 0.0375, 0.04, 0.0425, 0.045, 0.0475, 0.05]
 
-DATASET_SPEC = {
-    30: ("ern_swr_h360", 360),
-    40: ("ern_swr_h480", 480),
-    50: ("ern_swr_h600", 600),
-    60: ("ern_swr_h720", 720),
-}
+# Full grid dimensions: 5 weights x 9 rates x 4 horizons = 180 cells.
+FULL_GRID_CELLS = len(WEIGHTS) * len(RATES) * len(HORIZON_YEARS)
+# Every grid cell runs over the full rolling-cohort set (1739 cohorts), so the
+# full grid totals 180 x 1739 = 313,020 simulation units.
+COHORTS_PER_CELL = 1739
+FULL_GRID_UNITS = FULL_GRID_CELLS * COHORTS_PER_CELL
+
+# The reduced parameter space of the cheap smoke-grid fixture
+# (tests/e2e/ern/ern_grid_smoke.yaml): 2 x 2 x 2 = 8 cells.
+SMOKE_WEIGHTS: list[float] = [0.5, 0.0]
+SMOKE_RATES: list[float] = [0.04, 0.05]
+SMOKE_HORIZONS: list[int] = [30, 60]
+SMOKE_GRID_CELLS = len(SMOKE_WEIGHTS) * len(SMOKE_RATES) * len(SMOKE_HORIZONS)
+SMOKE_GRID_UNITS = SMOKE_GRID_CELLS * COHORTS_PER_CELL
 
 # Hard-fail acceptance anchors from the ERN paper Table 1 (Section 5.2).
 ANCHOR_CELLS = [
     (0.5, 30, 0.04, 95),
     (0.5, 60, 0.04, 65),
     (0.75, 60, 0.035, 97),
-]
-
-# Representative cells across weights, horizons and rates (Section 5.2 grid).
-SMOKE_CELLS = [
-    (0.0, 30, 0.03, 89),
-    (0.0, 30, 0.04, 55),
-    (0.25, 30, 0.04, 80),
-    (0.25, 60, 0.04, 33),
-    (0.5, 30, 0.04, 95),
-    (0.5, 60, 0.04, 65),
-    (0.5, 60, 0.05, 36),
-    (0.75, 30, 0.04, 98),
-    (0.75, 60, 0.035, 97),
-    (0.75, 60, 0.0425, 80),
-    (1.0, 40, 0.05, 76),
-    (1.0, 60, 0.04, 89),
 ]
 
 
@@ -137,8 +131,3 @@ def load_oracle_table(path: Path = ORACLE_CSV) -> OracleTable:
         horizon = int(row["horizon_years"])
         table[(weight, horizon)] = {rate: int(row[f"{rate:g}"]) for rate in RATES}
     return table
-
-
-def cell_name(weight: float, horizon_years: int, rate: float) -> str:
-    """Deterministic unique study name for a grid cell."""
-    return f"ERN SWR w{int(weight * 100):02d} h{horizon_years:02d} r{rate * 100:.2f}"

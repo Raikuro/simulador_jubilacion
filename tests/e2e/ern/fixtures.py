@@ -1,89 +1,125 @@
-"""Study YAML generation and cell success-rate computation for the ERN E2E.
+"""Grid-study CLI invocation and per-cell output parsing for the ERN E2E.
 
-The harness writes one study YAML per grid cell (weight x rate x horizon).
-Each study uses the ERN per-horizon dataset, a static equity/bond allocation,
-and the ``FixedRealWithdrawalPolicy`` at the cell's annual withdrawal rate.
+The E2E runs the full ERN SWR grid as ONE study (``examples/studies/ern_grid.yaml``)
+through a single ``sim-retire run --no-persist --summary-only`` subprocess.  The
+CLI prints one machine-parseable ``cell: ...`` line per parameter configuration;
+this module parses those lines back into per-cell statistics for oracle
+comparison.
 """
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from tests.e2e.cli_harness import CliHarness, CliResult
 
-from .constants import DATASET_SPEC, cell_name
+_CELL_LINE_RE = re.compile(r"^cell: (.*)$", re.MULTILINE)
+
+_CELL_HEADER = "Per-Cell Results (grid):"
+
+_CELL_FIELDS = (
+    "equity_allocation",
+    "withdrawal_rate",
+    "horizon_years",
+    "units_run",
+    "units_failed",
+    "success_rate",
+)
 
 
-def write_study_yaml(
-    path: Path,
-    weight: float,
-    horizon_years: int,
-    rate: float,
-) -> str:
-    """Write a per-cell study YAML and return its metadata name."""
-    identifier, _ = DATASET_SPEC[horizon_years]
-    name = cell_name(weight, horizon_years, rate)
-    description = (
-        f"ERN SWR Part 1 replication cell: {int(weight * 100)}/{int((1 - weight) * 100)} "
-        f"allocation, {horizon_years}y, {rate * 100:.2f}% real withdrawal."
-    )
-    yaml_text = f"""metadata:
-  name: "{name}"
-  version: "1.0"
-  description: "{description}"
+@dataclass(frozen=True)
+class PerCellStats:
+    """Aggregate statistics for one grid cell, parsed from the CLI summary."""
 
-dataset:
-  identifier: "{identifier}"
+    units_run: int
+    units_failed: int
+    success_rate: float
 
-cohorts:
-  type: "monthly_rolling"
-  window_years: {horizon_years}
-
-allocation_policies:
-  - name: "Static {int(weight * 100)}/{int((1 - weight) * 100)}"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: {weight}
-
-withdrawal_policy:
-  type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: {rate}
-
-parameters:
-  equity_allocation: [{weight}]
-"""
-    path.write_text(yaml_text, encoding="utf-8")
-    return name
+    @property
+    def success_percent(self) -> float:
+        return self.success_rate * 100
 
 
-def cell_success_rate(
+def parse_per_cell_lines(
+    stdout: str,
+) -> dict[tuple[float, float, int], PerCellStats]:
+    """Parse the CLI's machine-parseable per-cell summary lines.
+
+    Each line has the stable layout
+    ``cell: equity_allocation=<w> withdrawal_rate=<r> horizon_years=<h>
+    units_run=<n> units_failed=<m> success_rate=<s>`` and is keyed by
+    ``(equity_allocation, withdrawal_rate, horizon_years)``.
+
+    Raises
+    ------
+    ValueError
+        If any cell line is malformed, missing a required field, or duplicated.
+    """
+    parsed: dict[tuple[float, float, int], PerCellStats] = {}
+    for match in _CELL_LINE_RE.finditer(stdout):
+        fields: dict[str, str] = {}
+        for token in match.group(1).split():
+            name, sep, value = token.partition("=")
+            if not sep or not name or not value:
+                raise ValueError(f"Malformed per-cell token: {token!r}")
+            if name in fields:
+                raise ValueError(f"Duplicate field {name!r} in cell line")
+            fields[name] = value
+        missing = [name for name in _CELL_FIELDS if name not in fields]
+        if missing:
+            raise ValueError(f"Cell line missing fields {missing}: {match.group(1)!r}")
+        key = (
+            float(fields["equity_allocation"]),
+            float(fields["withdrawal_rate"]),
+            int(fields["horizon_years"]),
+        )
+        if key in parsed:
+            raise ValueError(f"Duplicate cell {key!r}")
+        parsed[key] = PerCellStats(
+            units_run=int(fields["units_run"]),
+            units_failed=int(fields["units_failed"]),
+            success_rate=float(fields["success_rate"]),
+        )
+    return parsed
+
+
+def run_grid_study(
     harness: CliHarness,
     study_yaml: Path,
-    workers: int = 4,
+    workers: int | str,
+    timeout: int = 3600,
     fast_path: bool = False,
-) -> tuple[float, int]:
-    """Run one cell study and return ``(success_rate_percent, units_run)``.
+) -> tuple[CliResult, dict[tuple[float, float, int], PerCellStats]]:
+    """Run one grid study through the public CLI and return its per-cell lines.
 
-    The rate is derived exclusively from the CLI completion summary
-    (``Units Run`` / ``Units Failed``), i.e. from public observable output.
-
-    The cell runs in non-persistent, summary-only mode: no study database is
-    written and per-month timelines are never materialized, because the oracle
-    comparison needs only the aggregate success statistics. The aggregate
-    statistics are identical to the persisted path.
+    The study runs as a single subprocess in non-persistent, summary-only mode
+    (no study database, no per-month timeline materialization).  The per-cell
+    statistics come exclusively from the CLI's observable stdout.
     """
-    result: CliResult = harness.run_study(
-        study_yaml, workers=workers, persist=False, fast_path=fast_path
-    )
-    if result.exit_code != 0 or result.units_run is None or result.units_failed is None:
+    args = ["run", str(study_yaml), "--workers", str(workers)]
+    if not fast_path:
+        args += ["--no-persist", "--summary-only"]
+    else:
+        args += ["--no-persist", "--summary-only", "--fast-path"]
+    result: CliResult = harness.run(args, timeout=timeout)
+    if result.exit_code != 0:
         raise RuntimeError(
-            f"sim-retire run failed (exit={result.exit_code}): "
-            f"{result.stderr or result.stdout}"
+            f"sim-retire run failed (exit={result.exit_code}): {result.stderr or result.stdout}"
         )
-    total = result.units_run
-    failed = result.units_failed
-    if failed > total:
+    if _CELL_HEADER not in result.stdout:
+        raise RuntimeError(f"sim-retire run printed no '{_CELL_HEADER}' section in its summary.")
+    cells = parse_per_cell_lines(result.stdout)
+    if not cells:
         raise RuntimeError(
-            f"CLI reported {failed} failed units of {total} (inconsistent output)."
+            f"No per-cell lines parsed from sim-retire run (exit={result.exit_code})."
         )
-    rate = 100.0 * (total - failed) / total
-    return rate, total
+    for key, stats in cells.items():
+        expected_rate = 1 - stats.units_failed / stats.units_run
+        if abs(stats.success_rate - expected_rate) > 1e-4:
+            raise RuntimeError(
+                f"cell {key}: success_rate={stats.success_rate} inconsistent with "
+                f"units_failed/units_run={expected_rate:.6f}"
+            )
+    return result, cells
