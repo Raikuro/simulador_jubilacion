@@ -9,6 +9,11 @@ from typing import Any
 
 import yaml
 
+from cli.builders import (
+    ResolvedDatasetFamily,
+    build_dataset_family,
+    build_grid_research_plan,
+)
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
 from engine.domain.model.asset import AssetClass
@@ -245,6 +250,7 @@ class ValidateCommand(BaseCommand):
         # --- 2. Extract metadata ---------------------------------------------
         metadata: dict[str, Any] = data.get("metadata", {})
         dataset_info: dict[str, Any] = data.get("dataset", {})
+        datasets_data: list[Any] = data.get("datasets", [])
         cohorts_info: dict[str, Any] = data.get("cohorts", {})
         params_data: dict[str, Any] = data.get("parameters", {})
         alloc_policies_data: list[Any] = data.get("allocation_policies", [])
@@ -264,11 +270,18 @@ class ValidateCommand(BaseCommand):
             )
             _print_verdict(errors, warnings)
             return ExitCode.VALIDATION_ERROR
-        horizon_months = window_years * 12
+        has_grid_datasets = bool(datasets_data)
+        has_horizon_axis = "horizon_years" in params_data
+        is_grid_study = has_grid_datasets or has_horizon_axis
 
-        # --- 3. Resolve dataset ----------------------------------------------
+        # --- 3. Resolve datasets (grid family or single dataset) -------------
         try:
-            dataset = _resolve_dataset(dataset_id, context.data_dir)
+            if has_grid_datasets:
+                dataset_family = build_dataset_family(datasets_data, context.data_dir)
+                canonical_dataset = dataset_family.canonical
+            else:
+                canonical_dataset = _resolve_dataset(dataset_id, context.data_dir)
+                dataset_family = None
         except Exception as exc:
             _print_section("ExperimentDefinition: invalid", False, f"Cannot resolve dataset: {exc}")
             _print_verdict(errors, warnings)
@@ -276,7 +289,20 @@ class ValidateCommand(BaseCommand):
 
         # --- 4. Build cohorts ------------------------------------------------
         try:
-            cohorts = _build_cohort_specs(dataset, horizon_months)
+            if is_grid_study:
+                axis_horizons = [
+                    h
+                    for h in params_data.get("horizon_years", [])
+                    if isinstance(h, int) and not isinstance(h, bool) and h > 0
+                ]
+                declared_max = (
+                    max(dataset_family.horizons) if dataset_family is not None else 0
+                )
+                axis_max = max(axis_horizons) if axis_horizons else 0
+                longest_horizon_years = max(declared_max, axis_max) or window_years
+                cohorts = _build_cohort_specs(canonical_dataset, longest_horizon_years * 12)
+            else:
+                cohorts = _build_cohort_specs(canonical_dataset, window_years * 12)
         except (ValueError, TypeError) as exc:
             _print_section("Cohorts: invalid", False, str(exc))
             _print_verdict(errors, warnings)
@@ -311,8 +337,10 @@ class ValidateCommand(BaseCommand):
             experiment_def = ExperimentDefinition(
                 name=name,
                 description=description_val or name,
-                dataset=dataset,
-                horizon_months=horizon_months,
+                dataset=canonical_dataset,
+                horizon_months=(
+                    longest_horizon_years * 12 if is_grid_study else window_years * 12
+                ),
                 initial_wealth=_DEFAULT_INITIAL_WEALTH,
                 cohorts=cohorts,
                 allocation_policies=alloc_policies,
@@ -344,13 +372,33 @@ class ValidateCommand(BaseCommand):
 
         # --- 13. Build ResearchPlan ------------------------------------------
         try:
-            plan = _build_research_plan(
-                experiment_def,
-                cohorts,
-                param_configs,
-                alloc_policies[0],
-                withdrawal_policies[0],
-            )
+            if is_grid_study:
+                if dataset_family is None:
+                    dataset_family = ResolvedDatasetFamily(
+                        canonical=canonical_dataset, horizons={}
+                    )
+                default_horizon_years = (
+                    window_years
+                    if "window_years" in cohorts_info
+                    else longest_horizon_years
+                )
+                plan = build_grid_research_plan(
+                    experiment_def,
+                    dataset_family,
+                    cohorts,
+                    param_configs,
+                    alloc_policies[0],
+                    withdrawal_policies[0],
+                    default_horizon_years=default_horizon_years,
+                )
+            else:
+                plan = _build_research_plan(
+                    experiment_def,
+                    cohorts,
+                    param_configs,
+                    alloc_policies[0],
+                    withdrawal_policies[0],
+                )
         except (ValueError, TypeError) as exc:
             _print_section("Plan: invalid", False, str(exc))
             errors.append(str(exc))

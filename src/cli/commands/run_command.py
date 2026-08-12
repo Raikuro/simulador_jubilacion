@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import time
 from decimal import Decimal
 from pathlib import Path
@@ -11,7 +12,10 @@ from typing import Any
 import yaml
 
 from cli.builders import (
+    ResolvedDatasetFamily,
     build_cohort_specs,
+    build_dataset_family,
+    build_grid_research_plan,
     build_parameter_configs,
     build_research_plan,
     load_yaml,
@@ -110,6 +114,79 @@ def _estimate_execution_time(total_units: int, workers: int) -> str:
     return _format_duration(est_seconds)
 
 
+def _resolve_workers_arg(value: str) -> int:
+    """Resolve the ``--workers`` argument to an integer worker count.
+
+    Accepts ``'max'`` (case-insensitive) for every available logical CPU, or a
+    positive integer.  Raises ``ValueError`` for anything else so the CLI exits
+    with a validation error instead of passing an invalid count downstream.
+    """
+    text = value.strip()
+    if text.lower() == "max":
+        return os.cpu_count() or 1
+    try:
+        workers = int(text)
+    except ValueError:
+        raise ValueError(f"--workers must be a positive integer or 'max', got {value!r}") from None
+    if workers <= 0:
+        raise ValueError(f"--workers must be a positive integer or 'max', got {value!r}")
+    return workers
+
+
+def _print_grid_per_cell_results(
+    plan: Any,
+    sim_results: Any,
+) -> None:
+    """Print one result block per parameter configuration for a grid study.
+
+    Groups the executed per-unit statistics by the unit's ``parameter_config``
+    and prints one machine-parseable block per configuration.  The per-cell
+    values come from the actual execution statistics (``SimulationStatistics``),
+    not from the plan or the expected oracle.
+
+    The block layout is a stable key=value line, one per parameter
+    configuration, so a future black-box E2E harness can parse it:
+    ``cell: equity_allocation=1.0 withdrawal_rate=0.03 horizon_years=30
+    units_run=1739 units_failed=123 success_rate=0.9293``.
+    """
+    from collections import defaultdict
+
+    from research.domain.parameter.configuration import ParameterConfiguration
+    from research.domain.parameter.types import ParameterScalar
+
+    CellKey = tuple[ParameterScalar | None, ...]
+    cell_units: dict[CellKey, list[Any]] = defaultdict(list)
+    cell_labels: dict[CellKey, str] = {}
+    for unit, result in zip(plan.units, sim_results, strict=True):
+        config: ParameterConfiguration = unit.parameter_config
+        key: CellKey = (
+            config.get("equity_allocation") if "equity_allocation" in config.values else None,
+            config.get("withdrawal_rate") if "withdrawal_rate" in config.values else None,
+            config.get("horizon_years") if "horizon_years" in config.values else None,
+        )
+        cell_units[key].append(result)
+        if key not in cell_labels:
+            parts = [
+                f"{name}={config.get(name)}"
+                for name in ("equity_allocation", "withdrawal_rate", "horizon_years")
+                if name in config.values
+            ]
+            cell_labels[key] = " ".join(parts)
+
+    print()
+    print("Per-Cell Results (grid):")
+    for key in cell_units:
+        results = cell_units[key]
+        units_run = len(results)
+        units_failed = sum(1 for r in results if not r.statistics.success)
+        success_rate = (units_run - units_failed) / units_run if units_run else 0.0
+        print(
+            f"cell: {cell_labels[key]} "
+            f"units_run={units_run} units_failed={units_failed} "
+            f"success_rate={success_rate:.4f}"
+        )
+
+
 class RunCommand(BaseCommand):
     name = "run"
     help_text = "Execute a research study"
@@ -124,9 +201,12 @@ class RunCommand(BaseCommand):
         )
         parser.add_argument(
             "--workers",
-            type=int,
+            type=str,
             default=None,
-            help="Number of parallel workers (default: config execution.default_workers or 1)",
+            help=(
+                "Number of parallel workers; 'max' uses every available logical "
+                "CPU (default: config execution.default_workers or 1)"
+            ),
         )
         parser.add_argument(
             "--format",
@@ -185,11 +265,14 @@ class RunCommand(BaseCommand):
 
         # --- 0. Resolve config-driven execution defaults (CLI > config > defaults) --
         config = load_configuration(context)
-        args.workers = (
-            args.workers
-            if args.workers is not None
-            else int(config.execution.get("default_workers", 1))
-        )
+        if args.workers is not None:
+            try:
+                args.workers = _resolve_workers_arg(args.workers)
+            except ValueError as exc:
+                print(f"ERROR: {exc}")
+                return ExitCode.VALIDATION_ERROR
+        else:
+            args.workers = int(config.execution.get("default_workers", 1))
         args.format = args.format or str(config.output.get("default_format", "csv"))
         args.output_dir = args.output_dir or str(
             config.output.get("default_directory", "./results/")
@@ -215,6 +298,7 @@ class RunCommand(BaseCommand):
         # --- 2. Extract metadata ---------------------------------------------
         metadata: dict[str, Any] = data.get("metadata", {})
         dataset_info: dict[str, Any] = data.get("dataset", {})
+        datasets_data: list[Any] = data.get("datasets", [])
         cohorts_info: dict[str, Any] = data.get("cohorts", {})
         params_data: dict[str, Any] = data.get("parameters", {})
         alloc_policies_data: list[Any] = data.get("allocation_policies", [])
@@ -229,18 +313,38 @@ class RunCommand(BaseCommand):
         if not isinstance(window_years, int) or window_years <= 0:
             print("ERROR: window_years must be a positive integer")
             return ExitCode.VALIDATION_ERROR
-        horizon_months = window_years * 12
+        has_grid_datasets = bool(datasets_data)
+        has_horizon_axis = "horizon_years" in params_data
+        is_grid_study = has_grid_datasets or has_horizon_axis
 
-        # --- 3. Resolve dataset ----------------------------------------------
+        # --- 3. Resolve datasets (grid family or single dataset) -------------
         try:
-            dataset = resolve_dataset(dataset_id, context.data_dir)
+            if has_grid_datasets:
+                dataset_family = build_dataset_family(datasets_data, context.data_dir)
+                canonical_dataset = dataset_family.canonical
+            else:
+                canonical_dataset = resolve_dataset(dataset_id, context.data_dir)
+                dataset_family = None
         except Exception as exc:
             print(f"ERROR: Cannot resolve dataset: {exc}")
             return ExitCode.VALIDATION_ERROR
 
         # --- 4. Build cohorts ------------------------------------------------
         try:
-            cohorts = build_cohort_specs(dataset, horizon_months)
+            if is_grid_study:
+                axis_horizons = [
+                    h
+                    for h in params_data.get("horizon_years", [])
+                    if isinstance(h, int) and not isinstance(h, bool) and h > 0
+                ]
+                declared_max = max(dataset_family.horizons) if dataset_family is not None else 0
+                axis_max = max(axis_horizons) if axis_horizons else 0
+                longest_horizon_years = max(declared_max, axis_max) or window_years
+                longest_horizon_months = longest_horizon_years * 12
+                cohorts = build_cohort_specs(canonical_dataset, longest_horizon_months)
+            else:
+                longest_horizon_months = window_years * 12
+                cohorts = build_cohort_specs(canonical_dataset, longest_horizon_months)
         except (ValueError, TypeError) as exc:
             print(f"ERROR: Cohort generation failed: {exc}")
             return ExitCode.VALIDATION_ERROR
@@ -271,8 +375,8 @@ class RunCommand(BaseCommand):
             experiment_def = ExperimentDefinition(
                 name=name,
                 description=description_val or name,
-                dataset=dataset,
-                horizon_months=horizon_months,
+                dataset=canonical_dataset,
+                horizon_months=longest_horizon_months,
                 initial_wealth=_DEFAULT_INITIAL_WEALTH,
                 cohorts=cohorts,
                 allocation_policies=alloc_policies,
@@ -284,13 +388,29 @@ class RunCommand(BaseCommand):
 
         # --- 9. Build ResearchPlan -------------------------------------------
         try:
-            plan = build_research_plan(
-                experiment_def,
-                cohorts,
-                param_configs,
-                alloc_policies[0],
-                withdrawal_policies[0],
-            )
+            if is_grid_study:
+                if dataset_family is None:
+                    dataset_family = ResolvedDatasetFamily(canonical=canonical_dataset, horizons={})
+                default_horizon_years = (
+                    window_years if "window_years" in cohorts_info else longest_horizon_years
+                )
+                plan = build_grid_research_plan(
+                    experiment_def,
+                    dataset_family,
+                    cohorts,
+                    param_configs,
+                    alloc_policies[0],
+                    withdrawal_policies[0],
+                    default_horizon_years=default_horizon_years,
+                )
+            else:
+                plan = build_research_plan(
+                    experiment_def,
+                    cohorts,
+                    param_configs,
+                    alloc_policies[0],
+                    withdrawal_policies[0],
+                )
         except (ValueError, TypeError) as exc:
             print(f"ERROR: Plan construction failed: {exc}")
             return ExitCode.VALIDATION_ERROR
@@ -349,8 +469,9 @@ class RunCommand(BaseCommand):
             if sampled_units == 0:
                 print("Validation:     skipped (no fast-path-eligible units)")
             else:
-                print(f"Validation:     OK ({sampled_units} fast-path unit(s) "
-                      f"vs Decimal reference)")
+                print(
+                    f"Validation:     OK ({sampled_units} fast-path unit(s) vs Decimal reference)"
+                )
 
         from cli.progress import ProgressDisplay
 
@@ -359,9 +480,9 @@ class RunCommand(BaseCommand):
 
         simulation_executor = None
         if args.fast_path:
-            from cli.fast_path import FastPathSimulationExecutor
+            from cli.fast_path import ChainedFastPathSimulationExecutor
 
-            simulation_executor = FastPathSimulationExecutor(precision="float")
+            simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
 
         try:
             if workers == 1:
@@ -424,11 +545,30 @@ class RunCommand(BaseCommand):
         print(f"Units Run:      {total_units:,}")
         print(f"Units Failed:   {failure_count:,}")
         if args.fast_path:
-            from cli.fast_path import fast_path_unit_counts
+            from cli.fast_path import (
+                expected_chaining_report,
+                fast_path_unit_counts,
+                reference_month_work,
+            )
 
             fast_units, reference_units = fast_path_unit_counts(plan)
             print(f"Fast Path:      {fast_units:,} units (closed form)")
             print(f"Reference Path: {reference_units:,} units (fallback)")
+            report = expected_chaining_report(plan)
+            if report.chained_groups:
+                print(f"Chained Groups: {report.chained_groups:,} families")
+                print(
+                    f"Longest Path:   {report.longest_path_evaluations:,} "
+                    f"evaluation(s) reused for {report.derived_results:,} derived unit(s)"
+                )
+            print(
+                f"Month-Work:     {report.month_work:,} months (chained) "
+                f"/ {reference_month_work(plan):,} months (reference)"
+            )
         print(f"Execution Time: {_format_duration(elapsed)}")
+
+        # --- 14. Per-cell results for grid studies ---------------------------
+        if is_grid_study and args.summary_only and not args.persist_study:
+            _print_grid_per_cell_results(plan, sim_results)
 
         return ExitCode.SUCCESS

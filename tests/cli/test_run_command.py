@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from cli.commands import COMMANDS
-from cli.commands.run_command import RunCommand
+from cli.commands.run_command import RunCommand, _resolve_workers_arg
 from cli.error_handling import ExitCode
 from cli.main import main
 from engine.domain import AssetClass, Dataset, MarketSnapshot
@@ -295,6 +296,36 @@ class TestRunCommandWorkers:
         assert "DRY RUN" in out
 
 
+class TestResolveWorkersArg:
+    """Direct unit tests for the CLI ``--workers`` value resolver."""
+
+    def test_max_resolves_to_every_logical_cpu(self) -> None:
+        assert _resolve_workers_arg("max") == (os.cpu_count() or 1)
+
+    def test_max_is_case_insensitive(self) -> None:
+        assert _resolve_workers_arg("MAX") == (os.cpu_count() or 1)
+        assert _resolve_workers_arg("  Max ") == (os.cpu_count() or 1)
+
+    def test_positive_integer_passes_through(self) -> None:
+        assert _resolve_workers_arg("1") == 1
+        assert _resolve_workers_arg("16") == 16
+        assert _resolve_workers_arg(" 8 ") == 8
+
+    def test_zero_and_negative_integers_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            _resolve_workers_arg("0")
+        with pytest.raises(ValueError):
+            _resolve_workers_arg("-1")
+
+    def test_non_numeric_values_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            _resolve_workers_arg("abc")
+        with pytest.raises(ValueError):
+            _resolve_workers_arg("")
+        with pytest.raises(ValueError):
+            _resolve_workers_arg("3.5")
+
+
 class TestRunCommandEdgeCases:
     def test_horizon_negative_exits_two(
         self,
@@ -347,9 +378,7 @@ parameters:
         assert "ERROR" in out
 
 
-def _make_fake_executor_result(
-    plan: ResearchPlan, **kwargs: object
-) -> ResearchExecutionResult:
+def _make_fake_executor_result(plan: ResearchPlan, **kwargs: object) -> ResearchExecutionResult:
     """Build a ResearchExecutionResult that satisfies the completion summary."""
     from datetime import date
 
@@ -398,9 +427,7 @@ def _make_fake_executor_result(
     )
     return ResearchExecutionResult(
         plan=plan,
-        experiment_result=ExperimentRun(
-            definition=engine_def, simulation_results=results
-        ),
+        experiment_result=ExperimentRun(definition=engine_def, simulation_results=results),
     )
 
 
