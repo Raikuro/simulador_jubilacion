@@ -91,18 +91,26 @@ def run_grid_study(
     workers: int | str,
     timeout: int = 3600,
     fast_path: bool = False,
+    reference_chained: bool = False,
 ) -> tuple[CliResult, dict[tuple[float, float, int], PerCellStats]]:
     """Run one grid study through the public CLI and return its per-cell lines.
 
     The study runs as a single subprocess in non-persistent, summary-only mode
     (no study database, no per-month timeline materialization).  The per-cell
     statistics come exclusively from the CLI's observable stdout.
+
+    ``fast_path`` and ``reference_chained`` select the corresponding opt-in
+    executor modes; at most one may be set (the default is the independent
+    Reference engine).
     """
+    if fast_path and reference_chained:
+        raise ValueError("fast_path and reference_chained are mutually exclusive")
     args = ["run", str(study_yaml), "--workers", str(workers)]
-    if not fast_path:
-        args += ["--no-persist", "--summary-only"]
-    else:
-        args += ["--no-persist", "--summary-only", "--fast-path"]
+    args += ["--no-persist", "--summary-only"]
+    if fast_path:
+        args.append("--fast-path")
+    elif reference_chained:
+        args.append("--reference-chained")
     result: CliResult = harness.run(args, timeout=timeout)
     if result.exit_code != 0:
         raise RuntimeError(

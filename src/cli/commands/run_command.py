@@ -29,6 +29,7 @@ from cli.policies import (
     ConstantWithdrawalPolicy,
     FixedRealWithdrawalPolicy,
 )
+from engine.application.executor import SimulationExecutor
 from engine.domain.model.money import Currency, Money
 from engine.domain.policies.allocation_policy import AllocationPolicy
 from engine.domain.policies.withdrawal_policy import WithdrawalPolicy
@@ -253,6 +254,15 @@ class RunCommand(BaseCommand):
             "reference Decimal engine)",
         )
         parser.add_argument(
+            "--reference-chained",
+            action="store_true",
+            help="Use the chained Reference executor: reproduce the canonical "
+            "Reference Decimal run for each family's longest horizon and derive "
+            "shorter-horizon results from it bit-exactly. Reference remains the "
+            "canonical engine; chaining is only an execution-layer optimisation "
+            "(cannot be combined with --fast-path)",
+        )
+        parser.add_argument(
             "--validate",
             action="store_true",
             help="Run a deterministic sample of the fast-path execution through "
@@ -458,6 +468,12 @@ class RunCommand(BaseCommand):
             print("       Decimal reference engine, so it is meaningless without it.")
             return ExitCode.VALIDATION_ERROR
 
+        if args.reference_chained and args.fast_path:
+            print("ERROR: --reference-chained cannot be combined with --fast-path")
+            print("       Each flag selects a different execution mode; request")
+            print("       exactly one (the default is the independent Reference).")
+            return ExitCode.VALIDATION_ERROR
+
         if args.validate:
             from cli.fast_path import FastPathValidationError, run_fast_path_validation
 
@@ -478,8 +494,14 @@ class RunCommand(BaseCommand):
         progress = ProgressDisplay(total_units)
         start_time = time.perf_counter()
 
-        simulation_executor = None
-        if args.fast_path:
+        simulation_executor: SimulationExecutor | None = None
+        if args.reference_chained:
+            from infrastructure.execution.reference_chaining import (
+                ChainedReferenceSimulationExecutor,
+            )
+
+            simulation_executor = ChainedReferenceSimulationExecutor()
+        elif args.fast_path:
             from cli.fast_path import ChainedFastPathSimulationExecutor
 
             simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
@@ -563,6 +585,29 @@ class RunCommand(BaseCommand):
                 )
             print(
                 f"Month-Work:     {report.month_work:,} months (chained) "
+                f"/ {reference_month_work(plan):,} months (reference)"
+            )
+        if args.reference_chained:
+            from cli.fast_path import reference_month_work
+            from infrastructure.execution.reference_chaining import (
+                expected_reference_chaining_report,
+            )
+
+            chained_report = expected_reference_chaining_report(plan)
+            print(f"Reference Chained: {chained_report.logical_units:,} units (chained reference)")
+            if chained_report.independent_evaluations:
+                print(
+                    f"Independent Path: {chained_report.independent_evaluations:,} units "
+                    f"(non-prefix fallback)"
+                )
+            if chained_report.chained_groups:
+                print(f"Chained Groups: {chained_report.chained_groups:,} families")
+                print(
+                    f"Longest Path:   {chained_report.longest_path_evaluations:,} "
+                    f"evaluation(s) reused for {chained_report.derived_results:,} derived unit(s)"
+                )
+            print(
+                f"Month-Work:     {chained_report.month_work:,} months (chained) "
                 f"/ {reference_month_work(plan):,} months (reference)"
             )
         print(f"Execution Time: {_format_duration(elapsed)}")

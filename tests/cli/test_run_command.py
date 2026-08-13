@@ -431,6 +431,155 @@ def _make_fake_executor_result(plan: ResearchPlan, **kwargs: object) -> Research
     )
 
 
+class TestExecutionModeSelection:
+    """--reference-chained wires the chained Reference executor; the default
+    stays the independent Reference; --fast-path stays a separate opt-in.
+    The CLI selects an execution mode explicitly and rejects incompatible
+    combinations rather than silently picking one."""
+
+    def _capture(
+        self, monkeypatch: pytest.MonkeyPatch, capture: dict[str, object], parallel: bool
+    ) -> None:
+        import infrastructure.execution.parallel_executor as pe
+
+        if parallel:
+
+            def fake_parallel(
+                plan: ResearchPlan,
+                max_workers: int,
+                simulation_executor: object = None,
+                **kwargs: object,
+            ) -> ResearchExecutionResult:
+                capture["executor"] = simulation_executor
+                capture["workers"] = max_workers
+                return _make_fake_executor_result(plan, **kwargs)
+
+            monkeypatch.setattr(pe, "parallel_execute", fake_parallel)
+        else:
+
+            def fake_sequential(
+                plan: ResearchPlan,
+                simulation_executor: object = None,
+                **kwargs: object,
+            ) -> ResearchExecutionResult:
+                capture["executor"] = simulation_executor
+                return _make_fake_executor_result(plan, **kwargs)
+
+            monkeypatch.setattr(pe, "sequential_execute", fake_sequential)
+
+    def test_default_uses_independent_reference(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Without any flag the independent Reference executor is selected."""
+        capture: dict[str, object] = {}
+        self._capture(monkeypatch, capture, parallel=False)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        assert capture["executor"] is None
+
+    def test_reference_chained_uses_chained_executor(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """--reference-chained selects ChainedReferenceSimulationExecutor."""
+        from infrastructure.execution.reference_chaining import (
+            ChainedReferenceSimulationExecutor,
+        )
+
+        capture: dict[str, object] = {}
+        self._capture(monkeypatch, capture, parallel=False)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--reference-chained", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        assert isinstance(capture["executor"], ChainedReferenceSimulationExecutor)
+
+    def test_fast_path_remains_separate_opt_in(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """--fast-path still selects the fast-path executor, independently."""
+        from cli.fast_path import ChainedFastPathSimulationExecutor
+
+        capture: dict[str, object] = {}
+        self._capture(monkeypatch, capture, parallel=False)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--fast-path", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        assert isinstance(capture["executor"], ChainedFastPathSimulationExecutor)
+
+    def test_reference_chained_conflicts_with_fast_path(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Fast-path + reference-chained is rejected explicitly at pre-flight."""
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(
+            ["run", "--reference-chained", "--fast-path", "--no-persist", str(study_file)]
+        )
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "--reference-chained" in out
+        assert "--fast-path" in out
+
+    def test_reference_chained_workers_parallel_preserved(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """With --workers N, parallel_execute receives the chained executor."""
+        from infrastructure.execution.reference_chaining import (
+            ChainedReferenceSimulationExecutor,
+        )
+
+        capture: dict[str, object] = {}
+        self._capture(monkeypatch, capture, parallel=True)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(
+            [
+                "run",
+                "--reference-chained",
+                "--workers",
+                "3",
+                "--no-persist",
+                str(study_file),
+            ]
+        )
+        assert rc == ExitCode.SUCCESS
+        assert isinstance(capture["executor"], ChainedReferenceSimulationExecutor)
+        assert capture["workers"] == 3
+
+    def test_reference_chained_reports_coverage(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The completion summary reports reference-chained chaining counts."""
+        import infrastructure.execution.parallel_executor as pe
+
+        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", "--reference-chained", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Reference Chained:" in out
+        assert "Chained Groups:" in out
+        assert "Longest Path:" in out
+        assert "Month-Work:" in out
+
+
 class TestPersistenceControls:
     def test_summary_only_conflicts_with_persist(
         self,
