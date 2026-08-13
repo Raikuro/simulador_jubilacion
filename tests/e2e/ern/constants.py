@@ -28,9 +28,9 @@ RETURNS_CSV = DATA_DIR / "ern_real_returns_1871_2016.csv"
 # logical CPU) since P4.11; ``ERN_E2E_WORKERS`` remains an optional override
 # for hosts that want a pinned count:
 #
-# - ``ERN_E2E_WORKERS`` unset       -> pass ``--workers max`` (CLI resolves)
+# - ``ERN_E2E_WORKERS`` unset       -> conservative default min(8, cpu_count())
 # - ``ERN_E2E_WORKERS=N``           -> pass exactly N workers (capped to host CPUs)
-# - ``ERN_E2E_WORKERS=max``         -> pass ``--workers max`` (same as unset)
+# - ``ERN_E2E_WORKERS=max``         -> pass ``--workers max`` (every logical CPU)
 
 ERN_E2E_WORKERS_ENV = "ERN_E2E_WORKERS"
 ERN_E2E_MAX_WORKERS = "max"
@@ -43,9 +43,10 @@ def resolve_e2e_workers(
 ) -> int:
     """Resolve the ERN E2E worker count from the ``ERN_E2E_WORKERS`` value.
 
-    Used for the explicit ``ERN_E2E_WORKERS=N`` override path (an exact count
-    capped to host CPUs).  The default path passes the literal ``"max"`` to the
-    CLI, which resolves it to every available logical CPU itself.
+    The default path (``None`` or empty) selects the conservative baseline
+    ``min(ERN_E2E_WORKERS_BASELINE, cpu_count())``; the literal ``"max"``
+    selects every available logical CPU (passed through to the CLI); a
+    positive integer selects exactly that count (capped to host CPUs).
 
     Parameters
     ----------
@@ -61,7 +62,7 @@ def resolve_e2e_workers(
     Returns
     -------
     int
-        The worker count for the ``ERN_E2E_WORKERS=N`` override path.
+        The worker count for the ``ERN_E2E_WORKERS`` value.
 
     Raises
     ------

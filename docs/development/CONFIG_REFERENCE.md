@@ -41,6 +41,13 @@ logging:
 |-----|------|---------|-------------|
 | `default_workers` | integer | `1` | Default parallel workers for `run` |
 
+> **Implicit worker default.** When execution code selects a worker count with
+> no explicit override at all, it never auto-scales to every logical CPU: the
+> conservative default is `min(8, os.cpu_count() or 1)` (see
+> `infrastructure.execution.parallel_executor.default_max_workers`). Explicit
+> overrides bypass this entirely — `run --workers N` uses exactly `N`, and
+> `run --workers max` uses every available logical CPU.
+
 ### `logging`
 
 | Key | Type | Default | Description |

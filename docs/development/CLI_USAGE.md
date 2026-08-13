@@ -60,7 +60,7 @@ sim-retire run [OPTIONS] STUDY_FILE
 | Option | Description |
 |--------|-------------|
 | `--output-dir DIR` | Output directory (default from config: `./results/`) |
-| `--workers N` | Parallel workers (default from config: 1) |
+| `--workers N` | Parallel workers (default from config: 1; `max` = every logical CPU) |
 | `--format {csv,json,sqlite,all}` | Output format (default: `csv`) |
 | `--dry-run` | Print the plan summary without executing |
 | `--resume ID` | Resume an interrupted study |

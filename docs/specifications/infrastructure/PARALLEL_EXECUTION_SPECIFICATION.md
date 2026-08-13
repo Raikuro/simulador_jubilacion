@@ -394,7 +394,7 @@ class ExecutionConfig:
     """Configuration for parallel execution."""
     
     max_workers: Optional[int] = None
-        # None = CPU count
+        # None = conservative default (min(8, os.cpu_count()))
         # 1 = Sequential
         # N = Use N worker processes
     
