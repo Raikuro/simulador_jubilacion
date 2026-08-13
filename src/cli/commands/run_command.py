@@ -43,6 +43,11 @@ from research.domain.experiment.definition import ExperimentDefinition
 _DEFAULT_INITIAL_WEALTH = Money(Decimal("1000000"), Currency.EUR)
 _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 
+# Historical field order for the per-cell grid output: the three ERN axes keep
+# their original relative order so existing ERN cell lines stay byte-identical.
+# Any additional parameter axis is appended afterwards in sorted order.
+_GRID_CELL_PARAMETER_ORDER = ("equity_allocation", "withdrawal_rate", "horizon_years")
+
 # Conservative per-unit estimate used ONLY by the dry-run preview. Measured
 # reference throughput on the ERN 360-month slice is ~0.027-0.03 s/unit with a
 # single worker; the constant is set higher (0.05) so the dry-run preview is an
@@ -149,6 +154,14 @@ def _print_grid_per_cell_results(
     configuration, so a future black-box E2E harness can parse it:
     ``cell: equity_allocation=1.0 withdrawal_rate=0.03 horizon_years=30
     units_run=1739 units_failed=123 success_rate=0.9293``.
+
+    The cell key/label is derived from ALL parameter axes of the configuration
+    rather than a hard-coded ERN triple, so grids with additional axes (e.g.
+    ``glidepath_duration``) are aggregated per full configuration instead of
+    silently merging units that differ only on the extra axis.  The three ERN
+    axes keep their historical field order (``equity_allocation``,
+    ``withdrawal_rate``, ``horizon_years``) so existing ERN cell lines are
+    byte-identical; any additional axes are appended afterwards in sorted order.
     """
     from collections import defaultdict
 
@@ -158,20 +171,20 @@ def _print_grid_per_cell_results(
     CellKey = tuple[ParameterScalar | None, ...]
     cell_units: dict[CellKey, list[Any]] = defaultdict(list)
     cell_labels: dict[CellKey, str] = {}
+
+    def _ordered_names(config: ParameterConfiguration) -> tuple[str, ...]:
+        names = config.names()
+        ordered = tuple(n for n in _GRID_CELL_PARAMETER_ORDER if n in names)
+        ordered += tuple(n for n in names if n not in ordered)
+        return ordered
+
     for unit, result in zip(plan.units, sim_results, strict=True):
         config: ParameterConfiguration = unit.parameter_config
-        key: CellKey = (
-            config.get("equity_allocation") if "equity_allocation" in config.values else None,
-            config.get("withdrawal_rate") if "withdrawal_rate" in config.values else None,
-            config.get("horizon_years") if "horizon_years" in config.values else None,
-        )
+        names = _ordered_names(config)
+        key: CellKey = tuple(config.get(name) for name in names)
         cell_units[key].append(result)
         if key not in cell_labels:
-            parts = [
-                f"{name}={config.get(name)}"
-                for name in ("equity_allocation", "withdrawal_rate", "horizon_years")
-                if name in config.values
-            ]
+            parts = [f"{name}={config.get(name)}" for name in names]
             cell_labels[key] = " ".join(parts)
 
     print()
@@ -496,45 +509,82 @@ class RunCommand(BaseCommand):
 
         simulation_executor: SimulationExecutor | None = None
         if args.reference_chained:
+            # The chained Reference executor materializes ~0.37 MiB of timeline
+            # payload per unit, so whole-plan dispatch (~110 GiB for the ERN
+            # grid) must never be handed to a single executor call.  Route it
+            # through the memory-safe cohort-slice dispatch instead.
             from infrastructure.execution.reference_chaining import (
-                ChainedReferenceSimulationExecutor,
+                execute_reference_chained,
             )
 
-            simulation_executor = ChainedReferenceSimulationExecutor()
-        elif args.fast_path:
-            from cli.fast_path import ChainedFastPathSimulationExecutor
-
-            simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
-
-        try:
-            if workers == 1:
-                from infrastructure.execution.parallel_executor import (
-                    sequential_execute,
-                )
-
-                research_result = sequential_execute(
-                    plan,
-                    simulation_executor=simulation_executor,
-                    progress_callback=progress.update,
-                    summary_only=args.summary_only,
-                )
-            else:
-                from infrastructure.execution.parallel_executor import (
-                    parallel_execute,
-                )
-
-                research_result = parallel_execute(
+            try:
+                research_result = execute_reference_chained(
                     plan,
                     max_workers=workers,
-                    simulation_executor=simulation_executor,
                     progress_callback=progress.update,
                     summary_only=args.summary_only,
                 )
-        except Exception as exc:
-            progress.finish()
-            elapsed = time.perf_counter() - start_time
-            print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
-            return ExitCode.ERROR
+            except Exception as exc:
+                progress.finish()
+                elapsed = time.perf_counter() - start_time
+                print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
+                return ExitCode.ERROR
+        else:
+            if args.fast_path:
+                from cli.fast_path import ChainedFastPathSimulationExecutor
+
+                simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
+
+            try:
+                if args.fast_path and workers == 1:
+                    from infrastructure.execution.parallel_executor import (
+                        sequential_execute,
+                    )
+
+                    research_result = sequential_execute(
+                        plan,
+                        simulation_executor=simulation_executor,
+                        progress_callback=progress.update,
+                        summary_only=args.summary_only,
+                    )
+                elif args.fast_path:
+                    from infrastructure.execution.parallel_executor import (
+                        parallel_execute,
+                    )
+
+                    research_result = parallel_execute(
+                        plan,
+                        max_workers=workers,
+                        simulation_executor=simulation_executor,
+                        progress_callback=progress.update,
+                        summary_only=args.summary_only,
+                    )
+                elif workers == 1:
+                    from infrastructure.execution.parallel_executor import (
+                        sequential_execute,
+                    )
+
+                    research_result = sequential_execute(
+                        plan,
+                        progress_callback=progress.update,
+                        summary_only=args.summary_only,
+                    )
+                else:
+                    from infrastructure.execution.parallel_executor import (
+                        parallel_execute,
+                    )
+
+                    research_result = parallel_execute(
+                        plan,
+                        max_workers=workers,
+                        progress_callback=progress.update,
+                        summary_only=args.summary_only,
+                    )
+            except Exception as exc:
+                progress.finish()
+                elapsed = time.perf_counter() - start_time
+                print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
+                return ExitCode.ERROR
 
         progress.finish()
         elapsed = time.perf_counter() - start_time

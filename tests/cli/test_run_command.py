@@ -467,6 +467,29 @@ class TestExecutionModeSelection:
 
             monkeypatch.setattr(pe, "sequential_execute", fake_sequential)
 
+    def _capture_chained(
+        self, monkeypatch: pytest.MonkeyPatch, capture: dict[str, object]
+    ) -> None:
+        """Patch the slice-dispatch call site used by ``execute_reference_chained``.
+
+        ``reference_chaining`` binds ``parallel_execute`` at import time, so
+        patching the executor module's attribute does not intercept the slice
+        dispatch.  Patch the module-local name instead.
+        """
+        import infrastructure.execution.reference_chaining as rc
+
+        def fake_slice_parallel(
+            plan: ResearchPlan,
+            max_workers: int,
+            simulation_executor: object = None,
+            **kwargs: object,
+        ) -> ResearchExecutionResult:
+            capture["executor"] = simulation_executor
+            capture["workers"] = max_workers
+            return _make_fake_executor_result(plan, **kwargs)
+
+        monkeypatch.setattr(rc, "parallel_execute", fake_slice_parallel)
+
     def test_default_uses_independent_reference(
         self,
         tmp_path: Path,
@@ -493,7 +516,7 @@ class TestExecutionModeSelection:
         )
 
         capture: dict[str, object] = {}
-        self._capture(monkeypatch, capture, parallel=False)
+        self._capture_chained(monkeypatch, capture)
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--reference-chained", "--no-persist", str(study_file)])
         assert rc == ExitCode.SUCCESS
@@ -537,13 +560,13 @@ class TestExecutionModeSelection:
         mock_dataset: None,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """With --workers N, parallel_execute receives the chained executor."""
+        """With --workers N, slice dispatch passes the chained executor + N."""
         from infrastructure.execution.reference_chaining import (
             ChainedReferenceSimulationExecutor,
         )
 
         capture: dict[str, object] = {}
-        self._capture(monkeypatch, capture, parallel=True)
+        self._capture_chained(monkeypatch, capture)
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(
             [
