@@ -24,6 +24,7 @@
 | **IMPLEMENTATION_PROGRESS_TEMPLATE.md** | Template for phase progress tracking | Reference |
 | **P4_INTEGRATION_HANDOFF.md** | Final P4 integration handoff | 7 |
 | **PHASE3_CLOSURE_REPORT.md** | Phase 3 closure report | Historical |
+| **P4_11_REFERENCE_CHAINED_DEFAULT_DECISION.md** | Reference Chained promoted to default exact execution mode | Decision |
 
 ---
 
@@ -236,7 +237,7 @@
 docs/
 ├── README.md                          [NEW - Documentation index]
 ├── RELEASE_CHECKLIST.md               [Release readiness checklist]
-├── continuity/                        [12 files - AI handover & governance]
+├── continuity/                        [22 files - AI handover & governance]
 │   ├── AI_ARCHITECT_GUIDE.md          [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
 │   ├── OPERATIONAL_DASHBOARD.md       [Operational health & metrics]

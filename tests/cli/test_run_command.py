@@ -84,6 +84,58 @@ parameters:
   glidepath_duration: [5, 10]
 """
 
+# Single-config, single-horizon study: exactly one unit per cohort, so every
+# chaining family is a singleton and ``derived_results == 0``.  The default
+# execution gate therefore keeps it on the independent Reference dispatch.
+_VALID_SINGLE_UNIT_YAML = """\
+metadata:
+  name: "Test Single Unit Study"
+  version: "1.0"
+dataset:
+  identifier: "TEST_DATASET"
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+allocation_policies:
+  - name: "Static 75/25"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.75
+withdrawal_policy:
+  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  withdrawal_rate: 0.04
+parameters:
+  equity_allocation: [0.75]
+"""
+
+# Multi-horizon grid study: every cohort carries two horizons whose datasets
+# are identity prefixes of the longest, so ``derived_results > 0`` and the
+# default routes to the chained Reference executor.
+_VALID_GRID_YAML = """\
+metadata:
+  name: "Test Grid Study"
+  version: "1.0"
+  description: "A multi-horizon grid study for execution"
+
+dataset:
+  identifier: "TEST_DATASET"
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 4
+
+allocation_policies:
+  - name: "Static 75/25"
+    type: "ConstantAllocationPolicy"
+    equity_ratio: 0.75
+
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  horizon_years: [3, 4]
+"""
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -432,10 +484,14 @@ def _make_fake_executor_result(plan: ResearchPlan, **kwargs: object) -> Research
 
 
 class TestExecutionModeSelection:
-    """--reference-chained wires the chained Reference executor; the default
-    stays the independent Reference; --fast-path stays a separate opt-in.
-    The CLI selects an execution mode explicitly and rejects incompatible
-    combinations rather than silently picking one."""
+    """The CLI selects an exact execution mode explicitly and rejects
+    incompatible combinations rather than silently picking one.
+
+    Default (no flag) = Reference Chained for plans that actually benefit from
+    horizon chaining (``derived_results > 0``); single-horizon / non-chainable
+    plans degrade to the independent Reference dispatch.  ``--reference-chained``
+    stays an explicit force; ``--reference-independent`` requests the canonical
+    oracle; ``--fast-path`` stays a separate opt-in."""
 
     def _capture(
         self, monkeypatch: pytest.MonkeyPatch, capture: dict[str, object], parallel: bool
@@ -490,19 +546,78 @@ class TestExecutionModeSelection:
 
         monkeypatch.setattr(rc, "parallel_execute", fake_slice_parallel)
 
-    def test_default_uses_independent_reference(
+    def test_default_single_horizon_plan_uses_independent_reference(
         self,
         tmp_path: Path,
         mock_dataset: None,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Without any flag the independent Reference executor is selected."""
+        """A single-config, single-horizon plan without any flag stays on the
+        independent Reference dispatch: no horizon family would chain
+        (``derived_results == 0``), so chained grouping/slicing overhead is
+        never paid."""
         capture: dict[str, object] = {}
         self._capture(monkeypatch, capture, parallel=False)
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_SINGLE_UNIT_YAML)
         rc = main(["run", "--no-persist", str(study_file)])
         assert rc == ExitCode.SUCCESS
         assert capture["executor"] is None
+
+    def test_default_chainable_grid_uses_chained_executor(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A multi-horizon grid without any flag routes through the chained
+        Reference executor by default (it benefits from horizon chaining)."""
+        from infrastructure.execution.reference_chaining import (
+            ChainedReferenceSimulationExecutor,
+        )
+
+        capture: dict[str, object] = {}
+        self._capture_chained(monkeypatch, capture)
+        study_file = _write_yaml(tmp_path / "grid.yaml", _VALID_GRID_YAML)
+        rc = main(["run", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        assert isinstance(capture["executor"], ChainedReferenceSimulationExecutor)
+
+    def test_reference_independent_uses_independent_executor(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """--reference-independent forces the independent Reference even for a
+        chainable grid, making the canonical oracle explicitly selectable."""
+        capture: dict[str, object] = {}
+        self._capture(monkeypatch, capture, parallel=False)
+        study_file = _write_yaml(tmp_path / "grid.yaml", _VALID_GRID_YAML)
+        rc = main(["run", "--reference-independent", "--no-persist", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        assert capture["executor"] is None
+
+    def test_reference_chained_conflicts_with_reference_independent(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Reference-chained + reference-independent is rejected explicitly."""
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(
+            [
+                "run",
+                "--reference-chained",
+                "--reference-independent",
+                "--no-persist",
+                str(study_file),
+            ]
+        )
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "--reference-chained" in out
+        assert "--reference-independent" in out
 
     def test_reference_chained_uses_chained_executor(
         self,

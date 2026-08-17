@@ -269,11 +269,22 @@ class RunCommand(BaseCommand):
         parser.add_argument(
             "--reference-chained",
             action="store_true",
-            help="Use the chained Reference executor: reproduce the canonical "
-            "Reference Decimal run for each family's longest horizon and derive "
-            "shorter-horizon results from it bit-exactly. Reference remains the "
-            "canonical engine; chaining is only an execution-layer optimisation "
-            "(cannot be combined with --fast-path)",
+            help="Explicitly use the chained Reference executor: reproduce the "
+            "canonical Reference Decimal run for each family's longest horizon "
+            "and derive shorter-horizon results from it bit-exactly. This is "
+            "the default exact execution mode for plans that benefit from "
+            "horizon chaining; the flag documents intent and preserves existing "
+            "scripts (cannot be combined with --reference-independent or "
+            "--fast-path)",
+        )
+        parser.add_argument(
+            "--reference-independent",
+            action="store_true",
+            help="Use the independent Reference executor: evaluate every unit "
+            "through the canonical Decimal engine with no horizon chaining. "
+            "This is the reference oracle against which optimized execution is "
+            "verified (cannot be combined with --reference-chained or "
+            "--fast-path)",
         )
         parser.add_argument(
             "--validate",
@@ -481,10 +492,19 @@ class RunCommand(BaseCommand):
             print("       Decimal reference engine, so it is meaningless without it.")
             return ExitCode.VALIDATION_ERROR
 
-        if args.reference_chained and args.fast_path:
-            print("ERROR: --reference-chained cannot be combined with --fast-path")
-            print("       Each flag selects a different execution mode; request")
-            print("       exactly one (the default is the independent Reference).")
+        execution_mode_flags = []
+        if args.fast_path:
+            execution_mode_flags.append("--fast-path")
+        if args.reference_chained:
+            execution_mode_flags.append("--reference-chained")
+        if args.reference_independent:
+            execution_mode_flags.append("--reference-independent")
+        if len(execution_mode_flags) > 1:
+            flags_text = " and ".join(execution_mode_flags)
+            print("ERROR: execution-mode flags are mutually exclusive: " + flags_text)
+            print("       Request exactly one; the default is Reference Chained,")
+            print("       falling back to the independent Reference for plans that")
+            print("       do not benefit from horizon chaining.")
             return ExitCode.VALIDATION_ERROR
 
         if args.validate:
@@ -507,8 +527,29 @@ class RunCommand(BaseCommand):
         progress = ProgressDisplay(total_units)
         start_time = time.perf_counter()
 
-        simulation_executor: SimulationExecutor | None = None
+        # --- 11a. Resolve the exact execution mode ---------------------------
+        # ``--reference-chained`` and ``--reference-independent`` are explicit;
+        # the default is Reference Chained only when the plan actually benefits
+        # from horizon chaining (``derived_results > 0``).  Single-horizon and
+        # other non-chainable plans stay on the independent Reference dispatch
+        # so grouping/slicing overhead is never paid when chaining would derive
+        # nothing.  Chaining never sacrifices correctness: non-eligible units
+        # and families fall back to the independent Reference inside the
+        # executor, and the default/independent paths are bit-exact (proven
+        # over the full ERN grid).
         if args.reference_chained:
+            use_chained = True
+        elif args.reference_independent or args.fast_path:
+            use_chained = False
+        else:
+            from infrastructure.execution.reference_chaining import (
+                expected_reference_chaining_report,
+            )
+
+            use_chained = expected_reference_chaining_report(plan).derived_results > 0
+
+        simulation_executor: SimulationExecutor | None = None
+        if use_chained:
             # The chained Reference executor materializes ~0.37 MiB of timeline
             # payload per unit, so whole-plan dispatch (~110 GiB for the ERN
             # grid) must never be handed to a single executor call.  Route it
@@ -637,7 +678,7 @@ class RunCommand(BaseCommand):
                 f"Month-Work:     {report.month_work:,} months (chained) "
                 f"/ {reference_month_work(plan):,} months (reference)"
             )
-        if args.reference_chained:
+        if use_chained:
             from cli.fast_path import reference_month_work
             from infrastructure.execution.reference_chaining import (
                 expected_reference_chaining_report,
