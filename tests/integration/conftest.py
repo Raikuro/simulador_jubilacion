@@ -221,13 +221,12 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 
 parameters:

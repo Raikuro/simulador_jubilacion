@@ -1,4 +1,12 @@
-"""CompareCommand — compare multiple allocation strategies side-by-side."""
+"""CompareCommand — compare generated parameter configurations side-by-side.
+
+The study's parameter configurations are the comparison strategies: one
+``sim-retire run`` plan already carries every configuration, so ``compare``
+executes the single plan once and partitions the results by configuration.
+``--strategy name=value`` selects a subset of configurations (all of them when
+the flag is absent).  The withdrawal policy comes from the normalized study
+configuration; there is no policy-name selection.
+"""
 
 from __future__ import annotations
 
@@ -12,16 +20,9 @@ from typing import Any
 
 import yaml
 
-from cli.builders import (
-    build_cohort_specs,
-    build_parameter_configs,
-    build_research_plan,
-    load_yaml,
-    resolve_dataset,
-)
+from cli.builders import StudyConfiguration, build_study_plan, load_yaml
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
-from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.domain.model.money import Currency, Money
 from engine.domain.optimizer.strategy_comparator import StrategyComparator
 from engine.domain.optimizer.types import (
@@ -30,31 +31,56 @@ from engine.domain.optimizer.types import (
     RankingRule,
     StrategyComparisonReport,
 )
-from engine.domain.policies.allocation_policy import AllocationPolicy
 from infrastructure.persistence.context import create_persistence_context
+from infrastructure.persistence.errors import RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
 )
-from research.domain.experiment.definition import ExperimentDefinition
-from research.domain.parameter.configuration import ParameterConfiguration
 from research.domain.plan import ResearchPlan
 from research.orchestration.result import ResearchExecutionResult
 
 _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 
 
-def _canonical_param_key(config: ParameterConfiguration) -> str:
+def _canonical_param_key(config: Any) -> str:
     return ";".join(f"{name}={value}" for name, value in config.items())
+
+
+def _parse_strategy_filter(value: str) -> tuple[str, Any]:
+    """Parse a ``name=value`` strategy selector into a configuration constraint."""
+    name, sep, raw = value.partition("=")
+    if not sep or not name.strip() or not raw:
+        raise ValueError(
+            f"--strategy must be 'name=value', got {value!r}"
+        )
+    name = name.strip()
+    parsed: Any
+    try:
+        parsed = float(raw)
+    except ValueError:
+        parsed = raw
+    return name, parsed
+
+
+def _config_matches(
+    config: Any, constraints: Sequence[tuple[str, Any]]
+) -> bool:
+    """True when *config* satisfies every ``(name, value)`` constraint."""
+    return all(config.get(name) == value for name, value in constraints)
 
 
 def _extract_evaluation_results(
     label: str,
     plan: ResearchPlan,
     result: ResearchExecutionResult,
-) -> Sequence[EvaluationResult]:
+    configs_by_key: dict[str, Any],
+) -> list[EvaluationResult]:
     evaluations: list[EvaluationResult] = []
     for unit, sim_result in zip(plan.units, result.results, strict=True):
+        key = _canonical_param_key(unit.parameter_config)
+        if key not in configs_by_key:
+            continue
         success_val = Decimal("1") if sim_result.statistics.success else Decimal("0")
         evaluations.append(
             EvaluationResult(
@@ -66,36 +92,11 @@ def _extract_evaluation_results(
                 },
                 provenance={
                     "cohort": [unit.cohort.id or unit.cohort.start_date.isoformat()],
-                    "parameter_config": [_canonical_param_key(unit.parameter_config)],
+                    "parameter_config": [key],
                 },
             )
         )
     return evaluations
-
-
-def _select_allocation_policy(
-    policies_data: list[dict[str, Any]], policy_name: str
-) -> AllocationPolicy:
-    for entry in policies_data:
-        if entry.get("name") == policy_name:
-            ratio = Decimal(str(entry.get("equity_ratio", "0.75")))
-            return ConstantAllocationPolicy(equity_allocation=ratio)
-    raise ValueError(f"Allocation policy '{policy_name}' not found in YAML")
-
-
-def _select_withdrawal_policy(
-    policies_data: list[dict[str, Any]], policy_name: str | None
-) -> ConstantWithdrawalPolicy:
-    target = policy_name
-    for entry in policies_data:
-        if target is None or entry.get("name") == target:
-            rate = Decimal(str(entry.get("withdrawal_rate", "0.04")))
-            return ConstantWithdrawalPolicy(withdrawal_rate=rate)
-    raise ValueError(
-        f"Withdrawal policy '{policy_name}' not found in YAML"
-        if policy_name
-        else "No withdrawal policies defined in YAML"
-    )
 
 
 def _format_duration(seconds: float) -> str:
@@ -181,15 +182,9 @@ class CompareCommand(BaseCommand):
             "--strategy",
             type=str,
             action="append",
-            required=True,
             dest="strategies",
-            help="Name of allocation policy from YAML (repeatable, min 2)",
-        )
-        parser.add_argument(
-            "--withdrawal-policy",
-            type=str,
-            default=None,
-            help="Name of withdrawal policy from YAML (default: first withdrawal policy)",
+            help="Configuration filter as 'name=value' (repeatable, AND-ed; "
+            "default: all generated configurations)",
         )
         parser.add_argument(
             "--group-by",
@@ -211,10 +206,6 @@ class CompareCommand(BaseCommand):
         )
 
     def execute(self, context: ExecutionContext, args: argparse.Namespace) -> int:
-        if len(args.strategies) < 2:
-            print("ERROR: At least two strategies required for comparison", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-
         try:
             initial_capital = Decimal(str(args.initial_capital))
         except (InvalidOperation, ValueError):
@@ -226,6 +217,14 @@ class CompareCommand(BaseCommand):
 
         capital = Money(initial_capital, Currency.EUR)
         workers = max(args.workers, 1)
+
+        constraints: list[tuple[str, Any]] = []
+        for raw in args.strategies or []:
+            try:
+                constraints.append(_parse_strategy_filter(raw))
+            except ValueError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                return ExitCode.VALIDATION_ERROR
 
         study_path = Path(args.study_file)
         try:
@@ -241,147 +240,94 @@ class CompareCommand(BaseCommand):
                 print(f"Line: {exc.problem_mark.line + 1}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        study_name = data.get("metadata", {}).get("name", "Comparison")
-        dataset_info: dict[str, Any] = data.get("dataset", {})
-        cohorts_info: dict[str, Any] = data.get("cohorts", {})
-        params_data: dict[str, Any] = data.get("parameters", {})
-        alloc_policies_data: list[Any] = data.get("allocation_policies", [])
-        withdrawal_policies_data: list[Any] = data.get("withdrawal_policies", [])
-
-        dataset_id: str = dataset_info.get("identifier", "")
-        window_years = cohorts_info.get("window_years", 30)
-        if not isinstance(window_years, int) or window_years <= 0:
-            print("ERROR: window_years must be a positive integer", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-        horizon_months = window_years * 12
-
         try:
-            dataset = resolve_dataset(dataset_id, context.data_dir)
-        except Exception as exc:
-            print(f"ERROR: Cannot resolve dataset: {exc}", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-
-        try:
-            cohorts = build_cohort_specs(dataset, horizon_months)
+            study_config = StudyConfiguration.from_yaml(data)
         except (ValueError, TypeError) as exc:
-            print(f"ERROR: Cohort generation failed: {exc}", file=sys.stderr)
+            print(f"ERROR: Invalid study configuration: {exc}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
         try:
-            param_configs = build_parameter_configs(params_data)
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid parameters: {exc}", file=sys.stderr)
+            built = build_study_plan(study_config, context.data_dir, capital)
+        except (ValueError, TypeError, RepositoryError) as exc:
+            print(f"ERROR: Cannot build study plan: {exc}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        try:
-            withdrawal_policy = _select_withdrawal_policy(
-                withdrawal_policies_data, args.withdrawal_policy
+        plan = built.plan
+        experiment_def = built.experiment_definition
+
+        configs_by_key: dict[str, Any] = {}
+        for param_config in built.param_configs:
+            key = _canonical_param_key(param_config)
+            if _config_matches(param_config, constraints):
+                configs_by_key[key] = param_config
+
+        if len(configs_by_key) < 2:
+            print(
+                "ERROR: At least two configurations are required for comparison; "
+                "declare a parameter axis (or widen --strategy filters)",
+                file=sys.stderr,
             )
-        except ValueError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        selected_policies: dict[str, AllocationPolicy] = {}
-        for strategy_name in args.strategies:
-            try:
-                selected_policies[strategy_name] = _select_allocation_policy(
-                    alloc_policies_data, strategy_name
-                )
-            except ValueError as exc:
-                print(f"ERROR: {exc}", file=sys.stderr)
-                return ExitCode.VALIDATION_ERROR
+        withdrawal_rate_val = getattr(
+            built.base_withdrawal_policy, "withdrawal_rate", Decimal("0")
+        )
 
         print("\u2501" * 47)
         print("Strategy Comparison Complete")
         print("\u2501" * 47)
         print(f"Study:               {study_path}")
-        print(f"Strategies:          {len(args.strategies)} ({', '.join(args.strategies)})")
-        withdrawal_rate_val = getattr(withdrawal_policy, "withdrawal_rate", Decimal("0"))
+        print(f"Strategies:          {len(configs_by_key)} (generated parameter configurations)")
         print(f"Withdrawal Policy:   Fixed {float(withdrawal_rate_val) * 100:.0f}%")
         print(f"Group By:            {args.group_by}")
         print(f"Workers:             {workers}")
         print()
 
-        strategy_results: dict[str, Sequence[EvaluationResult]] = {}
-        strategy_execution_info: dict[str, float] = {}
-        execution_failures: list[str] = []
+        start_time = time.perf_counter()
+        try:
+            if workers == 1:
+                from infrastructure.execution.parallel_executor import sequential_execute
 
-        for strategy_name in args.strategies:
-            policy = selected_policies[strategy_name]
+                result = sequential_execute(plan)
+            else:
+                from infrastructure.execution.parallel_executor import parallel_execute
 
-            experiment_def = ExperimentDefinition(
-                name=f"{study_name} - {strategy_name}",
-                description=f"Comparison strategy: {strategy_name}",
-                dataset=dataset,
-                horizon_months=horizon_months,
-                initial_wealth=capital,
-                cohorts=cohorts,
-                allocation_policies=(policy,),
-                withdrawal_policies=(withdrawal_policy,),
-            )
-
-            plan = build_research_plan(
-                experiment_def,
-                cohorts,
-                param_configs,
-                policy,
-                withdrawal_policy,
-            )
-
-            start_time = time.perf_counter()
-
-            try:
-                if workers == 1:
-                    from infrastructure.execution.parallel_executor import (
-                        sequential_execute,
-                    )
-
-                    result = sequential_execute(plan)
-                else:
-                    from infrastructure.execution.parallel_executor import (
-                        parallel_execute,
-                    )
-
-                    result = parallel_execute(plan, max_workers=workers)
-            except Exception as exc:
-                elapsed = time.perf_counter() - start_time
-                print(
-                    f"ERROR: Strategy '{strategy_name}' failed after "
-                    f"{_format_duration(elapsed)}: {exc}",
-                    file=sys.stderr,
-                )
-                execution_failures.append(strategy_name)
-                continue
-
+                result = parallel_execute(plan, max_workers=workers)
+        except Exception as exc:
             elapsed = time.perf_counter() - start_time
-            strategy_execution_info[strategy_name] = elapsed
-
-            evaluations = _extract_evaluation_results(strategy_name, plan, result)
-            strategy_results[strategy_name] = evaluations
-
-            try:
-                db_path = str(Path(_DEFAULT_DB_PATH).expanduser())
-                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-                repo = SQLiteRepository(db_path)
-                persistence_context = create_persistence_context(context.data_dir)
-
-                identity = ExperimentIdentity(
-                    name=f"{study_name} - {strategy_name}",
-                    revision="1.0",
-                )
-
-                experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
-                plan_id = repo.save_plan(plan, experiment_id, persistence_context)
-                repo.save_execution_result(plan_id, result, persistence_context, elapsed)
-            except Exception as exc:
-                print(
-                    f"WARNING: Persistence failed for strategy '{strategy_name}': {exc}",
-                    file=sys.stderr,
-                )
-
-        if len(strategy_results) < 2:
-            print("ERROR: Fewer than 2 strategies completed", file=sys.stderr)
+            print(
+                f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}",
+                file=sys.stderr,
+            )
             return ExitCode.ERROR
+
+        elapsed = time.perf_counter() - start_time
+
+        strategy_results: dict[str, Sequence[EvaluationResult]] = {}
+        for key in configs_by_key:
+            strategy_results[key] = _extract_evaluation_results(
+                key, plan, result, configs_by_key
+            )
+
+        try:
+            db_path = str(Path(_DEFAULT_DB_PATH).expanduser())
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            repo = SQLiteRepository(db_path)
+            persistence_context = create_persistence_context(context.data_dir)
+
+            identity = ExperimentIdentity(
+                name=experiment_def.name,
+                revision=study_config.version or "1.0",
+            )
+
+            experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
+            plan_id = repo.save_plan(plan, experiment_id, persistence_context)
+            repo.save_execution_result(plan_id, result, persistence_context, elapsed)
+        except Exception as exc:
+            print(
+                f"WARNING: Persistence failed (execution completed): {exc}",
+                file=sys.stderr,
+            )
 
         metrics = ["success_rate", "final_wealth", "max_drawdown"]
         ranking_rule = RankingRule(

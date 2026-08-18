@@ -338,10 +338,14 @@ sim-retire optimize [OPTIONS] STUDY_FILE
 |--------|------|---------|-------------|
 | `--target-success-rate` | Float | 0.95 | Target success rate (0.0–1.0) |
 | `--initial-capital` | Decimal | 1000000 | Starting portfolio value |
-| `--allocation-policy` | String | None | Specific policy to optimize (required) |
 | `--workers` | Integer | 1 | Parallel workers for binary search |
 | `--tolerance` | Decimal | 0.001 | Withdrawal rate precision |
 | `--output-dir` | Path | `./results/` | Output directory |
+
+The study's `allocation_policy` supplies the concrete equity allocation (from
+`allocation_policy.equity_allocation` or an unambiguous single-value
+`parameters.equity_allocation` axis). The optimizer owns the candidate
+withdrawal rates; `parameters.withdrawal_rate` is forbidden.
 
 #### Behavior
 
@@ -395,7 +399,7 @@ Execution Time: 45m 23s
 #### Syntax
 
 ```
-sim-retire compare [OPTIONS] STUDY_FILE STRATEGY_1 STRATEGY_2
+sim-retire compare [OPTIONS] STUDY_FILE
 ```
 
 #### Arguments
@@ -403,24 +407,26 @@ sim-retire compare [OPTIONS] STUDY_FILE STRATEGY_1 STRATEGY_2
 | Argument | Type | Required | Description |
 |----------|------|----------|-------------|
 | `STUDY_FILE` | Path | ✅ YES | Base experiment definition |
-| `STRATEGY_1` | String | ✅ YES | Policy identifier for first strategy |
-| `STRATEGY_2` | String | ✅ YES | Policy identifier for second strategy |
 
 #### Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--metrics` | Choice | `stats` | Metrics to compare: `stats`, `drawdown`, `quantiles`, `all` |
-| `--output-dir` | Path | `./results/` | Output directory |
+| `--strategy` | String | (all) | Configuration filter as `name=value`; repeatable, AND-ed |
+| `--group-by` | Choice | `global` | Grouping dimension: `global`, `cohort`, `parameter_config` |
 | `--workers` | Integer | 1 | Parallel workers |
+| `--initial-capital` | Decimal | 1000000 | Starting portfolio value |
 
 #### Behavior
 
 1. Parse STUDY_FILE
-2. Execute study with STRATEGY_1 and STRATEGY_2
-3. Run StrategyComparator
-4. Output comparison table
-5. Exit 0
+2. Build the study's generated parameter configurations (the comparison strategies)
+3. Apply `--strategy name=value` filters (AND-ed); fewer than two selected
+   configurations is a validation error
+4. Execute the single plan once; partition results by configuration
+5. Run StrategyComparator
+6. Output comparison table
+7. Exit 0
 
 #### Example Output
 
@@ -502,9 +508,9 @@ Line: 42
 
 Problem:
   Invalid indentation or syntax at:
-  allocation_policies:
-  - name: policy1
-   equity_ratio: 0.75  ← Inconsistent indentation
+  allocation_policy:
+  - type: policy1
+   equity_allocation: 0.75  ← Inconsistent indentation
 
 Suggestion: Check YAML syntax and indentation.
 Exit Code: 2
@@ -633,30 +639,21 @@ metadata:
 
 dataset:
   identifier: "ACWI_EUR_2024"
-  start_year: 1871
-  end_year: 2024
 
 cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "Dynamic Glidepath"
-    type: "GlidepathAllocationPolicy"
-    start_equity: 0.80
-    end_equity: 0.50
-    duration_years: 20
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 
 parameters:
   equity_allocation: [0.50, 0.75, 0.90]
-  glidepath_duration: [5, 10, 20]
 ```
 
 ---

@@ -12,33 +12,21 @@ from typing import Any
 import yaml
 
 from cli.builders import (
-    ResolvedDatasetFamily,
-    build_cohort_specs,
-    build_dataset_family,
-    build_grid_research_plan,
-    build_parameter_configs,
-    build_research_plan,
+    StudyConfiguration,
+    build_study_plan,
     load_yaml,
-    resolve_dataset,
 )
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.commands.config_command import load_configuration
 from cli.error_handling import ExitCode
-from cli.policies import (
-    ConstantAllocationPolicy,
-    ConstantWithdrawalPolicy,
-    FixedRealWithdrawalPolicy,
-)
 from engine.application.executor import SimulationExecutor
 from engine.domain.model.money import Currency, Money
-from engine.domain.policies.allocation_policy import AllocationPolicy
-from engine.domain.policies.withdrawal_policy import WithdrawalPolicy
 from infrastructure.persistence.context import create_persistence_context
+from infrastructure.persistence.errors import RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
 )
-from research.domain.experiment.definition import ExperimentDefinition
 
 _DEFAULT_INITIAL_WEALTH = Money(Decimal("1000000"), Currency.EUR)
 _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
@@ -55,39 +43,6 @@ _GRID_CELL_PARAMETER_ORDER = ("equity_allocation", "withdrawal_rate", "horizon_y
 # from the LIVE ETA, which is computed from observed throughput as units
 # actually complete (see cli.progress.ProgressDisplay).
 _DRY_RUN_SECONDS_PER_UNIT = 0.05
-
-
-def _build_allocation_policies(policies_data: list[Any]) -> tuple[AllocationPolicy, ...]:
-    """Build constant allocation policies from the YAML allocation_policies section.
-
-    Reuses the execution-grade ``ConstantAllocationPolicy`` so the study can be
-    executed through the real simulation engine (not a decision stub).
-    """
-    if not policies_data:
-        raise ValueError("At least one allocation policy is required")
-    policies: list[AllocationPolicy] = []
-    for policy in policies_data:
-        if not isinstance(policy, dict):
-            raise ValueError("Each allocation policy must be a mapping")
-        ratio = Decimal(str(policy.get("equity_ratio", "0.75")))
-        policies.append(ConstantAllocationPolicy(equity_allocation=ratio))
-    return tuple(policies)
-
-
-def _build_withdrawal_policy(policy_data: dict[str, Any]) -> tuple[WithdrawalPolicy, ...]:
-    """Build a withdrawal policy from the YAML ``withdrawal_policy`` section.
-
-    Dispatches on the ``type`` key: ``FixedRealWithdrawalPolicy`` builds the
-    fixed-real policy; any other or absent ``type`` builds the legacy
-    constant policy (backwards compatible).
-    """
-    if not isinstance(policy_data, dict):
-        raise ValueError("withdrawal_policy must be a mapping")
-    rate = Decimal(str(policy_data.get("withdrawal_rate", "0.04")))
-    policy_type = policy_data.get("type", "ConstantWithdrawalPolicy")
-    if policy_type == "FixedRealWithdrawalPolicy":
-        return (FixedRealWithdrawalPolicy(withdrawal_rate=rate),)
-    return (ConstantWithdrawalPolicy(withdrawal_rate=rate),)
 
 
 def _format_duration(seconds: float) -> str:
@@ -329,139 +284,41 @@ class RunCommand(BaseCommand):
             print()
             return ExitCode.VALIDATION_ERROR
 
-        # --- 2. Extract metadata ---------------------------------------------
-        metadata: dict[str, Any] = data.get("metadata", {})
-        dataset_info: dict[str, Any] = data.get("dataset", {})
-        datasets_data: list[Any] = data.get("datasets", [])
-        cohorts_info: dict[str, Any] = data.get("cohorts", {})
-        params_data: dict[str, Any] = data.get("parameters", {})
-        alloc_policies_data: list[Any] = data.get("allocation_policies", [])
-        withdrawal_policy_data: dict[str, Any] = data.get("withdrawal_policy", {})
-
-        name: str = metadata.get("name", "Unnamed Study")
-        description_val: str = metadata.get("description", "")
-        version: str = metadata.get("version", "")
-        dataset_id: str = dataset_info.get("identifier", "")
-
-        window_years = cohorts_info.get("window_years", 30)
-        if not isinstance(window_years, int) or window_years <= 0:
-            print("ERROR: window_years must be a positive integer")
-            return ExitCode.VALIDATION_ERROR
-        has_grid_datasets = bool(datasets_data)
-        has_horizon_axis = "horizon_years" in params_data
-        is_grid_study = has_grid_datasets or has_horizon_axis
-
-        # --- 3. Resolve datasets (grid family or single dataset) -------------
+        # --- 2. Interpret the study configuration ----------------------------
         try:
-            if has_grid_datasets:
-                dataset_family = build_dataset_family(datasets_data, context.data_dir)
-                canonical_dataset = dataset_family.canonical
-            else:
-                canonical_dataset = resolve_dataset(dataset_id, context.data_dir)
-                dataset_family = None
-        except Exception as exc:
-            print(f"ERROR: Cannot resolve dataset: {exc}")
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 4. Build cohorts ------------------------------------------------
-        try:
-            if is_grid_study:
-                axis_horizons = [
-                    h
-                    for h in params_data.get("horizon_years", [])
-                    if isinstance(h, int) and not isinstance(h, bool) and h > 0
-                ]
-                declared_max = max(dataset_family.horizons) if dataset_family is not None else 0
-                axis_max = max(axis_horizons) if axis_horizons else 0
-                longest_horizon_years = max(declared_max, axis_max) or window_years
-                longest_horizon_months = longest_horizon_years * 12
-                cohorts = build_cohort_specs(canonical_dataset, longest_horizon_months)
-            else:
-                longest_horizon_months = window_years * 12
-                cohorts = build_cohort_specs(canonical_dataset, longest_horizon_months)
+            study_config = StudyConfiguration.from_yaml(data)
         except (ValueError, TypeError) as exc:
-            print(f"ERROR: Cohort generation failed: {exc}")
+            print(f"ERROR: Invalid study configuration: {exc}")
             return ExitCode.VALIDATION_ERROR
 
-        # --- 5. Build parameter configs --------------------------------------
+        # --- 3. Build the unified plan ----------------------------------------
         try:
-            param_configs = build_parameter_configs(params_data)
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid parameters: {exc}")
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 6. Build allocation policies ------------------------------------
-        try:
-            alloc_policies = _build_allocation_policies(alloc_policies_data)
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid allocation policies: {exc}")
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 7. Build withdrawal policy --------------------------------------
-        try:
-            withdrawal_policies = _build_withdrawal_policy(withdrawal_policy_data)
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid withdrawal policy: {exc}")
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 8. Build ExperimentDefinition -----------------------------------
-        try:
-            experiment_def = ExperimentDefinition(
-                name=name,
-                description=description_val or name,
-                dataset=canonical_dataset,
-                horizon_months=longest_horizon_months,
-                initial_wealth=_DEFAULT_INITIAL_WEALTH,
-                cohorts=cohorts,
-                allocation_policies=alloc_policies,
-                withdrawal_policies=withdrawal_policies,
+            built = build_study_plan(
+                study_config, context.data_dir, _DEFAULT_INITIAL_WEALTH
             )
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid experiment definition: {exc}")
+        except (ValueError, TypeError, RepositoryError) as exc:
+            print(f"ERROR: Cannot build study plan: {exc}")
             return ExitCode.VALIDATION_ERROR
 
-        # --- 9. Build ResearchPlan -------------------------------------------
-        try:
-            if is_grid_study:
-                if dataset_family is None:
-                    dataset_family = ResolvedDatasetFamily(canonical=canonical_dataset, horizons={})
-                default_horizon_years = (
-                    window_years if "window_years" in cohorts_info else longest_horizon_years
-                )
-                plan = build_grid_research_plan(
-                    experiment_def,
-                    dataset_family,
-                    cohorts,
-                    param_configs,
-                    alloc_policies[0],
-                    withdrawal_policies[0],
-                    default_horizon_years=default_horizon_years,
-                )
-            else:
-                plan = build_research_plan(
-                    experiment_def,
-                    cohorts,
-                    param_configs,
-                    alloc_policies[0],
-                    withdrawal_policies[0],
-                )
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Plan construction failed: {exc}")
-            return ExitCode.VALIDATION_ERROR
+        experiment_def = built.experiment_definition
+        plan = built.plan
+        cohorts = built.cohorts
+        param_configs = built.param_configs
 
         total_units = len(plan)
         num_cohorts = len(cohorts)
         num_param_configs = len(param_configs)
-        num_alloc = len(alloc_policies)
-        num_withd = len(withdrawal_policies)
+        num_alloc = 1
+        num_withd = 1
 
-        # --- 10. Dry-run: print plan summary and exit ------------------------
+        # --- 4. Dry-run: print plan summary and exit --------------------------
         if args.dry_run:
             cohort_range = _format_cohort_range(cohorts)
             est_time = _estimate_execution_time(total_units, args.workers)
             param_names = ", ".join(param_configs[0].names()) if param_configs else "none"
 
-            print(f"Study:          {name} (v{version})" if version else f"Study:          {name}")
+            version_suffix = f" (v{study_config.version})" if study_config.version else ""
+            print(f"Study:          {experiment_def.name}{version_suffix}")
             print(f"Cohorts:        {num_cohorts} (monthly rolling, {cohort_range})")
             print(f"Parameters:     {num_param_configs} (sweep: {param_names})")
             print(f"Policies:       {num_alloc} allocation x {num_withd} withdrawal")
@@ -471,7 +328,7 @@ class RunCommand(BaseCommand):
             print("DRY RUN — No simulations executed.")
             return ExitCode.SUCCESS
 
-        # --- 11. Execute study -----------------------------------------------
+        # --- 5. Execute study ------------------------------------------------
         workers = max(args.workers, 1)
 
         if args.persist_study and args.summary_only:
@@ -638,7 +495,9 @@ class RunCommand(BaseCommand):
                 repo = SQLiteRepository(str(db_path))
                 persistence_context = create_persistence_context(context.data_dir)
 
-                identity = ExperimentIdentity(name=name, revision=version or "1.0")
+                identity = ExperimentIdentity(
+                    name=experiment_def.name, revision=study_config.version or "1.0"
+                )
 
                 experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
                 plan_id = repo.save_plan(plan, experiment_id, persistence_context)
@@ -703,8 +562,8 @@ class RunCommand(BaseCommand):
             )
         print(f"Execution Time: {_format_duration(elapsed)}")
 
-        # --- 14. Per-cell results for grid studies ---------------------------
-        if is_grid_study and args.summary_only and not args.persist_study:
+        # --- 14. Per-cell results ---------------------------------------------
+        if args.summary_only and not args.persist_study:
             _print_grid_per_cell_results(plan, sim_results)
 
         return ExitCode.SUCCESS

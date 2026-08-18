@@ -188,37 +188,51 @@ Get the `STUDY_ID` from `sim-retire list`.
 
 ## optimize
 
-Finds the maximum sustainable withdrawal rate for a given allocation policy.
+Finds the maximum sustainable withdrawal rate for a study's allocation policy.
+
+The study must declare a **single configuration**: no `parameters.withdrawal_rate`
+axis (the optimizer owns the candidate withdrawal rates) and every other axis
+must have exactly one value. The concrete `equity_allocation` comes from
+`allocation_policy.equity_allocation` or an unambiguous single-value
+`parameters.equity_allocation` axis. `withdrawal_policy.type` supplies the
+policy mechanism.
 
 ```bash
 sim-retire optimize [--target-success-rate RATE] \
-  [--initial-capital CAPITAL] --allocation-policy NAME \
+  [--initial-capital CAPITAL] \
   [--workers N] [--tolerance TOL] [--output-dir DIR] STUDY_FILE
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--target-success-rate` | — | Target success rate (0.0–1.0) |
-| `--initial-capital` | — | Starting portfolio value in EUR |
-| `--allocation-policy` | (required) | Policy name from the YAML |
+| `--target-success-rate` | 0.95 | Target success rate (0.0–1.0) |
+| `--initial-capital` | 1000000 | Starting portfolio value in EUR |
 | `--workers` | 1 | Parallel workers |
-| `--tolerance` | — | Precision of the binary search over withdrawal rate |
-| `--output-dir` | — | Output directory |
+| `--tolerance` | 0.001 | Precision of the binary search over withdrawal rate |
+| `--output-dir` | ./results/ | Output directory |
 
 ---
 
 ## compare
 
-Compares two or more allocation policies on a single study.
+Compares two or more generated parameter configurations side-by-side.
+
+The study's parameter configurations are the comparison strategies: the single
+plan is executed once and the results are partitioned by configuration.
 
 ```bash
-sim-retire compare --strategy NAME [--strategy NAME2 ...] \
-  [--withdrawal-policy NAME] [--group-by global|cohort|parameter_config] \
+sim-retire compare [--strategy name=value ...] \
+  [--group-by global|cohort|parameter_config] \
   [--workers N] [--initial-capital EUR] STUDY_FILE
 ```
 
-`--strategy` selects allocation policies from the YAML and must be supplied
-at least twice.
+- `--strategy name=value` is optional and repeatable; each one is a filter
+  (AND-ed) that selects a subset of configurations. Without it every generated
+  configuration is compared.
+- A study whose `parameters` declare multiple values on an axis yields multiple
+  strategies. Fewer than two selected configurations is a validation error.
+- The withdrawal policy comes from the normalized study configuration; there is
+  no policy-name selection.
 
 ---
 
@@ -249,27 +263,32 @@ A study is a YAML document with six top-level sections:
 metadata:            # Optional descriptive fields (name, version, description)
 dataset:
   identifier: "market_monthly"   # Matches the stem of a data/<name>.json
-  start_year: 1990
-  end_year: 2024
 cohorts:
   type: "monthly_rolling"
   window_years: 30
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
-parameters:
+parameters:          # Optional; omitted = single configuration per cohort
   equity_allocation: [0.50, 0.75, 0.90]
 ```
 
 - `dataset.identifier` selects the dataset file; the loader matches the
   identifier to `data/<identifier>.json` under the active data directory.
+- `allocation_policy` / `withdrawal_policy` are singular base policies; `type`
+  is required. Supported withdrawal types are `FixedRealWithdrawalPolicy` and
+  `ConstantWithdrawalPolicy`.
+- A base scalar is optional when the matching parameter axis supplies it per
+  unit (`equity_allocation`, `withdrawal_rate`).
 - `cohorts.window_years` defines the length of each rolling window. The
-  horizon in months is `window_years * 12`.
-- `parameters` defines each sweep axis; all combinations are executed.
+  default horizon in months is `window_years * 12`.
+- `parameters` defines each sweep axis; all combinations are executed. A
+  `horizon_years` axis selects the per-unit horizon (a prefix slice of the
+  canonical dataset). With no `parameters` section the study is a single
+  configuration per cohort using the base policy scalars.
 
 See [CONFIG_REFERENCE.md](CONFIG_REFERENCE.md) for the configuration file and
 [EXAMPLES.md](../../examples/EXAMPLES.md) for ready-to-run studies.

@@ -244,13 +244,12 @@ cohorts:
   type: "monthly_rolling"
   window_years: {window_years}
 
-allocation_policies:
-  - name: "{alloc_name}"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: {equity_ratio}
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: {equity_ratio}
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: {withdrawal_rate}
 
 parameters:
@@ -265,7 +264,6 @@ def create_study_yaml(
     description: str = "Study for integration testing",
     dataset_id: str = "INTEGRATION_TEST_v1",
     window_years: int = 30,
-    alloc_name: str = "Static 75/25",
     equity_ratio: float = 0.75,
     withdrawal_rate: float = 0.04,
     equity_values: str = "0.50",
@@ -276,7 +274,6 @@ def create_study_yaml(
         description=description,
         dataset_id=dataset_id,
         window_years=window_years,
-        alloc_name=alloc_name,
         equity_ratio=equity_ratio,
         withdrawal_rate=withdrawal_rate,
         equity_values=equity_values,

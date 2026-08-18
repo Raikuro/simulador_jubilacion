@@ -53,16 +53,18 @@ datasets are discovered automatically by
 ## 2. Add or extend a policy
 
 The concrete policy types live in `src/cli/policies.py`
-(`ConstantAllocationPolicy`, `ConstantWithdrawalPolicy`). Commands construct
-them from the study YAML in their command-specific helpers
-(`src/cli/commands/run_command.py`, `compare_command.py`, `optimize_command.py`);
-`src/cli/builders.py` imports the policy types and threads them into
-`build_research_plan` without constructing them:
+(`ConstantAllocationPolicy`, `ConstantWithdrawalPolicy`,
+`FixedRealWithdrawalPolicy`). The normalized study configuration
+(`StudyConfiguration`) interprets the singular YAML base policies
+(`allocation_policy:` / `withdrawal_policy:`) and `build_study_plan` threads
+them into the research plan; all commands consume this single interpretation
+layer via `src/cli/builders.py`:
 
 | Policy | YAML key | Builder option(s) | Implementation |
 |--------|----------|-------------------|----------------|
-| Constant allocation | `allocation_policies[]` | `equity_ratio` (default `0.75`) | `ConstantAllocationPolicy` |
-| Constant withdrawal | `withdrawal_policy` | `withdrawal_rate` (default `0.04`) | `ConstantWithdrawalPolicy` |
+| Constant allocation | `allocation_policy` | `equity_allocation` | `ConstantAllocationPolicy` |
+| Constant withdrawal | `withdrawal_policy` | `withdrawal_rate` | `ConstantWithdrawalPolicy` |
+| Fixed real withdrawal | `withdrawal_policy` | `withdrawal_rate` | `FixedRealWithdrawalPolicy` |
 
 To add a new policy type, keep the `src/cli/builders.py` convention: add a
 builder function without changing existing signatures, and pair the new type

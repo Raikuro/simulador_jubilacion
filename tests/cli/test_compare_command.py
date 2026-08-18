@@ -1,4 +1,4 @@
-"""Tests for CompareCommand — compare multiple allocation strategies."""
+"""Tests for CompareCommand — compare generated parameter configurations."""
 
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from cli.commands import COMMANDS
 from cli.commands.compare_command import (
     CompareCommand,
     _canonical_param_key,
+    _config_matches,
     _extract_evaluation_results,
+    _parse_strategy_filter,
 )
 from cli.error_handling import ExitCode
 from cli.main import main
@@ -104,27 +106,26 @@ def _make_simulation_result(
 
 
 def _make_plan_unit(
-    cohort_id: str = "1871-01-01",
-    param_key: str = "equity_allocation",
-    param_value: str = "0.75",
-    withdrawal_rate: str = "0.04",
+    param_value: str,
     dataset: Dataset | None = None,
 ) -> PlannedSimulationUnit:
     if dataset is None:
         dataset = _make_dataset(400)
     return PlannedSimulationUnit(
-        cohort=CohortSpecification(start_date=date(1871, 1, 1), id=cohort_id),
-        parameter_config=ParameterConfiguration(values={param_key: param_value}),
+        cohort=CohortSpecification(start_date=date(1871, 1, 1), id="1871-01-01"),
+        parameter_config=ParameterConfiguration(
+            values={"equity_allocation": param_value}
+        ),
         allocation_policy=ConstantAllocationPolicy(Decimal(param_value)),
-        withdrawal_policy=ConstantWithdrawalPolicy(Decimal(withdrawal_rate)),
+        withdrawal_policy=ConstantWithdrawalPolicy(Decimal("0.04")),
         initial_portfolio=_NULL_PORTFOLIO,
         dataset=dataset,
     )
 
 
 def _make_research_plan(
+    equity_values: list[Decimal],
     name: str = "test",
-    num_units: int = 2,
 ) -> ResearchPlan:
     full_dataset = _make_dataset(400)
     # Single cohort at origin; slice once for horizon=360
@@ -143,7 +144,7 @@ def _make_research_plan(
     )
     units = tuple(
         _make_plan_unit(param_value=str(v), dataset=sliced_dataset)
-        for v in (Decimal("0.75") + Decimal(i) * Decimal("0.01") for i in range(num_units))
+        for v in equity_values
     )
     return ResearchPlan(experiment_definition=experiment_def, units=units)
 
@@ -202,21 +203,15 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
+allocation_policy:
+  type: "ConstantAllocationPolicy"
 
-withdrawal_policies:
-  - name: "Fixed 4%"
-    type: "ConstantInflationAdjustedWithdrawalPolicy"
-    withdrawal_rate: 0.04
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
 
 parameters:
-  equity_allocation: [0.75]
+  equity_allocation: [0.60, 0.75]
 """
 
 _VALID_YAML_THREE_STRATEGIES = """\
@@ -232,29 +227,20 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
-  - name: "50/50"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.50
+allocation_policy:
+  type: "ConstantAllocationPolicy"
 
-withdrawal_policies:
-  - name: "Fixed 4%"
-    type: "ConstantInflationAdjustedWithdrawalPolicy"
-    withdrawal_rate: 0.04
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
 
 parameters:
-  equity_allocation: [0.75]
+  equity_allocation: [0.50, 0.60, 0.75]
 """
 
-_VALID_YAML_PARAM_CONFIGS = """\
+_VALID_YAML_SINGLE_STRATEGY = """\
 metadata:
-  name: "Compare Param Study"
+  name: "Compare Test Study"
   version: "1.0"
 
 dataset:
@@ -264,22 +250,13 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
-withdrawal_policies:
-  - name: "Fixed 4%"
-    type: "ConstantInflationAdjustedWithdrawalPolicy"
-    withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.60, 0.75]
-  glidepath_duration: [5, 10]
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
 """
 
 
@@ -342,6 +319,17 @@ def _write_yaml(path: Path, content: str) -> Path:
     return path
 
 
+def _configs_by_key() -> dict[str, Any]:
+    return {
+        "equity_allocation=0.60": ParameterConfiguration(
+            values={"equity_allocation": "0.60"}
+        ),
+        "equity_allocation=0.75": ParameterConfiguration(
+            values={"equity_allocation": "0.75"}
+        ),
+    }
+
+
 # ===================================================================
 # Tests: Helper functions
 # ===================================================================
@@ -367,59 +355,111 @@ class TestCanonicalParamKey:
         assert _canonical_param_key(config) == "type=aggressive"
 
 
+class TestParseStrategyFilter:
+    def test_numeric_value_parsed_as_float(self) -> None:
+        assert _parse_strategy_filter("equity_allocation=0.75") == (
+            "equity_allocation",
+            0.75,
+        )
+
+    def test_string_value_kept(self) -> None:
+        assert _parse_strategy_filter("type=aggressive") == ("type", "aggressive")
+
+    def test_missing_equals_sign_raises(self) -> None:
+        with pytest.raises(ValueError):
+            _parse_strategy_filter("equity_allocation")
+
+    def test_empty_value_raises(self) -> None:
+        with pytest.raises(ValueError):
+            _parse_strategy_filter("equity_allocation=")
+
+
+class TestConfigMatches:
+    def test_match_single_constraint(self) -> None:
+        config = ParameterConfiguration(values={"equity_allocation": 0.75})
+        assert _config_matches(config, [("equity_allocation", 0.75)])
+
+    def test_mismatch_single_constraint(self) -> None:
+        config = ParameterConfiguration(values={"equity_allocation": 0.60})
+        assert not _config_matches(config, [("equity_allocation", 0.75)])
+
+    def test_all_constraints_required(self) -> None:
+        config = ParameterConfiguration(
+            values={"equity_allocation": 0.75, "withdrawal_rate": 0.04}
+        )
+        constraints = [("equity_allocation", 0.75), ("withdrawal_rate", 0.05)]
+        assert not _config_matches(config, constraints)
+
+
 class TestExtractEvaluationResults:
     def test_count_matches_plan_units(self) -> None:
-        plan = _make_research_plan(num_units=3)
+        plan = _make_research_plan([Decimal("0.60"), Decimal("0.75"), Decimal("0.61")])
         outcomes = [
             (True, Decimal("1000000"), 0.1),
             (False, Decimal("500000"), 0.5),
             (True, Decimal("1500000"), 0.2),
         ]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
-        assert len(evaluations) == 3
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
+        # Only units whose canonical key is in configs_by_key are included
+        # (0.61 is excluded); 0.60 and 0.75 are both present.
+        assert len(evaluations) == 2
 
     def test_success_metric_true(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(True, Decimal("1000000"), 0.1)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert evaluations[0].metrics["success_rate"] == Decimal("1")
 
     def test_success_metric_false(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(False, Decimal("500000"), 0.5)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert evaluations[0].metrics["success_rate"] == Decimal("0")
 
     def test_final_wealth_metric(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(True, Decimal("1234567"), 0.1)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert evaluations[0].metrics["final_wealth"] == Decimal("1234567")
 
     def test_max_drawdown_metric(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(True, Decimal("1000000"), 0.283)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert evaluations[0].metrics["max_drawdown"] == Decimal("0.283")
 
     def test_provenance_contains_cohort(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(True, Decimal("1000000"), 0.1)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert "cohort" in evaluations[0].provenance
         assert len(evaluations[0].provenance["cohort"]) == 1
 
     def test_provenance_contains_parameter_config(self) -> None:
-        plan = _make_research_plan(num_units=1)
+        plan = _make_research_plan([Decimal("0.75")])
         outcomes = [(True, Decimal("1000000"), 0.1)]
         result = _make_execution_result(plan, outcomes)
-        evaluations = _extract_evaluation_results("test_label", plan, result)
+        evaluations = _extract_evaluation_results(
+            "equity_allocation=0.75", plan, result, _configs_by_key()
+        )
         assert "parameter_config" in evaluations[0].provenance
         assert len(evaluations[0].provenance["parameter_config"]) == 1
 
@@ -434,16 +474,7 @@ class TestCompareCommandValidation:
         self,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        rc = main(
-            [
-                "compare",
-                "/tmp/nonexistent_study.yaml",
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", "/tmp/nonexistent_study.yaml"])
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
@@ -455,41 +486,29 @@ class TestCompareCommandValidation:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
         assert "Invalid YAML" in err
 
-    def test_only_one_strategy_exits_two(
+    def test_single_config_study_exits_two(
         self,
         tmp_path: Path,
+        mock_dataset: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-            ]
+        """A study without a parameter axis has a single configuration — not comparable."""
+        study_file = _write_yaml(
+            tmp_path / "study.yaml", _VALID_YAML_SINGLE_STRATEGY
         )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
-        assert "At least two strategies" in err
+        assert "At least two configurations" in err
 
-    def test_strategy_not_found_exits_two(
+    def test_filter_narrows_to_one_config_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -501,17 +520,15 @@ class TestCompareCommandValidation:
                 "compare",
                 str(study_file),
                 "--strategy",
-                "Nonexistent",
-                "--strategy",
-                "60/40",
+                "equity_allocation=0.75",
             ]
         )
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
-        assert "Nonexistent" in err
+        assert "At least two configurations" in err
 
-    def test_withdrawal_policy_not_found_exits_two(
+    def test_malformed_strategy_filter_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -523,57 +540,13 @@ class TestCompareCommandValidation:
                 "compare",
                 str(study_file),
                 "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-                "--withdrawal-policy",
-                "Nonexistent",
+                "equity_allocation",
             ]
         )
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
-        assert "Nonexistent" in err
-
-    def test_no_withdrawal_policies_in_yaml_exits_two(
-        self,
-        tmp_path: Path,
-        mock_dataset: None,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        yaml_no_withdrawal = """\
-metadata:
-  name: "Test"
-dataset:
-  identifier: "TEST_DATASET"
-cohorts:
-  type: "monthly_rolling"
-  window_years: 30
-allocation_policies:
-  - name: "75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
-parameters:
-  equity_allocation: [0.75]
-"""
-        study_file = _write_yaml(tmp_path / "study.yaml", yaml_no_withdrawal)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
-        assert rc == ExitCode.VALIDATION_ERROR
-        err = capsys.readouterr().err
-        assert "ERROR" in err
-        assert "No withdrawal policies" in err
+        assert "name=value" in err
 
     def test_non_numeric_capital_exits_two(
         self,
@@ -585,10 +558,6 @@ parameters:
             [
                 "compare",
                 str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
                 "--initial-capital",
                 "not_a_number",
             ]
@@ -609,10 +578,10 @@ parameters:
         assert "compare" in out.lower()
         assert "study_file" in out
         assert "--strategy" in out
-        assert "--withdrawal-policy" in out
         assert "--group-by" in out
         assert "--workers" in out
         assert "--initial-capital" in out
+        assert "--withdrawal-policy" not in out
 
     def test_command_registered(self) -> None:
         assert "compare" in COMMANDS
@@ -633,21 +602,12 @@ class TestCompareCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Strategy Comparison Complete" in out
-        assert "75/25" in out
-        assert "60/40" in out
+        assert "equity_allocation=0.75" in out
+        assert "equity_allocation=0.6" in out
         assert "Rank" in out
 
     def test_three_strategies(
@@ -660,22 +620,11 @@ class TestCompareCommandExecution:
         study_file = _write_yaml(
             tmp_path / "study.yaml", _VALID_YAML_THREE_STRATEGIES
         )
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-                "--strategy",
-                "50/50",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Strategy Comparison Complete" in out
-        assert "3 (75/25, 60/40, 50/50)" in out
+        assert "Strategies:          3 (generated parameter configurations)" in out
 
     def test_ranked_by_success_rate(
         self,
@@ -690,32 +639,29 @@ class TestCompareCommandExecution:
             outcomes = [(True, Decimal("1200000"), 0.283)] * len(plan.units)
             return _make_execution_result(plan, outcomes)
 
-        # We need strategy-specific results. Better approach: mock
-        # at a higher level by replacing _extract_evaluation_results
-        # to return pre-computed results per strategy.
         import cli.commands.compare_command as cc_mod
         import infrastructure.execution.parallel_executor as pe
 
         strategy_data: dict[str, list[tuple[bool, Decimal, float]]] = {
-            "75/25": [
+            "equity_allocation=0.75": [
                 (True, Decimal("1200000"), 0.283),
                 (True, Decimal("1300000"), 0.250),
             ],
-            "60/40": [
+            "equity_allocation=0.6": [
                 (True, Decimal("1100000"), 0.321),
                 (False, Decimal("800000"), 0.400),
             ],
         }
 
         def _mock_extract(
-            label: str, plan: ResearchPlan, result: ResearchExecutionResult
+            label: str,
+            plan: ResearchPlan,
+            result: ResearchExecutionResult,
+            configs_by_key: dict[str, Any],
         ) -> list[EvaluationResult]:
             data = strategy_data.get(label, [])
             evals = []
-            for i, (success, fw, dd) in enumerate(data):
-                unit = plan.units[i]
-                cohort_id = unit.cohort.id
-                assert cohort_id is not None
+            for success, fw, dd in data:
                 evals.append(
                     EvaluationResult(
                         label=label,
@@ -725,11 +671,8 @@ class TestCompareCommandExecution:
                             "max_drawdown": Decimal(str(dd)),
                         },
                         provenance={
-                            "cohort": [cohort_id],
-                            "parameter_config": [
-                                f"equity_allocation="
-                                f"{unit.parameter_config.values.get('equity_allocation', '0.75')}"
-                            ],
+                            "cohort": ["1871-01-01"],
+                            "parameter_config": [label],
                         },
                     )
                 )
@@ -739,24 +682,13 @@ class TestCompareCommandExecution:
         monkeypatch.setattr(pe, "sequential_execute", _mock_exec)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         # 75/25 has 100% success (2/2), 60/40 has 50% (1/2)
-        # 75/25 should be ranked 1st
+        # equity_allocation=0.75 should be ranked 1st
         rank_lines = [line for line in out.split("\n") if line.strip().startswith("1")]
-        assert any("75/25" in line for line in rank_lines)
-        rank2_lines = [line for line in out.split("\n") if "2 " in line and "Rank" not in line]
-        assert any("60/40" in line for line in rank2_lines)
+        assert any("equity_allocation=0.75" in line for line in rank_lines)
 
     def test_global_group_by_default(
         self,
@@ -766,16 +698,7 @@ class TestCompareCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Group: global" in out
@@ -793,10 +716,6 @@ class TestCompareCommandExecution:
             [
                 "compare",
                 str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
                 "--group-by",
                 "cohort",
             ]
@@ -813,16 +732,12 @@ class TestCompareCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(
-            tmp_path / "study.yaml", _VALID_YAML_PARAM_CONFIGS
+            tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES
         )
         rc = main(
             [
                 "compare",
                 str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
                 "--group-by",
                 "parameter_config",
             ]
@@ -843,10 +758,6 @@ class TestCompareCommandExecution:
             [
                 "compare",
                 str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
                 "--workers",
                 "4",
             ]
@@ -867,10 +778,6 @@ class TestCompareCommandExecution:
             [
                 "compare",
                 str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
                 "--initial-capital",
                 "500000",
             ]
@@ -879,123 +786,27 @@ class TestCompareCommandExecution:
         out = capsys.readouterr().out
         assert "Strategy Comparison Complete" in out
 
-    def test_custom_withdrawal_policy(
-        self,
-        tmp_path: Path,
-        mock_dataset: None,
-        mock_sequential_execute: None,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        yaml_multi_withdrawal = """\
-metadata:
-  name: "Test"
-dataset:
-  identifier: "TEST_DATASET"
-cohorts:
-  type: "monthly_rolling"
-  window_years: 30
-allocation_policies:
-  - name: "75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
-withdrawal_policies:
-  - name: "Fixed 3%"
-    type: "ConstantInflationAdjustedWithdrawalPolicy"
-    withdrawal_rate: 0.03
-  - name: "Fixed 4%"
-    type: "ConstantInflationAdjustedWithdrawalPolicy"
-    withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.75]
-"""
-        study_file = _write_yaml(tmp_path / "study.yaml", yaml_multi_withdrawal)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-                "--withdrawal-policy",
-                "Fixed 3%",
-            ]
-        )
-        assert rc == ExitCode.SUCCESS
-        out = capsys.readouterr().out
-        assert "Fixed 3%" in out
-
-    def test_single_strategy_failure_proceeds(
+    def test_execution_failure_exits_one(
         self,
         tmp_path: Path,
         mock_dataset: None,
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        call_count: dict[str, int] = {"count": 0}
-
-        def _mock_exec_with_failure(
-            plan: ResearchPlan, **kwargs: Any
-        ) -> ResearchExecutionResult:
-            call_count["count"] += 1
-            if call_count["count"] == 1:
-                raise RuntimeError("Strategy 75/25 failed")
-            outcomes = [(True, Decimal("1100000"), 0.321)] * len(plan.units)
-            return _make_execution_result(plan, outcomes)
-
-        import infrastructure.execution.parallel_executor as pe
-
-        monkeypatch.setattr(pe, "sequential_execute", _mock_exec_with_failure)
-
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
-        assert rc == ExitCode.ERROR
-        err = capsys.readouterr().err
-        assert "Strategy '75/25' failed" in err
-        assert "Fewer than 2 strategies completed" in err
-
-    def test_all_strategies_fail(
-        self,
-        tmp_path: Path,
-        mock_dataset: None,
-        capsys: pytest.CaptureFixture[str],
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        def _mock_exec_all_fail(
+        def _mock_exec_fail(
             plan: ResearchPlan, **kwargs: Any
         ) -> ResearchExecutionResult:
             raise RuntimeError("Execution failed")
 
         import infrastructure.execution.parallel_executor as pe
 
-        monkeypatch.setattr(pe, "sequential_execute", _mock_exec_all_fail)
+        monkeypatch.setattr(pe, "sequential_execute", _mock_exec_fail)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.ERROR
         err = capsys.readouterr().err
-        assert "Fewer than 2 strategies completed" in err
+        assert "Execution failed" in err
 
 
 # ===================================================================
@@ -1012,16 +823,7 @@ class TestStrategyComparatorIntegration:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Rank" in out
@@ -1037,16 +839,7 @@ class TestStrategyComparatorIntegration:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Rank" in out
@@ -1073,16 +866,7 @@ class TestCompareCommandPersistence:
         )
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         # Verify database was created
         assert Path(db_path).exists()
@@ -1101,16 +885,7 @@ class TestCompareCommandPersistence:
         )
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
-        rc = main(
-            [
-                "compare",
-                str(study_file),
-                "--strategy",
-                "75/25",
-                "--strategy",
-                "60/40",
-            ]
-        )
+        rc = main(["compare", str(study_file)])
         assert rc == ExitCode.SUCCESS
         err = capsys.readouterr().err
         assert "WARNING" in err or err == ""

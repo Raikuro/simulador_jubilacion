@@ -463,8 +463,8 @@ class TestConfigCliInteraction:
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
             "cohorts:\n  window_years: 1\n"
-            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )
@@ -625,8 +625,8 @@ class TestConfigPrecedenceAndIsolation:
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
             "cohorts:\n  window_years: 1\n"
-            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )
@@ -650,8 +650,8 @@ class TestConfigPrecedenceAndIsolation:
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
             "cohorts:\n  window_years: 1\n"
-            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )
@@ -674,8 +674,8 @@ class TestConfigPrecedenceAndIsolation:
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
             "cohorts:\n  window_years: 1\n"
-            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )
@@ -696,8 +696,8 @@ class TestConfigPrecedenceAndIsolation:
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
             "cohorts:\n  window_years: 1\n"
-            "allocation_policies:\n  - name: p\n    equity_ratio: 0.5\n"
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.5]\n",
             encoding="utf-8",
         )

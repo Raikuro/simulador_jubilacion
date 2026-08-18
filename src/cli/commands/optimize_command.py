@@ -2,6 +2,11 @@
 
 Contains the private _SWREvaluator that bridges the SWROptimizer protocol
 to the simulation execution engine, and the OptimizeCommand itself.
+
+The allocation policy comes from the normalized study configuration (a concrete
+``equity_allocation`` is required, from the base scalar or an unambiguous
+single-value parameter axis).  The optimizer owns the candidate withdrawal-rate
+values; the YAML ``withdrawal_policy.type`` supplies the policy mechanism.
 """
 
 from __future__ import annotations
@@ -9,30 +14,22 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from dataclasses import replace
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
 
 import yaml
 
-from cli.builders import (
-    build_cohort_specs,
-    build_parameter_configs,
-    build_research_plan,
-    load_yaml,
-    resolve_dataset,
-)
+from cli.builders import StudyConfiguration, build_study_plan, load_yaml
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
-from cli.policies import ConstantAllocationPolicy, ConstantWithdrawalPolicy
 from engine.domain.model.money import Currency, Money
-from engine.domain.policies.allocation_policy import AllocationPolicy
 from infrastructure.persistence.context import create_persistence_context
+from infrastructure.persistence.errors import RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
 )
-from research.domain.experiment.definition import ExperimentDefinition
 from research.optimization.swr_optimizer import (
     EvaluationOutcome,
     OptimizerOutcome,
@@ -56,39 +53,26 @@ def _format_duration(seconds: float) -> str:
     return f"{hours}h {minutes}m {secs}s"
 
 
-def _select_allocation_policy(
-    policies_data: list[dict[str, Any]], policy_name: str
-) -> AllocationPolicy:
-    for entry in policies_data:
-        if entry.get("name") == policy_name:
-            ratio = Decimal(str(entry.get("equity_ratio", "0.75")))
-            return ConstantAllocationPolicy(equity_allocation=ratio)
-    raise ValueError(f"Allocation policy '{policy_name}' not found in YAML")
-
-
 class _SWREvaluator:
     """Evaluator adapter: bridges SWROptimizer binary search to simulation execution.
 
     Implements the SWROptimizer.Evaluator protocol:
         evaluate(candidate: Decimal) -> EvaluationOutcome
+
+    Each candidate builds the study plan with the candidate as the withdrawal
+    base scalar; the allocation policy (and every other axis) is unchanged.
     """
 
     def __init__(
         self,
-        dataset: Any,
-        horizon_months: int,
-        cohorts: tuple[Any, ...],
-        param_configs: tuple[Any, ...],
-        allocation_policy: AllocationPolicy,
+        config: StudyConfiguration,
+        data_dir: str | None,
         capital: Money,
         target_success_rate: Decimal,
         workers: int,
     ) -> None:
-        self._dataset = dataset
-        self._horizon_months = horizon_months
-        self._cohorts = cohorts
-        self._param_configs = param_configs
-        self._allocation_policy = allocation_policy
+        self._config = config
+        self._data_dir = data_dir
         self._capital = capital
         self._target = target_success_rate
         self._workers = workers
@@ -97,26 +81,9 @@ class _SWREvaluator:
     def evaluate(self, candidate: Decimal) -> EvaluationOutcome:
         self._iteration += 1
 
-        withdrawal_policy = ConstantWithdrawalPolicy(withdrawal_rate=candidate)
-
-        experiment_def = ExperimentDefinition(
-            name="SWROptimization",
-            description=f"SWR optimization at candidate {candidate}",
-            dataset=self._dataset,
-            horizon_months=self._horizon_months,
-            initial_wealth=self._capital,
-            cohorts=self._cohorts,
-            allocation_policies=(self._allocation_policy,),
-            withdrawal_policies=(withdrawal_policy,),
-        )
-
-        plan = build_research_plan(
-            experiment_def,
-            self._cohorts,
-            self._param_configs,
-            self._allocation_policy,
-            withdrawal_policy,
-        )
+        candidate_config = replace(self._config, withdrawal_policy_scalar=candidate)
+        built = build_study_plan(candidate_config, self._data_dir, self._capital)
+        plan = built.plan
 
         if self._workers == 1:
             from infrastructure.execution.parallel_executor import sequential_execute
@@ -174,12 +141,6 @@ class OptimizeCommand(BaseCommand):
             help="Starting portfolio value in EUR",
         )
         parser.add_argument(
-            "--allocation-policy",
-            type=str,
-            required=True,
-            help="Name of the allocation policy to optimize (must match YAML policy name)",
-        )
-        parser.add_argument(
             "--workers",
             type=int,
             default=1,
@@ -229,8 +190,6 @@ class OptimizeCommand(BaseCommand):
             return ExitCode.VALIDATION_ERROR
 
         capital = Money(initial_capital, Currency.EUR)
-
-        policy_name = args.allocation_policy
         workers = max(args.workers, 1)
 
         # --- 1. Parse and validate YAML --------------------------------------
@@ -248,55 +207,54 @@ class OptimizeCommand(BaseCommand):
                 print(f"Line: {exc.problem_mark.line + 1}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        # --- 2. Extract metadata from YAML -----------------------------------
-        dataset_info: dict[str, Any] = data.get("dataset", {})
-        cohorts_info: dict[str, Any] = data.get("cohorts", {})
-        params_data: dict[str, Any] = data.get("parameters", {})
-        alloc_policies_data: list[Any] = data.get("allocation_policies", [])
-
-        dataset_id: str = dataset_info.get("identifier", "")
-
-        window_years = cohorts_info.get("window_years", 30)
-        if not isinstance(window_years, int) or window_years <= 0:
-            print("ERROR: window_years must be a positive integer", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-        horizon_months = window_years * 12
-
-        # --- 3. Resolve dataset ----------------------------------------------
+        # --- 2. Interpret the study configuration ----------------------------
         try:
-            dataset = resolve_dataset(dataset_id, context.data_dir)
-        except Exception as exc:
-            print(f"ERROR: Cannot resolve dataset: {exc}", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 4. Build cohorts ------------------------------------------------
-        try:
-            cohorts = build_cohort_specs(dataset, horizon_months)
+            study_config = StudyConfiguration.from_yaml(data)
         except (ValueError, TypeError) as exc:
-            print(f"ERROR: Cohort generation failed: {exc}", file=sys.stderr)
+            print(f"ERROR: Invalid study configuration: {exc}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        # --- 5. Build parameter configs --------------------------------------
+        # --- 3. Validate the single-configuration requirement ---------------
+        if "withdrawal_rate" in study_config.parameters:
+            print(
+                "ERROR: optimize requires no parameters.withdrawal_rate axis; "
+                "the optimizer owns the candidate withdrawal-rate values",
+                file=sys.stderr,
+            )
+            return ExitCode.VALIDATION_ERROR
+        for name, values in study_config.parameters.items():
+            if len(values) != 1:
+                print(
+                    f"ERROR: optimize requires a single configuration; parameter "
+                    f"axis {name!r} must have exactly one value",
+                    file=sys.stderr,
+                )
+                return ExitCode.VALIDATION_ERROR
+
+        allocation_scalar = study_config.allocation_policy_scalar
+        if allocation_scalar is None and "equity_allocation" in study_config.parameters:
+            (axis_value,) = study_config.parameters["equity_allocation"]
+            allocation_scalar = Decimal(str(axis_value))
+        if allocation_scalar is None:
+            print(
+                "ERROR: optimize requires a concrete equity allocation "
+                "(allocation_policy.equity_allocation or a single-value "
+                "parameters.equity_allocation)",
+                file=sys.stderr,
+            )
+            return ExitCode.VALIDATION_ERROR
+
+        # --- 4. Validate plan buildability (dataset + cohort feasibility) -----
         try:
-            param_configs = build_parameter_configs(params_data)
-        except (ValueError, TypeError) as exc:
-            print(f"ERROR: Invalid parameters: {exc}", file=sys.stderr)
+            build_study_plan(study_config, context.data_dir, capital)
+        except (ValueError, TypeError, RepositoryError) as exc:
+            print(f"ERROR: Cannot build study plan: {exc}", file=sys.stderr)
             return ExitCode.VALIDATION_ERROR
 
-        # --- 6. Select allocation policy -------------------------------------
-        try:
-            allocation_policy = _select_allocation_policy(alloc_policies_data, policy_name)
-        except ValueError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            return ExitCode.VALIDATION_ERROR
-
-        # --- 7. Build evaluator ----------------------------------------------
+        # --- 5. Build evaluator ----------------------------------------------
         evaluator = _SWREvaluator(
-            dataset=dataset,
-            horizon_months=horizon_months,
-            cohorts=cohorts,
-            param_configs=param_configs,
-            allocation_policy=allocation_policy,
+            config=study_config,
+            data_dir=context.data_dir,
             capital=capital,
             target_success_rate=Decimal(str(target_success_rate)),
             workers=workers,
@@ -307,14 +265,17 @@ class OptimizeCommand(BaseCommand):
         print("Optimization Started")
         print("=" * 50)
         print(f"Study: {study_path}")
-        print(f"Allocation Policy: {policy_name}")
+        print(
+            f"Allocation Policy: {study_config.allocation_policy_type} "
+            f"(equity_allocation={allocation_scalar})"
+        )
         print(f"Target Success Rate: {target_success_rate:.1%}")
         print(f"Capital: {capital.amount:,.0f} {capital.currency.value}")
         print(f"Workers: {workers}")
         print(f"Tolerance: {tolerance}")
         print()
 
-        # --- 8. Run optimizer ------------------------------------------------
+        # --- 5. Run optimizer ------------------------------------------------
         optimizer = SWROptimizer()
         start_time = time.perf_counter()
 
@@ -335,7 +296,7 @@ class OptimizeCommand(BaseCommand):
 
         elapsed = time.perf_counter() - start_time
 
-        # --- 9. Print summary ------------------------------------------------
+        # --- 6. Print summary ------------------------------------------------
         print("\u2501" * 47)
         print("Optimization Complete")
         print("\u2501" * 47)
@@ -352,16 +313,16 @@ class OptimizeCommand(BaseCommand):
             print("No withdrawal rate satisfies criteria")
             print(f"Diagnostic: {outcome.diagnostic}")
 
-        equity_ratio = getattr(allocation_policy, "equity_allocation", "N/A")
         print(
-            f"Policy:                    ConstantAllocationPolicy(equity_ratio={equity_ratio})"
+            f"Policy:                    {study_config.allocation_policy_type}"
+            f"(equity_allocation={allocation_scalar})"
         )
         print(f"Target Success Rate:       {target_success_rate:.1%}")
         print(f"Iterations Required:       {evaluator._iteration}")
         print(f"Execution Time:            {_format_duration(elapsed)}")
         print()
 
-        # --- 10. Persist results ---------------------------------------------
+        # --- 7. Persist results ----------------------------------------------
         if outcome.candidate_value is not None:
             try:
                 db_path = str(Path(_DEFAULT_DB_PATH).expanduser())
@@ -369,24 +330,19 @@ class OptimizeCommand(BaseCommand):
                 repo = SQLiteRepository(db_path)
                 persistence_context = create_persistence_context(context.data_dir)
 
-                name = data.get("metadata", {}).get("name", "SWROptimization")
-                version_val = data.get("metadata", {}).get("version", "1.0")
-                identity = ExperimentIdentity(name=name, revision=version_val)
+                identity = ExperimentIdentity(
+                    name=study_config.name,
+                    revision=study_config.version or "1.0",
+                )
 
-                # Build the experiment definition for the optimal run
-                optimal_withdrawal = ConstantWithdrawalPolicy(
-                    withdrawal_rate=outcome.candidate_value
+                optimal_config = replace(
+                    study_config, withdrawal_policy_scalar=outcome.candidate_value
                 )
-                optimal_experiment_def = ExperimentDefinition(
-                    name=name,
-                    description=f"Optimal SWR: {outcome.candidate_value}",
-                    dataset=dataset,
-                    horizon_months=horizon_months,
-                    initial_wealth=capital,
-                    cohorts=cohorts,
-                    allocation_policies=(allocation_policy,),
-                    withdrawal_policies=(optimal_withdrawal,),
+                optimal_built = build_study_plan(
+                    optimal_config, context.data_dir, capital
                 )
+                optimal_experiment_def = optimal_built.experiment_definition
+                optimal_plan = optimal_built.plan
 
                 experiment_id = repo.save_experiment(
                     identity, optimal_experiment_def, persistence_context
@@ -394,17 +350,8 @@ class OptimizeCommand(BaseCommand):
                 print(f"Study ID:                  {experiment_id}")
                 print()
 
-                # Build and persist optimal plan
-                optimal_plan = build_research_plan(
-                    optimal_experiment_def,
-                    cohorts,
-                    param_configs,
-                    allocation_policy,
-                    optimal_withdrawal,
-                )
                 plan_id = repo.save_plan(optimal_plan, experiment_id, persistence_context)
 
-                # Execute the optimal plan to get results
                 try:
                     if workers == 1:
                         from infrastructure.execution.parallel_executor import sequential_execute

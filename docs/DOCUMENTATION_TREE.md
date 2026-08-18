@@ -25,6 +25,7 @@
 | **P4_INTEGRATION_HANDOFF.md** | Final P4 integration handoff | 7 |
 | **PHASE3_CLOSURE_REPORT.md** | Phase 3 closure report | Historical |
 | **P4_11_REFERENCE_CHAINED_DEFAULT_DECISION.md** | Reference Chained promoted to default exact execution mode | Decision |
+| **V0_5_STUDY_CONFIG_MODEL_DECISION.md** | v0.5 study-configuration model workstream (COMPLETE / CLOSED) | Decision |
 
 ---
 
@@ -249,7 +250,9 @@ docs/
 │   ├── GOVERNANCE.md                  [Documentation governance]
 │   ├── SOURCE_OF_TRUTH.md             [Canonical sources]
 │   ├── P4_INTEGRATION_HANDOFF.md      [Final P4 integration handoff]
-│   └── PHASE3_CLOSURE_REPORT.md       [Phase 3 closure report]
+│   ├── PHASE3_CLOSURE_REPORT.md       [Phase 3 closure report]
+│   ├── P4_11_REFERENCE_CHAINED_DEFAULT_DECISION.md [P4.11 default-mode decision]
+│   └── V0_5_STUDY_CONFIG_MODEL_DECISION.md [v0.5 study-config model — COMPLETE / CLOSED]
 │
 ├── architecture/                      [21 files - Design decisions & APIs]
 │   ├── decisions/                     [2 files - Architecture Decision Records]

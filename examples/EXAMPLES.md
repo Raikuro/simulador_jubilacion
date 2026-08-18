@@ -50,13 +50,24 @@ sim-retire --data-dir examples/data run examples/studies/sweep_equity_allocation
 
 ### Example 3 — multi-policy comparison
 
-Defines three allocation policies (60/40, 75/25, 90/10) in a single study.
+Defines three allocation strategies (60/40, 75/25, 90/10) in a single study.
+Under the v0.5 model the three strategies are the study's generated parameter
+configurations, so `compare` treats each configuration as a comparison
+strategy.
 
 ```bash
 sim-retire --data-dir examples/data validate examples/studies/multi_policy.yaml
 
 sim-retire --data-dir examples/data run --dry-run examples/studies/multi_policy.yaml \
   --workers 2
+
+# Compare all three generated configurations side-by-side
+sim-retire --data-dir examples/data compare examples/studies/multi_policy.yaml
+
+# Compare only two specific configurations (AND-ed filters)
+sim-retire --data-dir examples/data compare \
+  --strategy equity_allocation=0.60 --strategy equity_allocation=0.90 \
+  examples/studies/multi_policy.yaml
 ```
 
 ### Using the example configuration

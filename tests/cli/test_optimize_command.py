@@ -67,13 +67,32 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
+"""
+
+_VALID_YAML_AXIS_ALLOCATION = """\
+metadata:
+  name: "Optimize Test Study"
+  version: "1.0"
+
+dataset:
+  identifier: "TEST_DATASET"
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
   withdrawal_rate: 0.04
 
 parameters:
@@ -139,14 +158,7 @@ class TestOptimizeCommandValidation:
         self,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        rc = main(
-            [
-                "optimize",
-                "/tmp/nonexistent_study.yaml",
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", "/tmp/nonexistent_study.yaml"])
         assert rc == ExitCode.VALIDATION_ERROR
         out = capsys.readouterr().err
         assert "ERROR" in out
@@ -158,48 +170,97 @@ class TestOptimizeCommandValidation:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "bad_syntax.yaml", "{invalid: yaml: [broken}")
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
         out = capsys.readouterr().err
         assert "ERROR" in out
         assert "Invalid YAML" in out
 
-    def test_allocation_policy_not_found_exits_two(
+    def test_withdrawal_rate_axis_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Nonexistent Policy",
-            ]
-        )
+        yaml_with_rate_axis = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST_DATASET"
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+parameters:
+  equity_allocation: [0.75]
+  withdrawal_rate: [0.03, 0.04]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_with_rate_axis)
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
-        assert "Nonexistent Policy" in err
+        assert "withdrawal_rate" in err
 
-    def test_missing_allocation_policy_arg_exits_two(
+    def test_multi_value_axis_exits_two(
         self,
         tmp_path: Path,
+        mock_dataset: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        with pytest.raises(SystemExit) as exc_info:
-            main(["optimize", str(study_file)])
-        assert exc_info.value.code == ExitCode.VALIDATION_ERROR
+        yaml_multi_axis = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST_DATASET"
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
+parameters:
+  equity_allocation: [0.50, 0.75]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_multi_axis)
+        rc = main(["optimize", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        err = capsys.readouterr().err
+        assert "ERROR" in err
+        assert "single configuration" in err
+
+    def test_missing_concrete_allocation_exits_two(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_no_alloc = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST_DATASET"
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: 0.04
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_no_alloc)
+        rc = main(["optimize", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        err = capsys.readouterr().err
+        assert "ERROR" in err
+        assert "equity_allocation" in err
 
     def test_target_success_rate_above_one_exits_two(
         self,
@@ -211,8 +272,6 @@ class TestOptimizeCommandValidation:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--target-success-rate",
                 "1.5",
             ]
@@ -232,8 +291,6 @@ class TestOptimizeCommandValidation:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--target-success-rate",
                 "-0.1",
             ]
@@ -253,8 +310,6 @@ class TestOptimizeCommandValidation:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--initial-capital",
                 "not_a_number",
             ]
@@ -274,8 +329,6 @@ class TestOptimizeCommandValidation:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--tolerance",
                 "not_a_number",
             ]
@@ -291,14 +344,7 @@ class TestOptimizeCommandValidation:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.VALIDATION_ERROR
         err = capsys.readouterr().err
         assert "ERROR" in err
@@ -314,11 +360,11 @@ class TestOptimizeCommandValidation:
         assert "optimize" in out.lower()
         assert "study_file" in out
         assert "--target-success-rate" in out
-        assert "--allocation-policy" in out
         assert "--initial-capital" in out
         assert "--workers" in out
         assert "--tolerance" in out
         assert "--output-dir" in out
+        assert "--allocation-policy" not in out
 
 
 class TestOptimizeCommandExecution:
@@ -330,14 +376,7 @@ class TestOptimizeCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Optimization Complete" in out
@@ -351,41 +390,26 @@ class TestOptimizeCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "Optimal Withdrawal Rate" in out
         assert "%" in out
 
-    def test_iteration_progress_printed(
+    def test_allocation_from_single_value_axis(
         self,
         tmp_path: Path,
         mock_dataset: None,
         mock_optimizer: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
+        study_file = _write_yaml(
+            tmp_path / "study.yaml", _VALID_YAML_AXIS_ALLOCATION
         )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
-        # The mock optimizer doesn't actually call evaluate, so we don't
-        # expect iteration output from the real evaluator.
-        # The mock returns directly.
-        assert "Optimization Complete" in out
+        assert "equity_allocation=0.75" in out
 
     def test_custom_target_success_rate(
         self,
@@ -399,8 +423,6 @@ class TestOptimizeCommandExecution:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--target-success-rate",
                 "0.99",
                 "--tolerance",
@@ -423,8 +445,6 @@ class TestOptimizeCommandExecution:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--initial-capital",
                 "500000",
             ]
@@ -445,8 +465,6 @@ class TestOptimizeCommandExecution:
             [
                 "optimize",
                 str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
                 "--workers",
                 "4",
             ]
@@ -482,14 +500,7 @@ class TestOptimizeCommandExecution:
         monkeypatch.setattr(SWROptimizer, "optimize", mock_optimize_no_candidate)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
         assert "No withdrawal rate satisfies criteria" in out
@@ -527,14 +538,7 @@ class TestOptimizeCommandPersistence:
         monkeypatch.setattr("cli.commands.optimize_command._DEFAULT_DB_PATH", db_path)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "optimize",
-                str(study_file),
-                "--allocation-policy",
-                "Static 75/25",
-            ]
-        )
+        rc = main(["optimize", str(study_file)])
         (out, err) = capsys.readouterr()
         assert rc == ExitCode.SUCCESS
         assert "Study ID:" in out or "experiment saved" in err

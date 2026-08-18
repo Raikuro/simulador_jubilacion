@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-08-08
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.7 Complete → P4.8 Current
+**Last Updated:** 2026-08-18
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.7 Complete → P4.8 Current | v0.5 Study Configuration Model Complete & Closed
 
 ---
 
@@ -21,6 +21,7 @@
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.5 (Documentation & Release Readiness) Complete** — Documentation consistency, release checklist, continuity document validation
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.6 (User Documentation) Complete** — CLI/CONFIG user guides plus runnable study examples
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.7 (Developer Documentation) Complete** — Workflow, extension, performance, debug, and migration guides under `docs/development/`
+- ✅ **v0.5 (Study Configuration Model) Complete & Closed** — Normalized `StudyConfiguration` boundary; uniform plan pipeline for run/validate/compare/optimize; ERN default leg byte-identical; 970 passed / 6 skipped
 
 **Immediate Next Task:** **P4.8** — Final Validation Review. Verified against `docs/RELEASE_CHECKLIST.md` and final architectural review.
 
@@ -292,6 +293,58 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 - Phase 4 readiness review
 
 ## Future Milestones
+
+### v0.5 — Study Configuration Model ✅ COMPLETE / CLOSED
+
+**Status:** ✅ **COMPLETE / CLOSED (2026-08-18).** The normalized
+`StudyConfiguration` interpretation layer and the uniform plan pipeline are
+live for `run` / `validate` / `compare` / `optimize`; the ERN full-grid default
+gate (new-format vs old-format byte-identical) passed; Phase E cleanup of the
+obsolete grid/family machinery is complete; the final architectural review was
+accepted. Canonical scope:
+`docs/continuity/V0_5_STUDY_CONFIG_MODEL_DECISION.md` (now marked CLOSED).
+**Purpose:** Unify and clarify the study YAML configuration model by
+distinguishing required canonical inputs from sweep parameters.
+
+**Final verification (2026-08-18):** `pytest tests/` = **970 passed, 6
+skipped** · `ruff check src tests tools` = clean · `mypy --strict src tests
+tools` = Success (201 files) · ERN = 313,020 units / 180 cells / 1,739 cohorts /
+78,255 chained families, default (Reference Chained) output byte-identical to
+the established v0.5 oracle · `src/engine/**` untouched · no compatibility
+layer · no unrelated Phase 5+ work.
+
+**Closed-out defect (2026-08-18):** a falsy base-scalar regression (explicit
+`0.0` base scalar silently replaced by the 0.75 / 0.04 defaults) was found in
+the final architectural review and fixed (`scalar or _DEFAULT` → explicit
+`is not None` fallback); covered by regression tests.
+
+**Scope (summary — decision record is authoritative):**
+- `dataset:` is the sole runtime dataset source; `dataset_family` is **not**
+  part of v0.5.
+- Singular base policies (`allocation_policy` / `withdrawal_policy`) with
+  `type` required; scalar optional when a parameter axis supplies it.
+- Universal per-unit override rule: a `parameters.*` axis matching a policy
+  scalar overrides it per unit, identically across normal studies, sweeps,
+  grids, multi-policy, and ERN.
+- `parameters` becomes optional (valid single-configuration study).
+- Grid-ness is a declared property, never inferred from `bool(datasets)` or
+  `horizon_years`; uniform `StudyConfiguration → parameter configs →
+  ResearchPlan → execution`; `is_grid_study` semantic split removed.
+- Policy key naming normalized across `run` / `validate` / `compare` /
+  `optimize` (`withdrawal_policy` singular).
+- **Clean breaking change — no backward compatibility:** the old plural/
+  fallback model (`datasets:`, `allocation_policies:`, misnamed withdrawal
+  keys) is removed, not aliased. No deprecation warnings or compatibility
+  shims. Examples, tests, docs, and consumers migrate in the same change.
+- `sweep_equity_allocation.yaml` and `multi_policy.yaml` are corrected to their
+  intended semantics (their currently-broken behaviour is not preserved).
+- No `src/engine/**` changes; the four ERN dataset files are retained.
+- Key acceptance criteria: ERN default vs new-format byte-identical; 313,020
+  units / 180 cells reproduced; `ern_grid_smoke.yaml` reproduced;
+  `basic_minimal.yaml` preserved; `sweep_equity_allocation.yaml` actually
+  sweeps its values; `multi_policy.yaml` actually produces intended configs;
+  `compare`/`optimize` use the normalized model. **All PASSED** (see decision
+  record).
 
 ### v0.5+ Community & Extension
 

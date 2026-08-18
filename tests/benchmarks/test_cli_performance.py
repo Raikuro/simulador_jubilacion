@@ -28,12 +28,11 @@ dataset:
 cohorts:
   type: "monthly_rolling"
   window_years: 1
-allocation_policies:
-  - name: "p"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]

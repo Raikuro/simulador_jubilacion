@@ -64,21 +64,38 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "Static 60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 
 parameters:
   equity_allocation: [0.50, 0.75]
-  glidepath_duration: [5, 10]
+  withdrawal_rate: [0.03, 0.04]
+"""
+
+_VALID_YAML_NO_PARAMETERS = """\
+metadata:
+  name: "Test Study"
+  version: "1.0"
+
+dataset:
+  identifier: "TEST_DATASET"
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
+
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: 0.04
 """
 
 _INVALID_YAML = """\
@@ -88,13 +105,12 @@ dataset:
   identifier: "TEST_DATASET"
 cohorts:
   window_years: 30
-allocation_policies:
-  - name: "policy_1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "UnsupportedWithdrawalPolicy"
   withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50, 0.75]
 """
 
 
@@ -194,7 +210,7 @@ class TestValidateCommand:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test that an unresolvable dataset identifier causes exit 2."""
-        study_file = _write_yaml(tmp_path / "study.yaml", _INVALID_YAML)
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
 
         def mock_resolve_fail(self: DefaultDatasetResolver, identifier: str) -> Dataset:
             from infrastructure.persistence.errors import StudyNotFoundError
@@ -237,10 +253,11 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: []   # empty list — invalid
@@ -251,31 +268,20 @@ parameters:
         out = capsys.readouterr().out
         assert "invalid" in out.lower() or "error" in out.lower()
 
-    def test_missing_parameters_exits_two(
+    def test_missing_parameters_yields_single_config(
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        yaml_content = """\
-metadata:
-  name: "Test"
-dataset:
-  identifier: "TEST"
-cohorts:
-  window_years: 30
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
-withdrawal_policy:
-  withdrawal_rate: 0.04
-parameters: {}
-"""
-        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        """A study without ``parameters`` is a single configuration per cohort."""
+        study_file = _write_yaml(
+            tmp_path / "study.yaml", _VALID_YAML_NO_PARAMETERS
+        )
         rc = main(["validate", str(study_file)])
-        assert rc == ExitCode.VALIDATION_ERROR
+        assert rc == ExitCode.SUCCESS
         out = capsys.readouterr().out
-        assert "invalid" in out.lower() or "error" in out.lower()
+        assert "Parameters: 1 valid" in out
 
     def test_invalid_policy_exits_two(
         self,
@@ -290,11 +296,41 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies: []   # empty — invalid
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        rc = main(["validate", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Validation: PASSED" in out
+
+    def test_missing_allocation_scalar_exits_two(
+        self,
+        tmp_path: Path,
+        mock_dataset_resolver: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_content = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST"
+cohorts:
+  window_years: 30
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: 0.04
+parameters:
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])
@@ -354,10 +390,11 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: -5
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
@@ -368,7 +405,7 @@ parameters:
         out = capsys.readouterr().out
         assert "invalid" in out.lower() or "error" in out.lower()
 
-    def test_allocation_policy_missing_name(
+    def test_unsupported_withdrawal_type_exits_two(
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
@@ -381,18 +418,20 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies:
-  - equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantInflationAdjustedWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])
-        assert rc == ExitCode.SUCCESS
+        assert rc == ExitCode.VALIDATION_ERROR
         out = capsys.readouterr().out
-        assert "Validation: PASSED" in out
+        assert "invalid" in out.lower() or "error" in out.lower()
 
 
 class TestValidateCommandWithRealDataset:

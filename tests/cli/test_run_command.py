@@ -67,21 +67,16 @@ cohorts:
   type: "monthly_rolling"
   window_years: 30
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
-  - name: "Static 60/40"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.60
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 
 parameters:
   equity_allocation: [0.50, 0.75]
-  glidepath_duration: [5, 10]
 """
 
 # Single-config, single-horizon study: exactly one unit per cohort, so every
@@ -96,12 +91,11 @@ dataset:
 cohorts:
   type: "monthly_rolling"
   window_years: 30
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
-  type: "ConstantInflationAdjustedWithdrawalPolicy"
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.75]
@@ -123,10 +117,9 @@ cohorts:
   type: "monthly_rolling"
   window_years: 4
 
-allocation_policies:
-  - name: "Static 75/25"
-    type: "ConstantAllocationPolicy"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
@@ -245,10 +238,11 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
@@ -306,10 +300,11 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
@@ -391,10 +386,11 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: -5
-allocation_policies:
-  - name: "p1"
-    equity_ratio: 0.75
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: 0.75
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]
@@ -417,8 +413,9 @@ dataset:
   identifier: "TEST"
 cohorts:
   window_years: 30
-allocation_policies: []
+allocation_policy: {}
 withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
   withdrawal_rate: 0.04
 parameters:
   equity_allocation: [0.50]

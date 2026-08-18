@@ -593,9 +593,9 @@ class TestWorkflowFailureHandling:
         study = tmp_path / "bad_horizon.yaml"
         study.write_text(
             'metadata:\n  name: "Bad Study"\ndataset:\n  identifier: "E2E_TEST_v1"\n'
-            "cohorts:\n  window_years: -5\nallocation_policies:\n"
-            '  - name: "p1"\n    equity_ratio: 0.75\n'
-            "withdrawal_policy:\n  withdrawal_rate: 0.04\n"
+            "cohorts:\n  window_years: -5\nallocation_policy:\n"
+            '  type: "ConstantAllocationPolicy"\n    equity_allocation: 0.75\n'
+            "withdrawal_policy:\n  type: \"ConstantWithdrawalPolicy\"\n  withdrawal_rate: 0.04\n"
             "parameters:\n  equity_allocation: [0.50]\n",
             encoding="utf-8",
         )
