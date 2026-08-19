@@ -462,10 +462,9 @@ class TestConfigCliInteraction:
         study.write_text(
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
-            "cohorts:\n  window_years: 1\n"
-            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
-            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.5]\n",
+            "cohorts:\n  horizon_years: [1]\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: [0.5]\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
@@ -624,10 +623,9 @@ class TestConfigPrecedenceAndIsolation:
         study.write_text(
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
-            "cohorts:\n  window_years: 1\n"
-            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
-            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.5]\n",
+            "cohorts:\n  horizon_years: [1]\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: [0.5]\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
@@ -649,10 +647,9 @@ class TestConfigPrecedenceAndIsolation:
         study.write_text(
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
-            "cohorts:\n  window_years: 1\n"
-            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
-            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.5]\n",
+            "cohorts:\n  horizon_years: [1]\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: [0.5]\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
@@ -673,10 +670,9 @@ class TestConfigPrecedenceAndIsolation:
         study.write_text(
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
-            "cohorts:\n  window_years: 1\n"
-            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
-            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.5]\n",
+            "cohorts:\n  horizon_years: [1]\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: [0.5]\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))
@@ -695,10 +691,9 @@ class TestConfigPrecedenceAndIsolation:
         study.write_text(
             "metadata:\n  name: T\n"
             "dataset:\n  identifier: v1\n"
-            "cohorts:\n  window_years: 1\n"
-            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: 0.5\n"
-            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.5]\n",
+            "cohorts:\n  horizon_years: [1]\n"
+            "allocation_policy:\n  type: ConstantAllocationPolicy\n  equity_allocation: [0.5]\n"
+            "withdrawal_policy:\n  type: ConstantWithdrawalPolicy\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(DefaultDatasetResolver, "resolve", lambda self, i: make_dataset(24))

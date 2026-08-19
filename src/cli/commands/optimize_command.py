@@ -4,9 +4,11 @@ Contains the private _SWREvaluator that bridges the SWROptimizer protocol
 to the simulation execution engine, and the OptimizeCommand itself.
 
 The allocation policy comes from the normalized study configuration (a concrete
-``equity_allocation`` is required, from the base scalar or an unambiguous
-single-value parameter axis).  The optimizer owns the candidate withdrawal-rate
-values; the YAML ``withdrawal_policy.type`` supplies the policy mechanism.
+``equity_allocation`` is required via the declared ``allocation_policy.equity_allocation``
+array).  The optimizer owns the candidate withdrawal-rate values; the YAML
+``withdrawal_policy.type`` supplies the policy mechanism.  The optimizer replaces
+the study's single-value ``withdrawal_policy.withdrawal_rate`` placeholder with each
+candidate; multi-value arrays are rejected.
 """
 
 from __future__ import annotations
@@ -60,7 +62,7 @@ class _SWREvaluator:
         evaluate(candidate: Decimal) -> EvaluationOutcome
 
     Each candidate builds the study plan with the candidate as the withdrawal
-    base scalar; the allocation policy (and every other axis) is unchanged.
+    rate; the allocation policy (and every other value) is unchanged.
     """
 
     def __init__(
@@ -81,7 +83,7 @@ class _SWREvaluator:
     def evaluate(self, candidate: Decimal) -> EvaluationOutcome:
         self._iteration += 1
 
-        candidate_config = replace(self._config, withdrawal_policy_scalar=candidate)
+        candidate_config = replace(self._config, withdrawal_policy_values=(candidate,))
         built = build_study_plan(candidate_config, self._data_dir, self._capital)
         plan = built.plan
 
@@ -215,34 +217,29 @@ class OptimizeCommand(BaseCommand):
             return ExitCode.VALIDATION_ERROR
 
         # --- 3. Validate the single-configuration requirement ---------------
-        if "withdrawal_rate" in study_config.parameters:
+        if len(study_config.withdrawal_policy_values) != 1:
             print(
-                "ERROR: optimize requires no parameters.withdrawal_rate axis; "
+                "ERROR: optimize requires a single-value withdrawal_policy.withdrawal_rate; "
                 "the optimizer owns the candidate withdrawal-rate values",
                 file=sys.stderr,
             )
             return ExitCode.VALIDATION_ERROR
-        for name, values in study_config.parameters.items():
-            if len(values) != 1:
-                print(
-                    f"ERROR: optimize requires a single configuration; parameter "
-                    f"axis {name!r} must have exactly one value",
-                    file=sys.stderr,
-                )
-                return ExitCode.VALIDATION_ERROR
-
-        allocation_scalar = study_config.allocation_policy_scalar
-        if allocation_scalar is None and "equity_allocation" in study_config.parameters:
-            (axis_value,) = study_config.parameters["equity_allocation"]
-            allocation_scalar = Decimal(str(axis_value))
-        if allocation_scalar is None:
+        if len(study_config.allocation_policy_values) != 1:
             print(
-                "ERROR: optimize requires a concrete equity allocation "
-                "(allocation_policy.equity_allocation or a single-value "
-                "parameters.equity_allocation)",
+                "ERROR: optimize requires a single configuration; "
+                "allocation_policy.equity_allocation must have exactly one value",
                 file=sys.stderr,
             )
             return ExitCode.VALIDATION_ERROR
+        if len(study_config.horizon_years) != 1:
+            print(
+                "ERROR: optimize requires a single configuration; "
+                "cohorts.horizon_years must have exactly one value",
+                file=sys.stderr,
+            )
+            return ExitCode.VALIDATION_ERROR
+
+        allocation_scalar = study_config.allocation_policy_values[0]
 
         # --- 4. Validate plan buildability (dataset + cohort feasibility) -----
         try:
@@ -336,7 +333,7 @@ class OptimizeCommand(BaseCommand):
                 )
 
                 optimal_config = replace(
-                    study_config, withdrawal_policy_scalar=outcome.candidate_value
+                    study_config, withdrawal_policy_values=(outcome.candidate_value,)
                 )
                 optimal_built = build_study_plan(
                     optimal_config, context.data_dir, capital

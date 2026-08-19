@@ -272,14 +272,12 @@ class CompareCommand(BaseCommand):
         if len(configs_by_key) < 2:
             print(
                 "ERROR: At least two configurations are required for comparison; "
-                "declare a parameter axis (or widen --strategy filters)",
+                "declare multi-value arrays (or widen --strategy filters)",
                 file=sys.stderr,
             )
             return ExitCode.VALIDATION_ERROR
 
-        withdrawal_rate_val = getattr(
-            built.base_withdrawal_policy, "withdrawal_rate", Decimal("0")
-        )
+        withdrawal_rate_val = study_config.withdrawal_policy_values[0]
         withdrawal_label = _withdrawal_policy_label(study_config.withdrawal_policy_type)
 
         print("\u2501" * 47)

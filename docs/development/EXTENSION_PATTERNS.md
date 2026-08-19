@@ -55,16 +55,17 @@ datasets are discovered automatically by
 The concrete policy types live in `src/cli/policies.py`
 (`ConstantAllocationPolicy`, `ConstantWithdrawalPolicy`,
 `FixedRealWithdrawalPolicy`). The normalized study configuration
-(`StudyConfiguration`) interprets the singular YAML base policies
-(`allocation_policy:` / `withdrawal_policy:`) and `build_study_plan` threads
-them into the research plan; all commands consume this single interpretation
-layer via `src/cli/builders.py`:
+(`StudyConfiguration`) interprets the YAML policy sections
+(`allocation_policy:` / `withdrawal_policy:`) — each declares a policy `type`
+and its value array — and `build_study_plan` threads them into the research
+plan; all commands consume this single interpretation layer via
+`src/cli/builders.py`:
 
-| Policy | YAML key | Builder option(s) | Implementation |
-|--------|----------|-------------------|----------------|
-| Constant allocation | `allocation_policy` | `equity_allocation` | `ConstantAllocationPolicy` |
-| Constant withdrawal | `withdrawal_policy` | `withdrawal_rate` | `ConstantWithdrawalPolicy` |
-| Fixed real withdrawal | `withdrawal_policy` | `withdrawal_rate` | `FixedRealWithdrawalPolicy` |
+| Policy | YAML key | Value array | Implementation |
+|--------|----------|-------------|----------------|
+| Constant allocation | `allocation_policy` | `equity_allocation: [...]` | `ConstantAllocationPolicy` |
+| Constant withdrawal | `withdrawal_policy` | `withdrawal_rate: [...]` | `ConstantWithdrawalPolicy` |
+| Fixed real withdrawal | `withdrawal_policy` | `withdrawal_rate: [...]` | `FixedRealWithdrawalPolicy` |
 
 To add a new policy type, keep the `src/cli/builders.py` convention: add a
 builder function without changing existing signatures, and pair the new type

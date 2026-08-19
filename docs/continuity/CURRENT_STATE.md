@@ -267,9 +267,9 @@ filesystem. See `docs/reports/P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md`.
 
 ## 3. Active Milestone
 
-### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.8 Complete | v0.5 Complete
+### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.8 Complete | v0.5 Complete | v0.6 Complete
 
-**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), P4.4 (Performance Benchmarks), P4.5 (Documentation & Release Readiness), P4.6 (User Documentation), P4.7 (Developer Documentation), and P4.8 (Final Validation Review) complete. v0.5 (Study Configuration Model) complete & closed.
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), P4.4 (Performance Benchmarks), P4.5 (Documentation & Release Readiness), P4.6 (User Documentation), P4.7 (Developer Documentation), and P4.8 (Final Validation Review) complete. v0.5 (Study Configuration Model) complete & closed. v0.6 (Study Configuration Cleanup) complete & closed.
 
 **Completed v0.4 Phases:**
 - ✅ **Phase 1 (Parallel Execution)** — Complete (commit `dda449a`)
@@ -352,6 +352,61 @@ the final architectural review and fixed (`scalar or _DEFAULT` → explicit
   sweeps its values; `multi_policy.yaml` actually produces intended configs;
   `compare`/`optimize` use the normalized model. **All PASSED** (see decision
   record).
+
+### v0.6 — Study Configuration Cleanup (values-only) ✅ COMPLETE / CLOSED
+
+**Status:** ✅ **COMPLETE / CLOSED (2026-08-19).** The v0.6 cleanup removed the
+generic `parameters` sweep section and the `cohorts.type` / `cohorts.window_years`
+fields. The three value-bearing fields — `allocation_policy.equity_allocation`,
+`withdrawal_policy.withdrawal_rate`, and `cohorts.horizon_years` — are now
+arrays owned directly by their sections, and their Cartesian product is the
+sole study configuration space. A final architectural consistency review passed
+clean (no obsolete v0.5 concepts in production code/tests/examples; no legacy
+fields in `StudyConfiguration`; single-value and multi-value share one
+materialization path; `compare --strategy` is a pure selector; `optimize`
+applies candidates through the new model; ERN ordering and per-cell layout
+preserved; `src/engine/**` untouched). Canonical scope:
+`docs/continuity/V0_6_STUDY_CONFIG_VALUES_ONLY_DECISION.md` (now marked CLOSED).
+
+**Purpose:** Eliminate the base-policy-scalar / parameter-axis duality: every
+value is a declared array, there are no implicit defaults, and no CLI option
+can create or override equity / withdrawal / horizon values. The study YAML is
+the sole source of study-definition parameters.
+
+**Final verification (2026-08-19):** `pytest tests/` = **974 passed, 4
+skipped** · `ruff check src tests tools` = clean · `mypy --strict src tests
+tools` = Success (199 files) · ERN full E2E = **2 passed** (180-cell oracle
+preserved: 313,020 units / 180 cells / 1,739 cohorts / 78,255 families) ·
+`src/engine/**` = untouched · Fast Path unchanged · Reference Chained sole
+reference strategy · persistence semantics unchanged.
+
+**Scope (summary — decision record is authoritative):**
+- `parameters` is removed completely — no compat parsing, aliases, or
+  transformation; old YAML is rejected with clear errors, not migrated.
+- Arrays only: a single-value configuration is written as a one-element array
+  (`equity_allocation: [0.75]`). Empty arrays are invalid.
+- The three arrays form one Cartesian product (rightmost axis varies fastest);
+  there is no base / fallback / override layer.
+- `allocation_policy.type` and `withdrawal_policy.type` remain required.
+- `cohorts.type` and `cohorts.window_years` are removed; cohorts are rolling
+  monthly windows generated from `cohorts.horizon_years`.
+- `dataset_family` is **not** introduced.
+- Optimize requires exactly one value in each array and owns the candidate
+  withdrawal rates (each candidate substitutes the declared single rate).
+- `--strategy` filters the declared configurations; it cannot inject values.
+- Falsy values survive (explicit `0.0` equity / low rates are preserved).
+- Reference Chained remains the sole reference strategy; `src/engine/**` is
+  untouched; ERN ordering and oracle are preserved.
+- **Clean breaking change — no backward compatibility.** The clean-break
+  values-only configuration model is now the **only supported study YAML
+  model**.
+
+**Out of scope (explicitly recorded, not started):**
+- v0.5+ Community & Extension (tax modeling, behavioral adaptation,
+  multi-currency, open-source release) — pending stakeholder approval.
+- App-configuration abstraction debt (`P4_INTEGRATION_HANDOFF.md`,
+  "Configuration abstraction in Infrastructure layer") — separate Phase 5+
+  workstream.
 
 ### v0.5+ Community & Extension
 
@@ -639,10 +694,13 @@ Before starting work each session:
 6. ✅ P4.6 User Documentation complete
 7. ✅ P4.7 Developer Documentation complete
 8. ✅ P4.8 Final Validation Review complete (closed 2026-08-09; re-validated after v0.5 closure 2026-08-18)
+9. ✅ v0.5 Study Configuration Model complete / closed (2026-08-18)
+10. ✅ v0.6 Study Configuration Cleanup complete / closed (2026-08-19) — clean-break
+    values-only model is the only supported study YAML model
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
+**Test Status:** 974 passing (244 CLI + 105 integration + benchmarks + domain + infrastructure + 8 dataset slice; 4 ERN E2E skipped pending env gate)
 **Blockers:** None  
-**Next Action:** None — v0.4 Phase 4 and v0.5 are complete. Awaiting direction on the next milestone.
+**Next Action:** None — v0.5 and v0.6 are complete and closed. Awaiting direction on the next milestone (v0.5+ Community & Extension remains out of scope).

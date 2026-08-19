@@ -20,15 +20,12 @@ dataset:
   identifier: "market_monthly"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.60, 0.75, 0.90]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.60, 0.75, 0.90]
+  withdrawal_rate: [0.04]

@@ -200,18 +200,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.60, 0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.60, 0.75]
+  withdrawal_rate: [0.04]
 """
 
 _VALID_YAML_THREE_STRATEGIES = """\
@@ -224,18 +221,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.50, 0.60, 0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.50, 0.60, 0.75]
+  withdrawal_rate: [0.04]
 """
 
 _VALID_YAML_SINGLE_STRATEGY = """\
@@ -247,16 +241,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
+  withdrawal_rate: [0.04]
 """
 
 
@@ -658,18 +651,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.60, 0.75]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.60, 0.75]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["compare", str(study_file)])
@@ -694,11 +684,11 @@ parameters:
         import infrastructure.execution.parallel_executor as pe
 
         strategy_data: dict[str, list[tuple[bool, Decimal, float]]] = {
-            "equity_allocation=0.75": [
+            "equity_allocation=0.75;horizon_years=30;withdrawal_rate=0.04": [
                 (True, Decimal("1200000"), 0.283),
                 (True, Decimal("1300000"), 0.250),
             ],
-            "equity_allocation=0.6": [
+            "equity_allocation=0.6;horizon_years=30;withdrawal_rate=0.04": [
                 (True, Decimal("1100000"), 0.321),
                 (False, Decimal("800000"), 0.400),
             ],

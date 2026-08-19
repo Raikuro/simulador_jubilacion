@@ -10,7 +10,7 @@ examples/
 │   └── market_monthly.json    # Synthetic monthly market dataset (1990-2024)
 ├── studies/
 │   ├── basic_minimal.yaml      # Example 1: minimal single-strategy study
-│   ├── sweep_equity_allocation.yaml  # Example 2: parameter sweep
+│   ├── sweep_equity_allocation.yaml  # Example 2: allocation value sweep
 │   └── multi_policy.yaml       # Example 3: multi-policy comparison
 └── scripts/
     └── generate_dataset.py     # Regenerates the synthetic dataset
@@ -36,7 +36,7 @@ sim-retire --data-dir examples/data run --dry-run examples/studies/basic_minimal
 sim-retire --data-dir examples/data run examples/studies/basic_minimal.yaml
 ```
 
-### Example 2 — parameter sweep
+### Example 2 — equity-allocation sweep
 
 Sweeps the equity allocation across `[0.50, 0.75, 0.90]`, generating a
 `3 × <cohorts>` combination of simulation units.
@@ -51,9 +51,8 @@ sim-retire --data-dir examples/data run examples/studies/sweep_equity_allocation
 ### Example 3 — multi-policy comparison
 
 Defines three allocation strategies (60/40, 75/25, 90/10) in a single study.
-Under the v0.5 model the three strategies are the study's generated parameter
-configurations, so `compare` treats each configuration as a comparison
-strategy.
+The three strategies are the study's generated parameter configurations, so
+`compare` treats each configuration as a comparison strategy.
 
 ```bash
 sim-retire --data-dir examples/data validate examples/studies/multi_policy.yaml

@@ -40,7 +40,7 @@ Validate a YAML experiment definition without executing it.
 sim-retire validate STUDY_FILE
 ```
 
-Checks the dataset, cohorts, parameter sweep, policies, and resulting plan.
+Checks the dataset, cohorts, parameter configurations, policies, and resulting plan.
 Exits `0` on success, `2` on any validation failure.
 
 ```bash
@@ -178,12 +178,11 @@ Get the `STUDY_ID` from `sim-retire list`.
 
 Finds the maximum sustainable withdrawal rate for a study's allocation policy.
 
-The study must declare a **single configuration**: no `parameters.withdrawal_rate`
-axis (the optimizer owns the candidate withdrawal rates) and every other axis
-must have exactly one value. The concrete `equity_allocation` comes from
-`allocation_policy.equity_allocation` or an unambiguous single-value
-`parameters.equity_allocation` axis. `withdrawal_policy.type` supplies the
-policy mechanism.
+The study must declare a **single configuration**: `withdrawal_policy.withdrawal_rate`
+must have exactly one value (the optimizer owns the candidate withdrawal rates),
+and `allocation_policy.equity_allocation` and `cohorts.horizon_years` must each
+have exactly one value. `withdrawal_policy.type` supplies the policy mechanism;
+each candidate is substituted for the declared single withdrawal rate.
 
 ```bash
 sim-retire optimize [--target-success-rate RATE] \
@@ -215,10 +214,12 @@ sim-retire compare [--strategy name=value ...] \
 ```
 
 - `--strategy name=value` is optional and repeatable; each one is a filter
-  (AND-ed) that selects a subset of configurations. Without it every generated
-  configuration is compared.
-- A study whose `parameters` declare multiple values on an axis yields multiple
-  strategies. Fewer than two selected configurations is a validation error.
+  (AND-ed) that selects a subset of configurations already declared in the YAML.
+  Without it every generated configuration is compared.
+- A study whose value arrays declare multiple values yields multiple strategies
+  (the Cartesian product of `allocation_policy.equity_allocation`,
+  `withdrawal_policy.withdrawal_rate`, and `cohorts.horizon_years`). Fewer than
+  two selected configurations is a validation error.
 - The withdrawal policy comes from the normalized study configuration; there is
   no policy-name selection.
 
@@ -245,38 +246,40 @@ sim-retire config validate
 
 ## Study file format
 
-A study is a YAML document with six top-level sections:
+A study is a YAML document with five top-level sections. The study YAML is the
+sole source of study-definition parameters: there are no CLI options that set,
+override, or filter-in equity allocation, withdrawal rate, or horizon values.
 
 ```yaml
 metadata:            # Optional descriptive fields (name, version, description)
 dataset:
   identifier: "market_monthly"   # Matches the stem of a data/<name>.json
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:          # Optional; omitted = single configuration per cohort
-  equity_allocation: [0.50, 0.75, 0.90]
+  withdrawal_rate: [0.04]
 ```
 
 - `dataset.identifier` selects the dataset file; the loader matches the
   identifier to `data/<identifier>.json` under the active data directory.
-- `allocation_policy` / `withdrawal_policy` are singular base policies; `type`
-  is required. Supported withdrawal types are `FixedRealWithdrawalPolicy` and
+- `allocation_policy` / `withdrawal_policy` declare the policy `type` and its
+  value array. Supported withdrawal types are `FixedRealWithdrawalPolicy` and
   `ConstantWithdrawalPolicy`.
-- A base scalar is optional when the matching parameter axis supplies it per
-  unit (`equity_allocation`, `withdrawal_rate`).
-- `cohorts.window_years` defines the length of each rolling window. The
-  default horizon in months is `window_years * 12`.
-- `parameters` defines each sweep axis; all combinations are executed. A
-  `horizon_years` axis selects the per-unit horizon (a prefix slice of the
-  canonical dataset). With no `parameters` section the study is a single
-  configuration per cohort using the base policy scalars.
+- Every value-bearing field is an array — even a single value is written as
+  `[0.75]`. The study configuration space is the Cartesian product of
+  `allocation_policy.equity_allocation`, `withdrawal_policy.withdrawal_rate`,
+  and `cohorts.horizon_years`; every generated configuration carries all three
+  values.
+- `cohorts.horizon_years` defines the per-configuration horizons in years (each
+  is a prefix slice of the canonical dataset). Cohorts are generated as rolling
+  monthly windows against the longest declared horizon.
+- Value arrays must be non-empty; there are no implicit defaults, and the
+  legacy `parameters` section, `cohorts.window_years`, and `cohorts.type` are
+  rejected.
 
 See [CONFIG_REFERENCE.md](CONFIG_REFERENCE.md) for the configuration file and
 [EXAMPLES.md](../../examples/EXAMPLES.md) for ready-to-run studies.

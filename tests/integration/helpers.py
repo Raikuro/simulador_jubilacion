@@ -241,19 +241,15 @@ dataset:
   identifier: "{dataset_id}"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: {window_years}
+  horizon_years: [{horizon_years}]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: {equity_ratio}
+  equity_allocation: [{equity_values}]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: {withdrawal_rate}
-
-parameters:
-  equity_allocation: [{equity_values}]
+  withdrawal_rate: [{withdrawal_rate}]
 """
 
 
@@ -263,8 +259,7 @@ def create_study_yaml(
     version: str = "1.0",
     description: str = "Study for integration testing",
     dataset_id: str = "INTEGRATION_TEST_v1",
-    window_years: int = 30,
-    equity_ratio: float = 0.75,
+    horizon_years: int = 30,
     withdrawal_rate: float = 0.04,
     equity_values: str = "0.50",
 ) -> Path:
@@ -273,8 +268,7 @@ def create_study_yaml(
         version=version,
         description=description,
         dataset_id=dataset_id,
-        window_years=window_years,
-        equity_ratio=equity_ratio,
+        horizon_years=horizon_years,
         withdrawal_rate=withdrawal_rate,
         equity_values=equity_values,
     )

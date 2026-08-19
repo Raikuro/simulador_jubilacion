@@ -45,7 +45,6 @@ def _format_cohort_summary(cohorts: tuple[Any, ...]) -> list[str]:
     end = max(c.start_date for c in cohorts)
     return [
         f"   Range: {start.isoformat()} to {end.isoformat()}",
-        "   Type: monthly_rolling",
     ]
 
 

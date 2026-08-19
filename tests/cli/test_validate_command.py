@@ -61,23 +61,18 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50, 0.75]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.50, 0.75]
   withdrawal_rate: [0.03, 0.04]
 """
 
-_VALID_YAML_NO_PARAMETERS = """\
+_VALID_YAML_SINGLE_CONFIG = """\
 metadata:
   name: "Test Study"
   version: "1.0"
@@ -86,31 +81,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-"""
-
-_INVALID_YAML = """\
-metadata:
-  name: "Test"
-dataset:
-  identifier: "TEST_DATASET"
-cohorts:
-  window_years: 30
-allocation_policy:
-  type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
-withdrawal_policy:
-  type: "UnsupportedWithdrawalPolicy"
-  withdrawal_rate: 0.04
+  withdrawal_rate: [0.04]
 """
 
 
@@ -252,15 +231,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: []   # empty array — invalid
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: []   # empty list — invalid
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])
@@ -268,15 +245,15 @@ parameters:
         out = capsys.readouterr().out
         assert "invalid" in out.lower() or "error" in out.lower()
 
-    def test_missing_parameters_yields_single_config(
+    def test_single_value_arrays_yield_single_config(
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        """A study without ``parameters`` is a single configuration per cohort."""
+        """A study with one-element arrays is a single configuration per cohort."""
         study_file = _write_yaml(
-            tmp_path / "study.yaml", _VALID_YAML_NO_PARAMETERS
+            tmp_path / "study.yaml", _VALID_YAML_SINGLE_CONFIG
         )
         rc = main(["validate", str(study_file)])
         assert rc == ExitCode.SUCCESS
@@ -295,15 +272,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])
@@ -311,7 +286,7 @@ parameters:
         out = capsys.readouterr().out
         assert "Validation: PASSED" in out
 
-    def test_missing_allocation_scalar_exits_two(
+    def test_missing_allocation_array_exits_two(
         self,
         tmp_path: Path,
         mock_dataset_resolver: None,
@@ -323,13 +298,11 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
   withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
@@ -377,6 +350,84 @@ parameters:
 
 
 class TestValidateCommandEdgeCases:
+    def test_old_model_parameters_section_exits_two(
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_content = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST"
+cohorts:
+  horizon_years: [30]
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: [0.50]
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: [0.04]
+parameters:
+  equity_allocation: [0.75]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        rc = main(["validate", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "parameters is no longer supported" in out
+
+    def test_old_model_cohorts_type_exits_two(
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_content = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST"
+cohorts:
+  type: "monthly_rolling"
+  horizon_years: [30]
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: [0.50]
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: [0.04]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        rc = main(["validate", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "cohorts.type is no longer supported" in out
+
+    def test_old_model_window_years_exits_two(
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_content = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST"
+cohorts:
+  window_years: 30
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: [0.50]
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: [0.04]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        rc = main(["validate", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        out = capsys.readouterr().out
+        assert "window_years is no longer supported" in out
+
     def test_horizon_negative_exits_two(
         self,
         tmp_path: Path,
@@ -389,15 +440,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: -5
+  horizon_years: [-5]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])
@@ -417,15 +466,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantInflationAdjustedWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["validate", str(study_file)])

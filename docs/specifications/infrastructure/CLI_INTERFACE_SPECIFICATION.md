@@ -243,25 +243,24 @@ sim-retire validate STUDY_FILE
 #### Example Output
 
 ```
-Validating: studies/part19.yaml
+Validating: studies/ern_grid.yaml
 
 ✅ ExperimentDefinition: valid
-   Name: Part 19 Equity Glidepaths
+   Name: ERN SWR Grid
    Version: 1.0
-   Dataset: ACWI_EUR_2024
+   Dataset: ern_swr_h720
 
-✅ Cohorts: 144 valid
-   Range: 1871-01-01 to 2024-12-31
-   Type: monthly_rolling
+✅ Cohorts: 1739 valid
+   Range: 1871-02-01 to 2015-12-01
    
-✅ Parameters: 12 valid
-   equity_allocation: 0% to 100% (step 10%)
-   glidepath_duration: 5 to 30 years (step 5)
+✅ Parameters: 180 valid
+   equity_allocation: 0.0 to 1.0 (5 values)
+   horizon_years: 30 to 60 (4 values)
+   withdrawal_rate: 0.03 to 0.05 (9 values)
 
-✅ Policies: 12 distinct allocation policies
-✅ Policies: 1 withdrawal policy
+✅ Policies: 1 allocation policy x 1 withdrawal policy
 
-✅ Plan: 1,728 unique simulation units
+✅ Plan: 313,020 unique simulation units
 
 Validation: PASSED
 ```
@@ -342,10 +341,10 @@ sim-retire optimize [OPTIONS] STUDY_FILE
 | `--tolerance` | Decimal | 0.001 | Withdrawal rate precision |
 | `--output-dir` | Path | `./results/` | Output directory |
 
-The study's `allocation_policy` supplies the concrete equity allocation (from
-`allocation_policy.equity_allocation` or an unambiguous single-value
-`parameters.equity_allocation` axis). The optimizer owns the candidate
-withdrawal rates; `parameters.withdrawal_rate` is forbidden.
+The study must declare a **single configuration**: `allocation_policy.equity_allocation`,
+`withdrawal_policy.withdrawal_rate`, and `cohorts.horizon_years` must each have
+exactly one value. The optimizer owns the candidate withdrawal rates; it
+substitutes each candidate for the declared single `withdrawal_policy.withdrawal_rate`.
 
 #### Behavior
 
@@ -631,29 +630,25 @@ Examples:
 ### 7.1 Experiment Definition (YAML)
 
 ```yaml
-# studies/part19.yaml
+# studies/ern_grid.yaml
 metadata:
-  name: "SWR Part 19: Equity Glidepaths"
+  name: "ERN SWR Grid"
   version: "1.0"
-  description: "Equity glidepath strategies with monthly rebalancing"
+  description: "SWR grid: 5 weights x 9 rates x 4 horizons"
 
 dataset:
-  identifier: "ACWI_EUR_2024"
+  identifier: "ern_swr_h720"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30, 40, 50, 60]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [1.0, 0.75, 0.5, 0.25, 0.0]
 
 withdrawal_policy:
-  type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.50, 0.75, 0.90]
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: [0.03, 0.0325, 0.035, 0.0375, 0.04, 0.0425, 0.045, 0.0475, 0.05]
 ```
 
 ---

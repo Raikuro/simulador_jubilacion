@@ -64,19 +64,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50, 0.75]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.50, 0.75]
+  withdrawal_rate: [0.04]
 """
 
 # Single-config, single-horizon study: exactly one unit per cohort, so every
@@ -90,16 +86,13 @@ metadata:
 dataset:
   identifier: "TEST_DATASET"
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.75]
+  withdrawal_rate: [0.04]
 """
 
 # Multi-horizon grid study: every cohort carries two horizons whose datasets
@@ -115,19 +108,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 4
+  horizon_years: [3, 4]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  horizon_years: [3, 4]
+  withdrawal_rate: [0.04]
 """
 
 
@@ -238,15 +227,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["run", str(study_file)])
@@ -283,6 +270,9 @@ parameters:
         assert "study_file" in out
         assert "--dry-run" in out
         assert "--workers" in out
+        assert "--equity-allocation" not in out
+        assert "--withdrawal-rate" not in out
+        assert "--horizon-years" not in out
 
     def test_command_registered(self) -> None:
         assert "run" in COMMANDS
@@ -300,15 +290,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["run", "--dry-run", str(study_file)])
@@ -386,15 +374,13 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: -5
+  horizon_years: [-5]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.50]
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["run", str(study_file)])
@@ -413,13 +399,11 @@ metadata:
 dataset:
   identifier: "TEST"
 cohorts:
-  window_years: 30
+  horizon_years: [30]
 allocation_policy: {}
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
         rc = main(["run", str(study_file)])

@@ -49,7 +49,7 @@ from .helpers import (
 
 _E2E_ASSET = AssetClass(id="acwi", name="ACWI", description="Global equities")
 _E2E_DATASET_ID = "E2E_TEST_v1"
-_E2E_WINDOW_YEARS = 1
+_E2E_HORIZON_YEARS = 1
 _E2E_DATASET_MONTHS = 15
 _E2E_STUDY_NAME = "E2E Workflow Test"
 
@@ -83,7 +83,7 @@ def _e2e_study_yaml(path: Path, **overrides: Any) -> Path:
         path,
         name=_E2E_STUDY_NAME,
         dataset_id=_E2E_DATASET_ID,
-        window_years=_E2E_WINDOW_YEARS,
+        horizon_years=_E2E_HORIZON_YEARS,
         **overrides,
     )
 
@@ -593,10 +593,9 @@ class TestWorkflowFailureHandling:
         study = tmp_path / "bad_horizon.yaml"
         study.write_text(
             'metadata:\n  name: "Bad Study"\ndataset:\n  identifier: "E2E_TEST_v1"\n'
-            "cohorts:\n  window_years: -5\nallocation_policy:\n"
-            '  type: "ConstantAllocationPolicy"\n    equity_allocation: 0.75\n'
-            "withdrawal_policy:\n  type: \"ConstantWithdrawalPolicy\"\n  withdrawal_rate: 0.04\n"
-            "parameters:\n  equity_allocation: [0.50]\n",
+            "cohorts:\n  horizon_years: [-5]\nallocation_policy:\n"
+            '  type: "ConstantAllocationPolicy"\n    equity_allocation: [0.75]\n'
+            "withdrawal_policy:\n  type: \"ConstantWithdrawalPolicy\"\n  withdrawal_rate: [0.04]\n",
             encoding="utf-8",
         )
         rc = main(["validate", str(study)])

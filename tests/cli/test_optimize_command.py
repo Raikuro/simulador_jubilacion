@@ -64,19 +64,18 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
+  withdrawal_rate: [0.04]
 """
 
-_VALID_YAML_AXIS_ALLOCATION = """\
+_VALID_YAML_SINGLE_VALUE_ALLOCATION = """\
 metadata:
   name: "Optimize Test Study"
   version: "1.0"
@@ -85,18 +84,15 @@ dataset:
   identifier: "TEST_DATASET"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
-
-parameters:
-  equity_allocation: [0.75]
+  withdrawal_rate: [0.04]
 """
 
 
@@ -176,7 +172,7 @@ class TestOptimizeCommandValidation:
         assert "ERROR" in out
         assert "Invalid YAML" in out
 
-    def test_withdrawal_rate_axis_exits_two(
+    def test_multi_value_withdrawal_rate_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -188,15 +184,12 @@ metadata:
 dataset:
   identifier: "TEST_DATASET"
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-parameters:
-  equity_allocation: [0.75]
   withdrawal_rate: [0.03, 0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_with_rate_axis)
@@ -206,7 +199,7 @@ parameters:
         assert "ERROR" in err
         assert "withdrawal_rate" in err
 
-    def test_multi_value_axis_exits_two(
+    def test_multi_value_allocation_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -218,15 +211,13 @@ metadata:
 dataset:
   identifier: "TEST_DATASET"
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
+  equity_allocation: [0.50, 0.75]
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
-parameters:
-  equity_allocation: [0.50, 0.75]
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_multi_axis)
         rc = main(["optimize", str(study_file)])
@@ -235,7 +226,34 @@ parameters:
         assert "ERROR" in err
         assert "single configuration" in err
 
-    def test_missing_concrete_allocation_exits_two(
+    def test_multi_value_horizon_exits_two(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        yaml_multi_horizon = """\
+metadata:
+  name: "Test"
+dataset:
+  identifier: "TEST_DATASET"
+cohorts:
+  horizon_years: [30, 60]
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+  equity_allocation: [0.75]
+withdrawal_policy:
+  type: "FixedRealWithdrawalPolicy"
+  withdrawal_rate: [0.04]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_multi_horizon)
+        rc = main(["optimize", str(study_file)])
+        assert rc == ExitCode.VALIDATION_ERROR
+        err = capsys.readouterr().err
+        assert "ERROR" in err
+        assert "horizon_years" in err
+
+    def test_missing_allocation_array_exits_two(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -247,13 +265,12 @@ metadata:
 dataset:
   identifier: "TEST_DATASET"
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 allocation_policy:
   type: "ConstantAllocationPolicy"
 withdrawal_policy:
   type: "FixedRealWithdrawalPolicy"
-  withdrawal_rate: 0.04
+  withdrawal_rate: [0.04]
 """
         study_file = _write_yaml(tmp_path / "study.yaml", yaml_no_alloc)
         rc = main(["optimize", str(study_file)])
@@ -365,6 +382,9 @@ withdrawal_policy:
         assert "--tolerance" in out
         assert "--output-dir" in out
         assert "--allocation-policy" not in out
+        assert "--withdrawal-rate" not in out
+        assert "--equity-allocation" not in out
+        assert "--horizon-years" not in out
 
 
 class TestOptimizeCommandExecution:
@@ -396,7 +416,7 @@ class TestOptimizeCommandExecution:
         assert "Optimal Withdrawal Rate" in out
         assert "%" in out
 
-    def test_allocation_from_single_value_axis(
+    def test_allocation_from_single_value_array(
         self,
         tmp_path: Path,
         mock_dataset: None,
@@ -404,7 +424,7 @@ class TestOptimizeCommandExecution:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         study_file = _write_yaml(
-            tmp_path / "study.yaml", _VALID_YAML_AXIS_ALLOCATION
+            tmp_path / "study.yaml", _VALID_YAML_SINGLE_VALUE_ALLOCATION
         )
         rc = main(["optimize", str(study_file)])
         assert rc == ExitCode.SUCCESS

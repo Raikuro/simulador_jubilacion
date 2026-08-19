@@ -1,7 +1,7 @@
 # Example 1: Minimal study — a single fixed allocation and withdrawal rate.
 #
-# No ``parameters`` section: the study is a single configuration per cohort
-# using the base policy scalars and the study window (30 years) as the horizon.
+# Each value-bearing field is a one-element array: the study is a single
+# configuration per cohort with a 30-year horizon.
 #
 # Run:
 #   sim-retire --data-dir examples/data validate examples/studies/basic_minimal.yaml
@@ -17,13 +17,12 @@ dataset:
   identifier: "market_monthly"
 
 cohorts:
-  type: "monthly_rolling"
-  window_years: 30
+  horizon_years: [30]
 
 allocation_policy:
   type: "ConstantAllocationPolicy"
-  equity_allocation: 0.75
+  equity_allocation: [0.75]
 
 withdrawal_policy:
   type: "ConstantWithdrawalPolicy"
-  withdrawal_rate: 0.04
+  withdrawal_rate: [0.04]

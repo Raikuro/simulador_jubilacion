@@ -53,10 +53,10 @@ on connection open.
 ## 4. CLI and study definition debugging
 
 - **`sim-retire run --dry-run`** prints the plan summary (cohorts, parameter
-  sweep, policies, total units, estimated time) and exits — the fastest
-  sanity check before a full run.
-- **`sim-retire validate <study>`** checks dataset, cohorts, parameter sweep,
-  policies, and the resulting plan without executing.
+  configurations, policies, total units, estimated time) and exits — the
+  fastest sanity check before a full run.
+- **`sim-retire validate <study>`** checks dataset, cohorts, parameter
+  configurations, policies, and the resulting plan without executing.
 - If `run` fails with a validation error, fix the study YAML, not the engine —
   the layered architecture surfaces the failure at the earliest boundary.
 

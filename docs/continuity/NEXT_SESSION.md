@@ -1,7 +1,7 @@
 # NEXT_SESSION.md - Session Initialization Guide
 
-**Previous Session:** 2026-08-08 (P4.6 User Documentation — CLI/CONFIG guides + runnable examples)
-**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.8 complete. P4.6 (user docs) complete. P4.7 (developer docs) complete. P4.8 complete (closed 2026-08-09; re-validated 2026-08-18). v0.5 Study Configuration Model complete & closed. Typing Quality Initiative WP1-WP3 complete.
+**Previous Session:** 2026-08-19 (v0.6 Study Configuration Cleanup — COMPLETE / CLOSED)
+**Current Status:** `v0.4` Phase 3 complete and frozen. Phase 4 P4.1-P4.8 complete. P4.6 (user docs) complete. P4.7 (developer docs) complete. P4.8 complete (closed 2026-08-09; re-validated 2026-08-18). v0.5 Study Configuration Model complete & closed. v0.6 Study Configuration Cleanup complete & closed — the clean-break values-only configuration model is the only supported study YAML model. Typing Quality Initiative WP1-WP3 complete.
 - P3.1-P3.10 (CLI Interface) ✅ Frozen
 - P4.1 (Integration Test Framework) ✅ Complete
 - P4.2 (E2E Workflow Tests) ✅ Complete
@@ -123,5 +123,11 @@ P4.8 deliverables (verified):
 - Final governance and documentation validation — ✅ complete
 
 **After P4.8:** Architectural review submitted and accepted; v0.5 Study
-Configuration Model complete & closed. Awaiting direction on the next
-milestone.
+Configuration Model complete & closed; v0.6 Study Configuration Cleanup
+complete & closed (2026-08-19) after a clean final architectural consistency
+review. Final gates: pytest 974 passed / 4 skipped · ruff clean · mypy
+--strict clean (199 files) · ERN full E2E 2 passed (180-cell oracle) ·
+`src/engine/**` untouched · Fast Path unchanged. The clean-break values-only
+configuration model is the only supported study YAML model. Awaiting direction
+on the next milestone (v0.5+ Community & Extension remains out of scope). Do
+not commit until instructed.
