@@ -25,7 +25,7 @@ from cli.commands.base import BaseCommand, ExecutionContext
 from cli.error_handling import ExitCode
 from engine.domain.model.money import Currency, Money
 from infrastructure.persistence.context import create_persistence_context
-from infrastructure.persistence.errors import RepositoryError
+from infrastructure.persistence.errors import DuplicateStudyError, RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
@@ -369,6 +369,12 @@ class OptimizeCommand(BaseCommand):
                         file=sys.stderr,
                     )
 
+            except DuplicateStudyError:
+                print(
+                    "NOTE: Experiment already exists with this name/revision; "
+                    "optimal results were not persisted (existing study retained).",
+                    file=sys.stderr,
+                )
             except Exception as exc:
                 print(
                     f"WARNING: Persistence failed (optimization completed): {exc}",

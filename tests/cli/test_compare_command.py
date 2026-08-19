@@ -626,6 +626,57 @@ class TestCompareCommandExecution:
         assert "Strategy Comparison Complete" in out
         assert "Strategies:          3 (generated parameter configurations)" in out
 
+    def test_header_reflects_configured_withdrawal_policy_type(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        mock_sequential_execute: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The comparison header names the configured policy, not a hardcoded label."""
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML_TWO_STRATEGIES)
+        rc = main(["compare", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Withdrawal Policy:   Fixed Real 4%" in out
+
+    def test_header_reflects_constant_withdrawal_policy_type(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        mock_sequential_execute: None,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """ConstantWithdrawalPolicy is labelled ``Constant``, not ``Fixed``."""
+        yaml_content = """\
+metadata:
+  name: "Compare Test Study"
+  version: "1.0"
+  description: "A test study for comparison"
+
+dataset:
+  identifier: "TEST_DATASET"
+
+cohorts:
+  type: "monthly_rolling"
+  window_years: 30
+
+allocation_policy:
+  type: "ConstantAllocationPolicy"
+
+withdrawal_policy:
+  type: "ConstantWithdrawalPolicy"
+  withdrawal_rate: 0.04
+
+parameters:
+  equity_allocation: [0.60, 0.75]
+"""
+        study_file = _write_yaml(tmp_path / "study.yaml", yaml_content)
+        rc = main(["compare", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        out = capsys.readouterr().out
+        assert "Withdrawal Policy:   Constant 4%" in out
+
     def test_ranked_by_success_rate(
         self,
         tmp_path: Path,

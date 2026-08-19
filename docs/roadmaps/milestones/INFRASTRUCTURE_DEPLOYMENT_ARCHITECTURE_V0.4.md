@@ -919,8 +919,8 @@ v0.4 is complete when:
 ## 14. Related Documents
 
 **Frozen Baseline:**
-- [CURRENT_STATE.md](../continuity/CURRENT_STATE.md) — v0.1–v0.3 status
-- [PROJECT_CONTEXT.md](../continuity/PROJECT_CONTEXT.md) — Long-term vision
+- [CURRENT_STATE.md](../../continuity/CURRENT_STATE.md) — v0.1–v0.3 status
+- [PROJECT_CONTEXT.md](../../continuity/PROJECT_CONTEXT.md) — Long-term vision
 - [RESEARCH_LAYER_FINAL_ROADMAP.md](./RESEARCH_LAYER_FINAL_ROADMAP.md) — v0.2–v0.3 architecture
 
 **Behavioral Specifications (Frozen):**

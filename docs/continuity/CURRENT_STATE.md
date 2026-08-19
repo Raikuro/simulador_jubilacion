@@ -3,7 +3,7 @@
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
 **Last Updated:** 2026-08-18
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.7 Complete → P4.8 Current | v0.5 Study Configuration Model Complete & Closed
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.8 Complete | v0.5 Study Configuration Model Complete & Closed
 
 ---
 
@@ -23,7 +23,7 @@
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.7 (Developer Documentation) Complete** — Workflow, extension, performance, debug, and migration guides under `docs/development/`
 - ✅ **v0.5 (Study Configuration Model) Complete & Closed** — Normalized `StudyConfiguration` boundary; uniform plan pipeline for run/validate/compare/optimize; ERN default leg byte-identical; 970 passed / 6 skipped
 
-**Immediate Next Task:** **P4.8** — Final Validation Review. Verified against `docs/RELEASE_CHECKLIST.md` and final architectural review.
+**Immediate Next Task:** None outstanding — v0.4 Phase 4 complete (P4.8 Final Validation Review closed 2026-08-09, re-validated 2026-08-18) and v0.5 Study Configuration Model complete & closed.
 
 ## Typing Quality Initiative (WP1-WP3) ✅ COMPLETE
 
@@ -126,8 +126,15 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 - `DEBUGGING_GUIDE.md` — SQLite, dataset, and CLI troubleshooting
 - `MIGRATION_GUIDE.md` — schema, dataset, and config migration
 
-### P4.8 Final Validation Review ⬜ Future
+### P4.8 Final Validation Review ✅ COMPLETE
 **Package:** Release readiness verification and final architectural review.
+
+P4.8 closed 2026-08-09 (`a138d70`) with corrections applied (F-1 frozen-boundary
+audit, F-2 documentation tree synchronization, F-3 stale metric corrections).
+Re-validated 2026-08-18 after the v0.5 Study Configuration Model closure:
+970 passed / 6 skipped, ruff clean, mypy --strict clean (201 files),
+`src/engine/**` untouched, documentation tree re-synchronized with the
+filesystem. See `docs/reports/P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md`.
 
 ---
 
@@ -260,9 +267,9 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 
 ## 3. Active Milestone
 
-### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.7 Complete | P4.8 Current
+### v0.4 Infrastructure & Deployment ✅ Phase 3 Complete | Phase 4 P4.1-P4.8 Complete | v0.5 Complete
 
-**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), P4.4 (Performance Benchmarks), P4.5 (Documentation & Release Readiness), P4.6 (User Documentation), and P4.7 (Developer Documentation) complete. P4.8 (Final Validation Review) is current.
+**Status:** Architecture approved and frozen. Phase 1 (Parallel Execution), Phase 2 (SQLite Persistence), and Phase 3 (CLI Interface P3.1-P3.10) all complete and frozen. Phase 4 packages P4.1 (Integration Framework), P4.2 (E2E Workflow Tests), P4.3 (Configuration Integration Tests), P4.4 (Performance Benchmarks), P4.5 (Documentation & Release Readiness), P4.6 (User Documentation), P4.7 (Developer Documentation), and P4.8 (Final Validation Review) complete. v0.5 (Study Configuration Model) complete & closed.
 
 **Completed v0.4 Phases:**
 - ✅ **Phase 1 (Parallel Execution)** — Complete (commit `dda449a`)
@@ -275,7 +282,7 @@ Cross-cutting `mypy --strict` hardening initiative, independent of the v0.4 mile
 - ✅ **Phase 4 P4.5 (Documentation & Release Readiness)** — Complete
 - ✅ **Phase 4 P4.6 (User Documentation)** — Complete
 - ✅ **Phase 4 P4.7 (Developer Documentation)** — Complete
-- ⬜ **Phase 4 P4.8 (Final Validation Review)** — Future
+- ✅ **Phase 4 P4.8 (Final Validation Review)** — Complete (closed 2026-08-09, re-validated 2026-08-18)
 
 ---
 
@@ -631,11 +638,11 @@ Before starting work each session:
 5. ✅ P4.5 Documentation & Release Readiness complete
 6. ✅ P4.6 User Documentation complete
 7. ✅ P4.7 Developer Documentation complete
-8. ⬜ Phase 4 readiness review (P4.8)
+8. ✅ P4.8 Final Validation Review complete (closed 2026-08-09; re-validated after v0.5 closure 2026-08-18)
 
 ---
 
 **Document Status:** Complete & Accurate  
 **Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
 **Blockers:** None  
-**Next Action:** Complete P4.8 Final Validation Review
+**Next Action:** None — v0.4 Phase 4 and v0.5 are complete. Awaiting direction on the next milestone.

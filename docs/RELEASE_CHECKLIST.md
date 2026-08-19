@@ -2,7 +2,7 @@
 
 **Document Type:** Release Readiness Artefact  
 **Status:** Active  
-**Last Updated:** 2026-07-29  
+**Last Updated:** 2026-08-18  
 **Maintainer:** Implementation Engineer
 
 ---
@@ -37,7 +37,7 @@
 
 ## 4. Test Suite
 
-- [x] Total: **808 tests passing** (verified 2026-08-09)
+- [x] Total: **970 tests passing, 6 skipped** (verified 2026-08-18)
 
 ## 5. Type Checking
 
@@ -80,15 +80,18 @@
 The following packages contain approved corrections recorded in
 [ADR-002](architecture/decisions/ADR-002-retroactive-real-engine-approval.md).
 These are necessary bug fixes and authorized extensions, not unauthorized
-modifications.
+modifications. Additionally, the approved v0.5 Study Configuration Model
+workstream (closed 2026-08-18) intentionally modified `src/cli/`,
+`src/research/domain/plan.py`, and `src/infrastructure/execution/reference_chaining.py`
+(docstring only) as a documented clean breaking change.
 
-- [x] `src/engine/` — approved corrections: deterministic rebalance residual normalization (3c4c59e), `derive_allocation` + month-0 bootstrap (57a87a5)
-- [x] `src/research/` — approved state (reconciled by ADR-002): `materialize_research_plan` / multi-cohort dataset extension (553074c) plus in-process-worker pickling correction (57a87a5)
+- [x] `src/engine/` — approved corrections: deterministic rebalance residual normalization (3c4c59e), `derive_allocation` + month-0 bootstrap (57a87a5); untouched by v0.5
+- [x] `src/research/` — approved state (reconciled by ADR-002) plus v0.5 unified `materialize_research_plan` (plan.py)
 - [x] `src/research/optimization/` — unmodified
-- [x] `src/cli/commands/` — approved corrections: real engine execution (57a87a5), config precedence (dd022b1), multi-cohort validation (553074c)
-- [x] `src/cli/builders.py` — approved: multi-cohort builder extensions (553074c)
+- [x] `src/cli/commands/` — approved corrections (57a87a5, dd022b1, 553074c) plus v0.5 normalized configuration model
+- [x] `src/cli/builders.py` — v0.5 `StudyConfiguration` / `build_study_plan` (clean break)
 - [x] `src/cli/main.py` — unmodified
-- [x] `src/infrastructure/execution/` — approved correction: in-process worker execution (57a87a5)
+- [x] `src/infrastructure/execution/` — approved correction (57a87a5); reference_chaining.py docstring-only in v0.5
 - [x] `src/infrastructure/persistence/` — approved: dataset identity persistence (553074c)
 
 No unapproved modifications remain. The frozen-package boundary audit is

@@ -80,8 +80,9 @@ parameters:
 """
 
 # Single-config, single-horizon study: exactly one unit per cohort, so every
-# chaining family is a singleton and ``derived_results == 0``.  The default
-# execution gate therefore keeps it on the independent Reference dispatch.
+# chaining family is a singleton and ``derived_results == 0``.  Reference
+# Chained still evaluates such plans through the canonical engine, exactly as
+# before.
 _VALID_SINGLE_UNIT_YAML = """\
 metadata:
   name: "Test Single Unit Study"
@@ -484,11 +485,10 @@ class TestExecutionModeSelection:
     """The CLI selects an exact execution mode explicitly and rejects
     incompatible combinations rather than silently picking one.
 
-    Default (no flag) = Reference Chained for plans that actually benefit from
-    horizon chaining (``derived_results > 0``); single-horizon / non-chainable
-    plans degrade to the independent Reference dispatch.  ``--reference-chained``
-    stays an explicit force; ``--reference-independent`` requests the canonical
-    oracle; ``--fast-path`` stays a separate opt-in."""
+    Reference Chained is the sole reference execution strategy: the default
+    (no flag) and ``--reference-chained`` both route through the chained
+    Reference executor for every plan, chainable or not.  ``--fast-path`` is a
+    separate opt-in."""
 
     def _capture(
         self, monkeypatch: pytest.MonkeyPatch, capture: dict[str, object], parallel: bool
@@ -529,7 +529,7 @@ class TestExecutionModeSelection:
         patching the executor module's attribute does not intercept the slice
         dispatch.  Patch the module-local name instead.
         """
-        import infrastructure.execution.reference_chaining as rc
+        import infrastructure.execution.reference_chaining as rchain
 
         def fake_slice_parallel(
             plan: ResearchPlan,
@@ -541,24 +541,28 @@ class TestExecutionModeSelection:
             capture["workers"] = max_workers
             return _make_fake_executor_result(plan, **kwargs)
 
-        monkeypatch.setattr(rc, "parallel_execute", fake_slice_parallel)
+        monkeypatch.setattr(rchain, "parallel_execute", fake_slice_parallel)
 
-    def test_default_single_horizon_plan_uses_independent_reference(
+    def test_default_single_horizon_plan_uses_chained_executor(
         self,
         tmp_path: Path,
         mock_dataset: None,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """A single-config, single-horizon plan without any flag stays on the
-        independent Reference dispatch: no horizon family would chain
-        (``derived_results == 0``), so chained grouping/slicing overhead is
-        never paid."""
+        """A single-config, single-horizon plan without any flag routes through
+        the chained Reference executor: Reference Chained is the sole reference
+        strategy, so non-chainable plans run through the same dispatch (each
+        unit evaluated through the canonical engine inside the executor)."""
+        from infrastructure.execution.reference_chaining import (
+            ChainedReferenceSimulationExecutor,
+        )
+
         capture: dict[str, object] = {}
-        self._capture(monkeypatch, capture, parallel=False)
+        self._capture_chained(monkeypatch, capture)
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_SINGLE_UNIT_YAML)
         rc = main(["run", "--no-persist", str(study_file)])
         assert rc == ExitCode.SUCCESS
-        assert capture["executor"] is None
+        assert isinstance(capture["executor"], ChainedReferenceSimulationExecutor)
 
     def test_default_chainable_grid_uses_chained_executor(
         self,
@@ -578,43 +582,6 @@ class TestExecutionModeSelection:
         rc = main(["run", "--no-persist", str(study_file)])
         assert rc == ExitCode.SUCCESS
         assert isinstance(capture["executor"], ChainedReferenceSimulationExecutor)
-
-    def test_reference_independent_uses_independent_executor(
-        self,
-        tmp_path: Path,
-        mock_dataset: None,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """--reference-independent forces the independent Reference even for a
-        chainable grid, making the canonical oracle explicitly selectable."""
-        capture: dict[str, object] = {}
-        self._capture(monkeypatch, capture, parallel=False)
-        study_file = _write_yaml(tmp_path / "grid.yaml", _VALID_GRID_YAML)
-        rc = main(["run", "--reference-independent", "--no-persist", str(study_file)])
-        assert rc == ExitCode.SUCCESS
-        assert capture["executor"] is None
-
-    def test_reference_chained_conflicts_with_reference_independent(
-        self,
-        tmp_path: Path,
-        mock_dataset: None,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        """Reference-chained + reference-independent is rejected explicitly."""
-        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
-        rc = main(
-            [
-                "run",
-                "--reference-chained",
-                "--reference-independent",
-                "--no-persist",
-                str(study_file),
-            ]
-        )
-        assert rc == ExitCode.VALIDATION_ERROR
-        out = capsys.readouterr().out
-        assert "--reference-chained" in out
-        assert "--reference-independent" in out
 
     def test_reference_chained_uses_chained_executor(
         self,
@@ -702,9 +669,9 @@ class TestExecutionModeSelection:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         """The completion summary reports reference-chained chaining counts."""
-        import infrastructure.execution.parallel_executor as pe
+        import infrastructure.execution.reference_chaining as rchain
 
-        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+        monkeypatch.setattr(rchain, "parallel_execute", _make_fake_executor_result)
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--reference-chained", "--no-persist", str(study_file)])
         assert rc == ExitCode.SUCCESS
@@ -824,11 +791,11 @@ class TestPersistenceControls:
     ) -> None:
         import unittest.mock
 
-        import infrastructure.execution.parallel_executor as pe
+        import infrastructure.execution.reference_chaining as rchain
 
         repo_cls = unittest.mock.Mock()
         monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
-        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+        monkeypatch.setattr(rchain, "parallel_execute", _make_fake_executor_result)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", "--no-persist", "--summary-only", str(study_file)])
@@ -846,7 +813,7 @@ class TestPersistenceControls:
     ) -> None:
         import unittest.mock
 
-        import infrastructure.execution.parallel_executor as pe
+        import infrastructure.execution.reference_chaining as rchain
 
         repo_cls = unittest.mock.Mock()
         repo = unittest.mock.Mock()
@@ -855,7 +822,7 @@ class TestPersistenceControls:
         repo.save_execution_result.return_value = "res-1"
         repo_cls.return_value = repo
         monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
-        monkeypatch.setattr(pe, "sequential_execute", _make_fake_executor_result)
+        monkeypatch.setattr(rchain, "parallel_execute", _make_fake_executor_result)
 
         study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
         rc = main(["run", str(study_file)])
@@ -864,6 +831,37 @@ class TestPersistenceControls:
         repo.save_experiment.assert_called_once()
         repo.save_plan.assert_called_once()
         repo.save_execution_result.assert_called_once()
+
+    def test_duplicate_study_emits_note_not_persistence_warning(
+        self,
+        tmp_path: Path,
+        mock_dataset: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """A re-run that already exists reports a NOTE, not a misleading
+        ``Persistence failed`` warning, and still exits SUCCESS."""
+        import unittest.mock
+
+        import infrastructure.execution.reference_chaining as rchain
+        from infrastructure.persistence.errors import DuplicateStudyError
+
+        repo = unittest.mock.Mock()
+        repo.save_experiment.side_effect = DuplicateStudyError(
+            "Experiment already exists with name 'X' and revision '1.0'"
+        )
+        repo_cls = unittest.mock.Mock(return_value=repo)
+        monkeypatch.setattr("cli.commands.run_command.SQLiteRepository", repo_cls)
+        monkeypatch.setattr(rchain, "parallel_execute", _make_fake_executor_result)
+
+        study_file = _write_yaml(tmp_path / "study.yaml", _VALID_YAML)
+        rc = main(["run", str(study_file)])
+        assert rc == ExitCode.SUCCESS
+        captured = capsys.readouterr()
+        assert "WARNING: Persistence failed" not in captured.out + captured.err
+        assert "Experiment already exists with this name/revision" in (
+            captured.out + captured.err
+        )
 
     def test_progress_display_silent_on_non_tty(self) -> None:
         import io

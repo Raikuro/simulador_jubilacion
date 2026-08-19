@@ -32,7 +32,7 @@ from engine.domain.optimizer.types import (
     StrategyComparisonReport,
 )
 from infrastructure.persistence.context import create_persistence_context
-from infrastructure.persistence.errors import RepositoryError
+from infrastructure.persistence.errors import DuplicateStudyError, RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
@@ -45,6 +45,14 @@ _DEFAULT_DB_PATH = "~/.sim-retire/studies.db"
 
 def _canonical_param_key(config: Any) -> str:
     return ";".join(f"{name}={value}" for name, value in config.items())
+
+
+def _withdrawal_policy_label(policy_type: str) -> str:
+    """Human-readable withdrawal-policy label for the comparison header."""
+    return {
+        "ConstantWithdrawalPolicy": "Constant",
+        "FixedRealWithdrawalPolicy": "Fixed Real",
+    }.get(policy_type, policy_type)
 
 
 def _parse_strategy_filter(value: str) -> tuple[str, Any]:
@@ -272,13 +280,14 @@ class CompareCommand(BaseCommand):
         withdrawal_rate_val = getattr(
             built.base_withdrawal_policy, "withdrawal_rate", Decimal("0")
         )
+        withdrawal_label = _withdrawal_policy_label(study_config.withdrawal_policy_type)
 
         print("\u2501" * 47)
         print("Strategy Comparison Complete")
         print("\u2501" * 47)
         print(f"Study:               {study_path}")
         print(f"Strategies:          {len(configs_by_key)} (generated parameter configurations)")
-        print(f"Withdrawal Policy:   Fixed {float(withdrawal_rate_val) * 100:.0f}%")
+        print(f"Withdrawal Policy:   {withdrawal_label} {float(withdrawal_rate_val) * 100:.0f}%")
         print(f"Group By:            {args.group_by}")
         print(f"Workers:             {workers}")
         print()
@@ -323,6 +332,12 @@ class CompareCommand(BaseCommand):
             experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
             plan_id = repo.save_plan(plan, experiment_id, persistence_context)
             repo.save_execution_result(plan_id, result, persistence_context, elapsed)
+        except DuplicateStudyError:
+            print(
+                "NOTE: Experiment already exists with this name/revision; "
+                "results were not persisted (existing study retained).",
+                file=sys.stderr,
+            )
         except Exception as exc:
             print(
                 f"WARNING: Persistence failed (execution completed): {exc}",

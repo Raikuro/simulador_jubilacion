@@ -2,8 +2,8 @@
 
 **Document Type:** Operational Status  
 **Status:** Active (Updated at milestone boundaries)  
-**Last Updated:** 2026-08-08
-**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.7 Complete → P4.8 Current
+**Last Updated:** 2026-08-18
+**Milestone:** v0.3 Complete | v0.4 Phase 3 P3.1-P3.10 Frozen | Phase 4 P4.1-P4.8 Complete | v0.5 Study Configuration Model Complete & Closed
 
 ---
 
@@ -21,9 +21,10 @@
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.5 Complete** — Documentation & Release Readiness
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.6 Complete** — User Documentation & Examples
 - ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.7 Complete** — Developer Documentation
-- ⬜ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.8 Current** — Final Validation Review
+- ✅ **v0.4 (Infrastructure & Deployment) — Phase 4 P4.8 Complete** — Final Validation Review (closed 2026-08-09; re-validated 2026-08-18 after v0.5 closure)
+- ✅ **v0.5 (Study Configuration Model) Complete & Closed**
 
-**Immediate Next Task:** Complete P4.8 Final Validation Review. See `NEXT_SESSION.md` for details.
+**Immediate Next Task:** None — v0.4 Phase 4 and v0.5 are complete.
 
 ---
 
@@ -71,7 +72,7 @@
 3. ✅ **Phase 3:** CLI interface — P3.1-P3.10 Complete (165 CLI tests)
 4. ✅ **Phase 4 P4.1-P4.4:** Integration framework, E2E tests, config tests, benchmarks
 5. ✅ **Phase 4 P4.5-P4.7:** Documentation, user guides, developer guides — Complete
-6. ⬜ **Phase 4 P4.8:** Final Validation Review — Current
+6. ✅ **Phase 4 P4.8:** Final Validation Review — Complete
 
 
 ---
@@ -143,7 +144,7 @@ Every implementation must:
 
 ### Current Blockers
 
-**NONE** — Phase 3 P3.1-P3.10 frozen. Phase 4 P4.1-P4.7 complete. P4.8 current.
+**NONE** — Phase 3 P3.1-P3.10 frozen. Phase 4 P4.1-P4.8 complete. v0.5 complete & closed.
 
 All dependencies are in place:
 - v0.1 Execution Engine ✅ Available
@@ -264,11 +265,11 @@ Before starting work each session:
 3. ✅ Phase 3 P3.1-P3.10 complete and frozen
 4. ✅ Phase 4 P4.1-P4.4 complete
 5. ✅ P4.5-P4.7 complete (Documentation & Release, User Docs, Developer Docs)
-6. ⬜ P4.8 Final Validation Review
+6. ✅ P4.8 Final Validation Review complete
 
 ---
 
 **Document Status:** Complete & Accurate  
-**Test Status:** 808 passing (168 CLI + 102 infrastructure + 369 domain + 135 integration + 26 benchmarks + 8 dataset slice)
+**Test Status:** 970 passing (6 skipped; includes 2 v0.5 base-scalar regression tests)  
 **Blockers:** None  
-**Next Action:** Complete P4.8 Final Validation Review
+**Next Action:** None — v0.4 Phase 4 and v0.5 complete

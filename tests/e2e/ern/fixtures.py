@@ -92,7 +92,6 @@ def run_grid_study(
     timeout: int = 3600,
     fast_path: bool = False,
     reference_chained: bool = False,
-    reference_independent: bool = False,
 ) -> tuple[CliResult, dict[tuple[float, float, int], PerCellStats]]:
     """Run one grid study through the public CLI and return its per-cell lines.
 
@@ -100,14 +99,13 @@ def run_grid_study(
     (no study database, no per-month timeline materialization).  The per-cell
     statistics come exclusively from the CLI's observable stdout.
 
-    ``fast_path``, ``reference_chained`` and ``reference_independent`` select
-    the corresponding execution modes; at most one may be set.  With none set,
-    the run uses the public default (Reference Chained for plans that benefit
-    from horizon chaining, which the ERN grid is).
+    ``fast_path`` and ``reference_chained`` select the corresponding execution
+    modes; with neither set, the run uses the public default (Reference Chained,
+    the sole reference execution strategy).  At most one may be set.
     """
-    if sum((fast_path, reference_chained, reference_independent)) > 1:
+    if fast_path and reference_chained:
         raise ValueError(
-            "fast_path, reference_chained and reference_independent are mutually exclusive"
+            "fast_path and reference_chained are mutually exclusive"
         )
     args = ["run", str(study_yaml), "--workers", str(workers)]
     args += ["--no-persist", "--summary-only"]
@@ -115,8 +113,6 @@ def run_grid_study(
         args.append("--fast-path")
     elif reference_chained:
         args.append("--reference-chained")
-    elif reference_independent:
-        args.append("--reference-independent")
     result: CliResult = harness.run(args, timeout=timeout)
     if result.exit_code != 0:
         raise RuntimeError(

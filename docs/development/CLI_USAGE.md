@@ -68,12 +68,11 @@ sim-retire run [OPTIONS] STUDY_FILE
 | `--summary-only` | Keep only aggregate statistics in memory (strips per-month timelines) |
 | `--fast-path` | Use the closed-form fast path for constant-allocation + fixed-real-withdrawal studies |
 | `--reference-chained` | Explicitly use the chained Reference executor (bit-exact horizon chaining); this is the default exact mode for plans that benefit from it |
-| `--reference-independent` | Use the independent Reference executor (canonical Decimal engine, no chaining) — the oracle against which optimized execution is verified |
 | `--validate` | Pre-flight: run a deterministic sample through both the fast path and the canonical Decimal reference engine, failing loudly on any divergence; requires `--fast-path` |
 
-The execution-mode flags (`--fast-path`, `--reference-chained`,
-`--reference-independent`) are mutually exclusive; requesting more than one is
-rejected at pre-flight rather than silently merged.
+The execution-mode flags (`--fast-path`, `--reference-chained`) are mutually
+exclusive; requesting more than one is rejected at pre-flight rather than
+silently merged.
 
 Dry-run is the fastest way to sanity-check a study before a full run:
 
@@ -91,44 +90,33 @@ sim-retire --data-dir examples/data run \
 
 ### Execution modes
 
-`sim-retire run` supports three mutually exclusive execution modes.
+`sim-retire run` supports two mutually exclusive execution modes.
 
 **Default — Reference Chained (exact).** With no execution-mode flag, the CLI
-routes the plan through the chained Reference executor whenever the plan
-actually benefits from horizon chaining (`derived_results > 0`, i.e.
-multi-horizon, prefix-consistent grid families). The longest horizon of each
-family is evaluated once through the canonical Decimal engine and every
+routes the plan through the chained Reference executor. The longest horizon of
+each family is evaluated once through the canonical Decimal engine and every
 shorter, prefix-consistent horizon is derived from it bit-exactly; any
-non-eligible unit or family falls back to the independent Reference inside the
-executor. The completion summary reports `Reference Chained:`, `Chained
+non-eligible unit or family is evaluated through the canonical engine inside
+the executor. The completion summary reports `Reference Chained:`, `Chained
 Groups:`, and `Month-Work:` coverage.
 
-Single-horizon and other non-chainable plans run without any flag through the
-independent Reference dispatch exactly as before — no chaining overhead is paid
-when nothing would be derived. The chained and independent paths are
-bit-exact, so switching a plan between them never changes results, only
-execution cost.
+Single-horizon and other non-chainable plans also route through Reference
+Chained; each unit is evaluated directly through the canonical engine, so no
+chaining overhead is paid when nothing would be derived. Reference Chained is
+the sole reference execution strategy — there is no separate independent
+dispatch.
 
 ```bash
 sim-retire --data-dir data run --summary-only <study.yaml>
 ```
 
-**`--reference-independent` (canonical oracle).** Forces the independent
-Reference executor: every unit is evaluated through the full 9-step Decimal
-pipeline with no chaining. This is the development/verification oracle against
-which optimized execution is tested and is not the normal production path.
-
-```bash
-sim-retire --data-dir data run --reference-independent --summary-only <study.yaml>
-```
-
 **`--reference-chained` (explicit force).** Explicitly requests the chained
-Reference executor. This is the default exact mode for eligible plans; the flag
+Reference executor. This is the default exact mode for all plans; the flag
 documents intent and is preserved for backward compatibility with existing
 scripts. It is accepted for all plans, even when chaining derives nothing.
 
 **`--fast-path` (approximate, opt-in).** See below. Mutually exclusive with
-both Reference modes.
+`--reference-chained`.
 
 ### Fast path and pre-flight validation
 

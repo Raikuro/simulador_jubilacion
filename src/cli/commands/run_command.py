@@ -19,10 +19,9 @@ from cli.builders import (
 from cli.commands.base import BaseCommand, ExecutionContext
 from cli.commands.config_command import load_configuration
 from cli.error_handling import ExitCode
-from engine.application.executor import SimulationExecutor
 from engine.domain.model.money import Currency, Money
 from infrastructure.persistence.context import create_persistence_context
-from infrastructure.persistence.errors import RepositoryError
+from infrastructure.persistence.errors import DuplicateStudyError, RepositoryError
 from infrastructure.persistence.sqlite_repository import (
     ExperimentIdentity,
     SQLiteRepository,
@@ -229,17 +228,7 @@ class RunCommand(BaseCommand):
             "and derive shorter-horizon results from it bit-exactly. This is "
             "the default exact execution mode for plans that benefit from "
             "horizon chaining; the flag documents intent and preserves existing "
-            "scripts (cannot be combined with --reference-independent or "
-            "--fast-path)",
-        )
-        parser.add_argument(
-            "--reference-independent",
-            action="store_true",
-            help="Use the independent Reference executor: evaluate every unit "
-            "through the canonical Decimal engine with no horizon chaining. "
-            "This is the reference oracle against which optimized execution is "
-            "verified (cannot be combined with --reference-chained or "
-            "--fast-path)",
+            "scripts (cannot be combined with --fast-path)",
         )
         parser.add_argument(
             "--validate",
@@ -354,14 +343,10 @@ class RunCommand(BaseCommand):
             execution_mode_flags.append("--fast-path")
         if args.reference_chained:
             execution_mode_flags.append("--reference-chained")
-        if args.reference_independent:
-            execution_mode_flags.append("--reference-independent")
         if len(execution_mode_flags) > 1:
             flags_text = " and ".join(execution_mode_flags)
             print("ERROR: execution-mode flags are mutually exclusive: " + flags_text)
-            print("       Request exactly one; the default is Reference Chained,")
-            print("       falling back to the independent Reference for plans that")
-            print("       do not benefit from horizon chaining.")
+            print("       Request exactly one; the default is Reference Chained.")
             return ExitCode.VALIDATION_ERROR
 
         if args.validate:
@@ -384,57 +369,22 @@ class RunCommand(BaseCommand):
         progress = ProgressDisplay(total_units)
         start_time = time.perf_counter()
 
-        # --- 11a. Resolve the exact execution mode ---------------------------
-        # ``--reference-chained`` and ``--reference-independent`` are explicit;
-        # the default is Reference Chained only when the plan actually benefits
-        # from horizon chaining (``derived_results > 0``).  Single-horizon and
-        # other non-chainable plans stay on the independent Reference dispatch
-        # so grouping/slicing overhead is never paid when chaining would derive
-        # nothing.  Chaining never sacrifices correctness: non-eligible units
-        # and families fall back to the independent Reference inside the
-        # executor, and the default/independent paths are bit-exact (proven
-        # over the full ERN grid).
-        if args.reference_chained:
-            use_chained = True
-        elif args.reference_independent or args.fast_path:
-            use_chained = False
-        else:
-            from infrastructure.execution.reference_chaining import (
-                expected_reference_chaining_report,
-            )
+        # --- 11a. Execute ----------------------------------------------------
+        # Reference Chained is the sole reference execution strategy: every
+        # reference run (no flag, or ``--reference-chained``) routes through the
+        # chained Reference executor.  It materializes ~0.37 MiB of timeline
+        # payload per unit, so whole-plan dispatch (~110 GiB for the ERN grid)
+        # must never be handed to a single executor call — it goes through the
+        # memory-safe cohort-slice dispatch instead.  Non-chainable plans (no
+        # derived results) run through the same dispatch: each unit is evaluated
+        # through the canonical Decimal engine inside the executor, so there is
+        # no separate reference path.
+        if args.fast_path:
+            from cli.fast_path import ChainedFastPathSimulationExecutor
 
-            use_chained = expected_reference_chaining_report(plan).derived_results > 0
-
-        simulation_executor: SimulationExecutor | None = None
-        if use_chained:
-            # The chained Reference executor materializes ~0.37 MiB of timeline
-            # payload per unit, so whole-plan dispatch (~110 GiB for the ERN
-            # grid) must never be handed to a single executor call.  Route it
-            # through the memory-safe cohort-slice dispatch instead.
-            from infrastructure.execution.reference_chaining import (
-                execute_reference_chained,
-            )
-
+            simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
             try:
-                research_result = execute_reference_chained(
-                    plan,
-                    max_workers=workers,
-                    progress_callback=progress.update,
-                    summary_only=args.summary_only,
-                )
-            except Exception as exc:
-                progress.finish()
-                elapsed = time.perf_counter() - start_time
-                print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
-                return ExitCode.ERROR
-        else:
-            if args.fast_path:
-                from cli.fast_path import ChainedFastPathSimulationExecutor
-
-                simulation_executor = ChainedFastPathSimulationExecutor(precision="float")
-
-            try:
-                if args.fast_path and workers == 1:
+                if workers == 1:
                     from infrastructure.execution.parallel_executor import (
                         sequential_execute,
                     )
@@ -442,28 +392,6 @@ class RunCommand(BaseCommand):
                     research_result = sequential_execute(
                         plan,
                         simulation_executor=simulation_executor,
-                        progress_callback=progress.update,
-                        summary_only=args.summary_only,
-                    )
-                elif args.fast_path:
-                    from infrastructure.execution.parallel_executor import (
-                        parallel_execute,
-                    )
-
-                    research_result = parallel_execute(
-                        plan,
-                        max_workers=workers,
-                        simulation_executor=simulation_executor,
-                        progress_callback=progress.update,
-                        summary_only=args.summary_only,
-                    )
-                elif workers == 1:
-                    from infrastructure.execution.parallel_executor import (
-                        sequential_execute,
-                    )
-
-                    research_result = sequential_execute(
-                        plan,
                         progress_callback=progress.update,
                         summary_only=args.summary_only,
                     )
@@ -475,9 +403,27 @@ class RunCommand(BaseCommand):
                     research_result = parallel_execute(
                         plan,
                         max_workers=workers,
+                        simulation_executor=simulation_executor,
                         progress_callback=progress.update,
                         summary_only=args.summary_only,
                     )
+            except Exception as exc:
+                progress.finish()
+                elapsed = time.perf_counter() - start_time
+                print(f"ERROR: Execution failed after {_format_duration(elapsed)}: {exc}")
+                return ExitCode.ERROR
+        else:
+            from infrastructure.execution.reference_chaining import (
+                execute_reference_chained,
+            )
+
+            try:
+                research_result = execute_reference_chained(
+                    plan,
+                    max_workers=workers,
+                    progress_callback=progress.update,
+                    summary_only=args.summary_only,
+                )
             except Exception as exc:
                 progress.finish()
                 elapsed = time.perf_counter() - start_time
@@ -502,6 +448,11 @@ class RunCommand(BaseCommand):
                 experiment_id = repo.save_experiment(identity, experiment_def, persistence_context)
                 plan_id = repo.save_plan(plan, experiment_id, persistence_context)
                 repo.save_execution_result(plan_id, research_result, persistence_context, elapsed)
+            except DuplicateStudyError:
+                print(
+                    "NOTE: Experiment already exists with this name/revision; "
+                    "results were not persisted (existing study retained)."
+                )
             except Exception as exc:
                 print(f"WARNING: Persistence failed (execution completed): {exc}")
 
@@ -537,7 +488,7 @@ class RunCommand(BaseCommand):
                 f"Month-Work:     {report.month_work:,} months (chained) "
                 f"/ {reference_month_work(plan):,} months (reference)"
             )
-        if use_chained:
+        if not args.fast_path:
             from cli.fast_path import reference_month_work
             from infrastructure.execution.reference_chaining import (
                 expected_reference_chaining_report,
@@ -547,7 +498,7 @@ class RunCommand(BaseCommand):
             print(f"Reference Chained: {chained_report.logical_units:,} units (chained reference)")
             if chained_report.independent_evaluations:
                 print(
-                    f"Independent Path: {chained_report.independent_evaluations:,} units "
+                    f"Direct Evaluations: {chained_report.independent_evaluations:,} units "
                     f"(non-prefix fallback)"
                 )
             if chained_report.chained_groups:

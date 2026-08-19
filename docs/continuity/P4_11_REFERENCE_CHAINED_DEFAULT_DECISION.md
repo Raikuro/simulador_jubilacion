@@ -111,3 +111,41 @@ document supersedes them.
   before this default is relied upon.
 - Default single-worker chained runs report progress per cohort-slice rather
   than per unit; acceptable and documented.
+
+---
+
+## Status Update (2026-08-19) — Reference Independent removed entirely
+
+Scope: v0.5 follow-up. Two waves: first the public `--reference-independent`
+flag was removed (replaced by a test-only switch); then, once the equivalence
+was fully established, the independent execution dispatch itself was removed.
+Where the sections above describe `--reference-independent` as a
+*user-facing execution mode* (Decision 2 "explicitly selectable by users",
+Decision 5 mutual-exclusion list, "Compatibility", "Required tests", "Required
+documentation"), this section supersedes them.
+
+- The public `--reference-independent` flag is **removed**. The public
+  execution model is now exactly two mutually exclusive modes:
+  `--reference-chained` (explicit) and `--fast-path` (opt-in approximate), with
+  no flag meaning Reference Chained for all plans.
+- The independent Reference execution dispatch is **removed entirely**, along
+  with the test-only `SIM_RETIRE_FORCE_INDEPENDENT` environment switch that
+  previously exposed it. There is no replacement fallback and no compatibility
+  path: Reference Chained is the **sole reference execution strategy**.
+  - Single-horizon and other non-chainable plans route through Reference
+    Chained and are evaluated directly through the canonical Decimal engine
+    inside the executor — identical results to the former independent dispatch.
+  - The generic execution infrastructure those plans used
+    (`parallel_executor.sequential_execute` / `parallel_execute` and the
+    default simulation-executor factory) is retained because Reference Chained,
+    the fast path, `compare`, and `optimize` all build on it.
+- The correctness contract is unchanged and pinned by the chained-vs-canonical
+  engine differential tests (`test_reference_chaining.py`,
+  `test_grid_chaining.py::test_reference_chained_reproduces_canonical_engine`),
+  the fast-path equivalence suite, and the ERN oracle E2E gates.
+- Rationale: with Reference Chained proven bit-exact to the canonical engine on
+  the full 313,020-unit ERN grid, a separate independent dispatch is redundant
+  code and a redundant CLI surface. Removing it eliminates a second execution
+  path, its test scaffolding, and its documentation.
+- No files under `src/engine/**` changed. All other decisions above (the gated
+  default, fallback semantics, bit-exactness) remain in force.

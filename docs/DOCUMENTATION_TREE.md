@@ -152,7 +152,7 @@
 | **RESEARCH_STRATEGYCOMPARATOR_IMPLEMENTATION_HANDOFF.md** | StrategyComparator implementation handoff | Active |
 | **P4.5_DOCUMENTATION_SYNCHRONIZATION_AUDIT_REPORT.md** | P4.5 documentation sync audit | Historical |
 | **P4.5_IMPLEMENTATION_REPORT.md** | P4.5 implementation report | Historical |
-| **P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md** | P4.8 final validation review | Active |
+| **P4.8_CORRECTION_AND_RELEASE_READINESS_REPORT.md** | P4.8 final validation review (COMPLETE) | Historical |
 
 ### docs/history/
 
@@ -238,7 +238,7 @@
 docs/
 ├── README.md                          [NEW - Documentation index]
 ├── RELEASE_CHECKLIST.md               [Release readiness checklist]
-├── continuity/                        [22 files - AI handover & governance]
+├── continuity/                        [23 files - AI handover & governance]
 │   ├── AI_ARCHITECT_GUIDE.md          [Orientation guide]
 │   ├── PROJECT_CONTEXT.md             [Mission, vision, philosophy]
 │   ├── OPERATIONAL_DASHBOARD.md       [Operational health & metrics]
@@ -251,13 +251,23 @@ docs/
 │   ├── SOURCE_OF_TRUTH.md             [Canonical sources]
 │   ├── P4_INTEGRATION_HANDOFF.md      [Final P4 integration handoff]
 │   ├── PHASE3_CLOSURE_REPORT.md       [Phase 3 closure report]
+│   ├── P4_9_E2E_REPLICATION_INVESTIGATION.md [P4.9 E2E replication investigation]
+│   ├── P4_10_ARCHITECTURAL_REVIEW.md  [P4.10 architectural review]
+│   ├── P4_10_CONDITIONAL_APPROVAL_FIXES_REPORT.md [P4.10 conditional-approval fixes]
+│   ├── P4_10_F7_VALIDATION_FOLLOWUP_REPORT.md [P4.10 F7 validation follow-up]
+│   ├── P4_10_PERFORMANCE_OPTIMIZATIONS_REPORT.md [P4.10 performance optimizations]
+│   ├── P4_11_ARCHITECTURAL_REVIEW.md  [P4.11 architectural review]
+│   ├── P4_11_DEFERRED_REFERENCE_CHAINING_RECOMMENDATION.md [P4.11 deferred-chaining recommendation]
+│   ├── P4_11_FINALIZATION_DECISION.md [P4.11 finalization decision]
+│   ├── P4_11_FINALIZATION_REPORT.md   [P4.11 finalization report]
 │   ├── P4_11_REFERENCE_CHAINED_DEFAULT_DECISION.md [P4.11 default-mode decision]
 │   └── V0_5_STUDY_CONFIG_MODEL_DECISION.md [v0.5 study-config model — COMPLETE / CLOSED]
 │
-├── architecture/                      [21 files - Design decisions & APIs]
-│   ├── decisions/                     [2 files - Architecture Decision Records]
+├── architecture/                      [22 files - Design decisions & APIs]
+│   ├── decisions/                     [3 files - Architecture Decision Records]
 │   │   ├── ADR-001-cli-framework-selection.md
-│   │   └── ADR-002-retroactive-real-engine-approval.md
+│   │   ├── ADR-002-retroactive-real-engine-approval.md
+│   │   └── ADR-003-semantic-equivalence-restore.md
 │   ├── reviews/                       [12 files - Design decisions]
 │   │   ├── COHORT_GENERATOR_ARCHITECTURE_REVIEW.md
 │   │   ├── EXPERIMENT_DEFINITION_ARCHITECTURE_REVIEW.md
