@@ -125,6 +125,7 @@
 | Document | Purpose | Status |
 |----------|---------|--------|
 | **EXECUTION_ENGINE_COMPLETION.md** | v0.1 completion summary | Frozen |
+| **REPOSITORY_SEPARATION_DOCUMENTATION_AUDIT_ROADMAP.md** | Future workstream: core/CLI repo separation + documentation audit | PLANNED |
 | **INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md** | v0.4 infrastructure milestone architecture | Frozen |
 | **RESEARCH_LAYER_FINAL_ROADMAP.md** | Authoritative milestone blueprint | Frozen |
 | **RESEARCH_LAYER_ROADMAP.md** | Earlier roadmap version (historical) | Frozen |
@@ -322,10 +323,11 @@ docs/
 │       └── CLI_INTERFACE_SPECIFICATION.md
 │
 ├── roadmaps/                           [1 file - Planning docs]
-│   └── milestones/                    [15 files - Milestone planning + handoff]
+│   └── milestones/                    [16 files - Milestone planning + handoff]
 │       ├── RESEARCH_LAYER_FINAL_ROADMAP.md
 │       ├── RESEARCH_LAYER_ROADMAP.md
 │       ├── EXECUTION_ENGINE_COMPLETION.md
+│       ├── REPOSITORY_SEPARATION_DOCUMENTATION_AUDIT_ROADMAP.md
 │       ├── INFRASTRUCTURE_DEPLOYMENT_ARCHITECTURE_V0.4.md
 │       ├── V0.4_IMPLEMENTATION_HANDOFF.md
 │       ├── V0.4_P3.1_CODECS_HANDOFF.md

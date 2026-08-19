@@ -416,6 +416,49 @@ reference strategy · persistence semantics unchanged.
 - Multi-currency support
 - Open-source release
 
+### Repository Separation & Documentation Audit 🎯 PLANNED
+
+**Status:** 🎯 **PLANNED** (registered 2026-08-19 — roadmap only; NOT in
+progress, NO task executed). **Dependency:** v0.6 — COMPLETE / CLOSED
+(2026-08-19). **Canonical roadmap:**
+`docs/roadmaps/milestones/REPOSITORY_SEPARATION_DOCUMENTATION_AUDIT_ROADMAP.md`.
+
+**Purpose:** Split the current single repository into two independent Python
+packages/repositories — `fbf/core` and `fbf/cli` — with a defensible,
+responsibility-based architectural boundary and strictly one-way dependency
+`CLI → CORE`, followed by an aggressive documentation audit.
+
+**Two strictly sequential phases:**
+- **Phase 1 — Core / CLI Repository Separation:** P1.1 Baseline → P1.2 Core
+  Public API → P1.3 Core Boundary → P1.4 CLI Boundary → P1.5 Dependency/Import
+  Audit → P1.6 Packaging Design → P1.7 Test Separation → P1.8 Git Migration →
+  P1.9 Core Extraction → P1.10 CLI Extraction → P1.11 Workspace
+  Reconstruction → P1.12 **PHASE 1 VALIDATION GATE (hard gate)**.
+- **Phase 2 — Aggressive Documentation Audit (after P1.12 approval):** P2.1
+  Inventory → P2.2 Code-vs-Docs Audit → P2.3 Deletion → P2.4 Consolidation →
+  P2.5 Roadmap/TODO Audit → P2.6 Validation → P2.7 FINAL ARCHITECTURAL REVIEW.
+
+**Explicit dependency:** P1.12 → approval → P2.1. No Phase 2 task may start
+before P1.12 is approved.
+
+**Target workspace (NO `fbf/.git`; UI out of scope):**
+```
+fbf/
+├── ARCHITECTURE.md
+├── core/   (.git · AGENTS.md · README.md · src/ · tests/ · pyproject.toml)
+└── cli/    (.git · AGENTS.md · README.md · src/ · tests/ · pyproject.toml)
+```
+
+**Known boundary facts to resolve (from 2026-08-19 baseline):** the study
+configuration layer (`StudyConfiguration`, YAML parsing, `build_study_plan`)
+currently lives at the CLI boundary in `src/cli/builders.py`; the concrete
+execution policies live in `src/cli/policies.py` but are imported by the sole
+reference strategy `src/infrastructure/execution/reference_chaining.py`
+(confirmed `core → cli` leak to fix); ownership of `StudyConfiguration`, YAML,
+policies, persistence abstractions vs implementations, and `--strategy` /
+`--initial-capital` handling must be decided by responsibility, not by current
+filesystem location.
+
 ---
 
 ## 5. Quality Checkpoints
