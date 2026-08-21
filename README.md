@@ -1,3 +1,13 @@
+> **⚠️ Legacy Repository**
+>
+> This repository is no longer under active development. The FIRE Backtesting Framework has moved to the [`fbf-core`](https://github.com/Raikuro/fbf-core) and [`fbf-cli`](https://github.com/Raikuro/fbf-cli) repositories.
+>
+> `simulador_jubilacion` is retained for historical and reference purposes only. New development, bug fixes, and feature work should take place in the active repositories listed above. Contributors should not implement new features or architectural changes here.
+>
+> For the active CLI and application entry point, see [`fbf-cli`](https://github.com/Raikuro/fbf-cli).
+
+---
+
 # FIRE Backtesting Framework
 
 FIRE Backtesting Framework (FBF) is a deterministic financial simulation engine designed to reproduce and extend SWR research. The project is built on a rigorously defined Clean Architecture that prioritizes correctness, reproducibility, and maintainability.
